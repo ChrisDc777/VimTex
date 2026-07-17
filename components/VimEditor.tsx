@@ -6,7 +6,7 @@ import {
   useImperativeHandle,
   useRef,
 } from "react";
-import { Compartment, EditorState } from "@codemirror/state";
+import { Compartment, EditorState, Prec } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -14,20 +14,28 @@ import {
   highlightActiveLine,
   drawSelection,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { getCM, vim } from "@replit/codemirror-vim";
+import { defaultKeymap } from "@codemirror/commands";
+import { CodeMirror, getCM, vim, Vim } from "@replit/codemirror-vim";
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
+import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 import { mathInlineWidgets } from "@/lib/cm-math-widgets";
-import type { ViewMode, VimMode } from "@/lib/types";
+import { getCollabWsBase } from "@/lib/collab";
+import { STARTER_NOTE } from "@/lib/starter-content";
+import type { CollabStatus, CollabUser, ViewMode, VimMode } from "@/lib/types";
 
 export type VimEditorHandle = {
   focus: () => void;
 };
 
 type VimEditorProps = {
-  value: string;
-  onChange: (value: string) => void;
+  roomId: string;
+  user: CollabUser;
   viewMode: ViewMode;
+  onChange: (value: string) => void;
   onVimModeChange: (mode: VimMode) => void;
+  onCollabStatus: (status: CollabStatus) => void;
+  onPeerCount: (count: number) => void;
 };
 
 const vimTexTheme = EditorView.theme(
@@ -62,20 +70,67 @@ const vimTexTheme = EditorView.theme(
   { dark: true },
 );
 
+function setAwarenessUser(
+  provider: WebsocketProvider,
+  user: CollabUser,
+): void {
+  provider.awareness.setLocalStateField("user", {
+    name: user.name,
+    color: user.color,
+    colorLight: user.colorLight,
+  });
+}
+
+/** Active Y.UndoManager for the live editor — used by Vim chord maps. */
+let activeUndoManager: Y.UndoManager | null = null;
+
+let vimUndoWired = false;
+function wireVimUndoRedo(): void {
+  if (vimUndoWired) return;
+  vimUndoWired = true;
+  Vim.defineAction("yUndo", () => {
+    activeUndoManager?.undo();
+  });
+  Vim.defineAction("yRedo", () => {
+    activeUndoManager?.redo();
+  });
+  for (const ctx of ["normal", "insert", "visual"] as const) {
+    Vim.mapCommand("<C-S-z>", "action", "yRedo", {}, { context: ctx });
+    Vim.mapCommand("<D-S-z>", "action", "yRedo", {}, { context: ctx });
+    Vim.mapCommand("<C-z>", "action", "yUndo", {}, { context: ctx });
+    Vim.mapCommand("<D-z>", "action", "yUndo", {}, { context: ctx });
+  }
+}
+
 export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
   function VimEditor(
-    { value, onChange, viewMode, onVimModeChange },
+    {
+      roomId,
+      user,
+      viewMode,
+      onChange,
+      onVimModeChange,
+      onCollabStatus,
+      onPeerCount,
+    },
     ref,
   ) {
     const hostRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
+    const providerRef = useRef<WebsocketProvider | null>(null);
+    const undoManagerRef = useRef<Y.UndoManager | null>(null);
     const inlineMathRef = useRef(new Compartment());
     const onChangeRef = useRef(onChange);
     const onVimModeChangeRef = useRef(onVimModeChange);
-    const skippingSync = useRef(false);
+    const onCollabStatusRef = useRef(onCollabStatus);
+    const onPeerCountRef = useRef(onPeerCount);
+    const userRef = useRef(user);
 
     onChangeRef.current = onChange;
     onVimModeChangeRef.current = onVimModeChange;
+    onCollabStatusRef.current = onCollabStatus;
+    onPeerCountRef.current = onPeerCount;
+    userRef.current = user;
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -83,32 +138,125 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       },
     }));
 
+    // Keep awareness in sync when name/color changes without recreating the doc.
+    useEffect(() => {
+      const provider = providerRef.current;
+      if (!provider) return;
+      setAwarenessUser(provider, user);
+    }, [user.name, user.color, user.colorLight, user]);
+
     useEffect(() => {
       if (!hostRef.current) return;
 
+      const ydoc = new Y.Doc();
+      const ytext = ydoc.getText("codemirror");
+      const wsBase = getCollabWsBase();
+      const provider = new WebsocketProvider(wsBase, roomId, ydoc, {
+        connect: true,
+      });
+      providerRef.current = provider;
+
+      setAwarenessUser(provider, userRef.current);
+
+      // yCollab registers its sync origin on this manager so local edits undo correctly.
+      const um = new Y.UndoManager(ytext);
+      undoManagerRef.current = um;
+
+      const updatePeerCount = () => {
+        onPeerCountRef.current(provider.awareness.getStates().size);
+      };
+
+      const onStatus = (event: { status: string }) => {
+        if (
+          event.status === "connected" ||
+          event.status === "disconnected" ||
+          event.status === "connecting"
+        ) {
+          onCollabStatusRef.current(event.status);
+        }
+      };
+
+      provider.on("status", onStatus);
+      provider.awareness.on("change", updatePeerCount);
+      updatePeerCount();
+
+      const emitText = () => {
+        onChangeRef.current(ytext.toString());
+      };
+
+      ytext.observe(emitText);
+
+      let seeded = false;
+      const maybeSeed = (synced: boolean) => {
+        if (!synced || seeded) return;
+        seeded = true;
+        if (ytext.length === 0) {
+          ydoc.transact(() => {
+            ytext.insert(0, STARTER_NOTE);
+          }, "seed");
+          um.clear();
+        }
+        emitText();
+      };
+      provider.on("sync", maybeSeed);
+
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          skippingSync.current = true;
           onChangeRef.current(update.state.doc.toString());
-          queueMicrotask(() => {
-            skippingSync.current = false;
-          });
         }
       });
 
+      // Wire Vim `u` / Ctrl-r / Ctrl-Shift-z to Y.UndoManager (no CM history).
+      wireVimUndoRedo();
+      activeUndoManager = um;
+
+      const prevUndo = CodeMirror.commands.undo;
+      const prevRedo = CodeMirror.commands.redo;
+      const runYUndo = () => {
+        um.undo();
+        return true;
+      };
+      const runYRedo = () => {
+        um.redo();
+        return true;
+      };
+      CodeMirror.commands.undo = (cm) => {
+        if (viewRef.current && cm.cm6 === viewRef.current) {
+          runYUndo();
+          return;
+        }
+        prevUndo?.(cm);
+      };
+      CodeMirror.commands.redo = (cm) => {
+        if (viewRef.current && cm.cm6 === viewRef.current) {
+          runYRedo();
+          return;
+        }
+        prevRedo?.(cm);
+      };
+
+      const yUndoKeys = Prec.highest(
+        keymap.of([
+          { key: "Mod-z", run: runYUndo, preventDefault: true },
+          { key: "Mod-y", run: runYRedo, preventDefault: true },
+          { key: "Mod-Shift-z", run: runYRedo, preventDefault: true },
+          ...yUndoManagerKeymap,
+        ]),
+      );
+
       const state = EditorState.create({
-        doc: value,
+        doc: ytext.toString(),
         extensions: [
-          // vim() must come before other keymaps
           vim(),
           lineNumbers(),
           highlightActiveLine(),
           drawSelection(),
-          history(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
+          yUndoKeys,
+          keymap.of(defaultKeymap),
           vimTexTheme,
           EditorView.lineWrapping,
           updateListener,
+          yCollab(ytext, provider.awareness, { undoManager: um }),
           inlineMathRef.current.of(
             viewMode === "realtime" ? [mathInlineWidgets] : [],
           ),
@@ -126,28 +274,30 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           onVimModeChangeRef.current(e.mode);
         }
       };
-      // getCM is ready after the vim plugin constructs (same tick as EditorView).
       const cm = getCM(view);
       cm?.on("vim-mode-change", onMode);
       requestAnimationFrame(() => view.focus());
 
       return () => {
         cm?.off("vim-mode-change", onMode);
+        CodeMirror.commands.undo = prevUndo;
+        CodeMirror.commands.redo = prevRedo;
+        provider.off("status", onStatus);
+        provider.off("sync", maybeSeed);
+        provider.awareness.off("change", updatePeerCount);
+        ytext.unobserve(emitText);
+        provider.destroy();
+        um.destroy();
+        if (activeUndoManager === um) activeUndoManager = null;
+        ydoc.destroy();
         view.destroy();
         viewRef.current = null;
+        providerRef.current = null;
+        undoManagerRef.current = null;
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once
-    }, []);
-
-    useEffect(() => {
-      const view = viewRef.current;
-      if (!view || skippingSync.current) return;
-      const current = view.state.doc.toString();
-      if (current === value) return;
-      view.dispatch({
-        changes: { from: 0, to: current.length, insert: value },
-      });
-    }, [value]);
+      // Only remount when the room changes — awareness updates via the effect above.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roomId]);
 
     useEffect(() => {
       const view = viewRef.current;
