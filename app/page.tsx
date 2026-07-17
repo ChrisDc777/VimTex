@@ -6,43 +6,65 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StatusBar } from "@/components/StatusBar";
 import { ExportMenu } from "@/components/ExportMenu";
+import { ShareRoom } from "@/components/ShareRoom";
+import { NamePicker } from "@/components/NamePicker";
 import type { VimEditorHandle } from "@/components/VimEditor";
-import { STARTER_NOTE } from "@/lib/starter-content";
-import { loadNote, loadViewMode, saveNote, saveViewMode } from "@/lib/storage";
-import type { ViewMode, VimMode } from "@/lib/types";
+import {
+  createCollabUser,
+  createRoomId,
+  loadDisplayName,
+  readRoomFromLocation,
+  saveDisplayName,
+  writeRoomToLocation,
+} from "@/lib/collab";
+import { loadViewMode, saveViewMode } from "@/lib/storage";
+import type { CollabStatus, CollabUser, ViewMode, VimMode } from "@/lib/types";
 
 const VimEditor = dynamic(
-  () =>
-    import("@/components/VimEditor").then((m) => m.VimEditor),
+  () => import("@/components/VimEditor").then((m) => m.VimEditor),
   {
     ssr: false,
     loading: () => (
       <div className="flex h-full items-center px-5 font-mono text-xs uppercase tracking-[1.2px] text-mute">
-        Loading editor…
+        Connecting room…
       </div>
     ),
   },
 );
 
 export default function HomePage() {
-  const [note, setNote] = useState(STARTER_NOTE);
+  const [note, setNote] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [vimMode, setVimMode] = useState<VimMode>("normal");
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [collabStatus, setCollabStatus] =
+    useState<CollabStatus>("connecting");
+  const [peerCount, setPeerCount] = useState(1);
   const [hydrated, setHydrated] = useState(false);
+  const [user, setUser] = useState<CollabUser | null>(null);
+  const [needsName, setNeedsName] = useState(false);
+  const [editingName, setEditingName] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
-    const storedNote = loadNote();
+    const existing = readRoomFromLocation();
+    const room = existing ?? createRoomId();
+    writeRoomToLocation(room);
+    setRoomId(room);
+
     const storedMode = loadViewMode();
-    if (storedNote != null) setNote(storedNote);
     if (storedMode != null) setViewMode(storedMode);
+
+    const storedName = loadDisplayName();
+    if (storedName) {
+      setUser(createCollabUser({ name: storedName }));
+      setNeedsName(false);
+    } else {
+      setUser(createCollabUser());
+      setNeedsName(true);
+    }
     setHydrated(true);
   }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveNote(note);
-  }, [note, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -54,7 +76,25 @@ export default function HomePage() {
     requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
+  const handleNameSubmit = useCallback((name: string) => {
+    saveDisplayName(name);
+    setUser((prev) =>
+      prev
+        ? { ...prev, name }
+        : createCollabUser({ name }),
+    );
+    setNeedsName(false);
+    setEditingName(false);
+    requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
+
+  const openNameEdit = useCallback(() => {
+    setEditingName(true);
+  }, []);
+
   const isSplit = viewMode === "split";
+  const ready = hydrated && !!roomId && !!user && !needsName;
+  const namePickerOpen = needsName || editingName;
 
   return (
     <div className="flex h-dvh flex-col bg-canvas text-ink">
@@ -68,6 +108,7 @@ export default function HomePage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {roomId ? <ShareRoom roomId={roomId} /> : null}
           <ViewToggle value={viewMode} onChange={handleViewMode} />
           <ExportMenu note={note} />
         </div>
@@ -87,13 +128,22 @@ export default function HomePage() {
               : "h-full min-h-0"
           }
         >
-          <VimEditor
-            ref={editorRef}
-            value={note}
-            onChange={setNote}
-            viewMode={viewMode}
-            onVimModeChange={setVimMode}
-          />
+          {ready ? (
+            <VimEditor
+              ref={editorRef}
+              roomId={roomId}
+              user={user}
+              viewMode={viewMode}
+              onChange={setNote}
+              onVimModeChange={setVimMode}
+              onCollabStatus={setCollabStatus}
+              onPeerCount={setPeerCount}
+            />
+          ) : (
+            <div className="flex h-full items-center px-5 font-mono text-xs uppercase tracking-[1.2px] text-mute">
+              {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
+            </div>
+          )}
         </section>
 
         {isSplit ? (
@@ -103,7 +153,25 @@ export default function HomePage() {
         ) : null}
       </main>
 
-      <StatusBar vimMode={vimMode} />
+      <StatusBar
+        vimMode={vimMode}
+        collabStatus={collabStatus}
+        peerCount={peerCount}
+        userName={user?.name ?? "…"}
+        onEditName={user ? openNameEdit : undefined}
+      />
+
+      <NamePicker
+        open={namePickerOpen}
+        initialName={needsName ? "" : (user?.name ?? "")}
+        onSubmit={handleNameSubmit}
+        allowSkip={editingName && !needsName}
+        onCancel={
+          editingName && !needsName
+            ? () => setEditingName(false)
+            : undefined
+        }
+      />
     </div>
   );
 }

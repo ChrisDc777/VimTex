@@ -104,6 +104,29 @@ body {
   color: var(--on-primary) !important;
 }
 
+/* y-codemirror.next remote carets — always show peer name labels */
+.cm-ySelectionCaret {
+  border-left-width: 2px;
+  border-right-width: 2px;
+}
+
+.cm-ySelectionInfo {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  position: absolute;
+  top: -1.25em;
+  left: -1px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1 !important;
+  color: #0a0a0a;
+  font-weight: 500;
+}
+
 .cm-vim-panel,
 .cm-panels {
   background: var(--canvas);
