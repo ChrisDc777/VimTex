@@ -24,7 +24,7 @@ export function LatexPreview({ note, debounceMs = 75 }: LatexPreviewProps) {
 
   return (
     <div
-      className="latex-preview h-full overflow-auto px-5 py-4"
+      className="latex-preview h-full overflow-auto overscroll-contain px-4 py-4 sm:px-5"
       dangerouslySetInnerHTML={markup}
     />
   );

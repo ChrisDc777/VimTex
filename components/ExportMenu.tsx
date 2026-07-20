@@ -8,18 +8,20 @@ type ExportMenuProps = {
 
 export function ExportMenu({ note }: ExportMenuProps) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5" aria-label="Export">
       <button
         type="button"
         onClick={() => exportAsTex(note)}
-        className="rounded-full border border-hairline bg-canvas px-3 py-1 text-sm text-ink hover:border-body-mid transition-colors"
+        className="vt-pill vt-pill--ghost vt-pill--label"
+        title="Export as LaTeX"
       >
         .tex
       </button>
       <button
         type="button"
         onClick={() => exportAsMd(note)}
-        className="rounded-full border border-hairline bg-canvas px-3 py-1 text-sm text-ink hover:border-body-mid transition-colors"
+        className="vt-pill vt-pill--ghost vt-pill--label"
+        title="Export as Markdown"
       >
         .md
       </button>

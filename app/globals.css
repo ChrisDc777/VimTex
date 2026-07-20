@@ -2,6 +2,7 @@
 @import "katex/dist/katex.min.css";
 
 :root {
+  /* Surfaces — engineered cosmic canvas with depth */
   --canvas: #0a0a0a;
   --canvas-soft: #1a1c20;
   --canvas-card: #191919;
@@ -14,6 +15,41 @@
   --hairline: #212327;
   --on-primary: #0a0a0a;
   --primary: #ffffff;
+
+  /* Accents (sparse — atmosphere + focus cues) */
+  --accent-sunset: #ff7a17;
+  --accent-sunset-soft: #ffc285;
+  --accent-breeze: #a0c3ec;
+  --accent-midnight: #0d1726;
+  --border-pill: rgba(255, 255, 255, 0.25);
+
+  /* Spacing scale (4px base) */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 140ms;
+  --duration-med: 220ms;
+  --duration-slow: 320ms;
+
+  /* Touch / chrome */
+  --touch-min: 44px;
+  --header-h: 52px;
+  --footer-h: 40px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -32,10 +68,15 @@
   --color-hairline: var(--hairline);
   --color-on-primary: var(--on-primary);
   --color-primary: var(--primary);
+  --color-accent-sunset: var(--accent-sunset);
+  --color-accent-breeze: var(--accent-breeze);
+  --color-accent-midnight: var(--accent-midnight);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
+  --radius-sm: var(--radius-sm);
+  --radius-pill: var(--radius-pill);
 }
 
 * {
@@ -47,18 +88,371 @@ body {
   height: 100%;
 }
 
+html {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  background: var(--canvas);
   color: var(--ink);
-  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(
+      ellipse 100% 60% at 8% -12%,
+      color-mix(in srgb, var(--accent-breeze) 22%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 100% -5%,
+      color-mix(in srgb, var(--accent-sunset) 16%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 50% 115%,
+      color-mix(in srgb, var(--accent-midnight) 90%, transparent),
+      transparent 62%
+    );
+  background-attachment: fixed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* App shell: respect notches / home indicator */
+.app-shell {
+  padding-top: var(--safe-top);
+  padding-right: var(--safe-right);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+}
+
+/* Shared interactive chrome */
+.vt-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-pill);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.vt-pill:hover:not(:disabled) {
+  border-color: var(--body-mid);
+}
+
+.vt-pill:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.vt-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.vt-pill:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: 2px;
+}
+
+.vt-pill--solid {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.vt-pill--solid:hover:not(:disabled) {
+  background: var(--ink-hover);
+  border-color: var(--ink-hover);
+}
+
+.vt-pill--ghost {
+  border-color: var(--hairline);
+}
+
+.vt-pill--label {
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.vt-caption {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.vt-brand {
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* Dialog enter */
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vt-slide-in-end {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vt-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vt-overlay {
+  animation: vt-fade-in var(--duration-med) var(--ease-out);
+}
+
+.vt-dialog {
+  animation: vt-rise-in var(--duration-slow) var(--ease-out);
+}
+
+.vt-chat-panel {
+  animation: vt-slide-up var(--duration-med) var(--ease-out);
+}
+
+@media (min-width: 768px) {
+  .vt-chat-panel {
+    animation-name: vt-slide-in-end;
+  }
+}
+
+/* Quiet chat stream — no card chrome */
+.vt-chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.vt-chat-msg + .vt-chat-msg {
+  margin-top: 10px;
+}
+
+.vt-chat-msg--continued {
+  margin-top: 2px;
+}
+
+.vt-chat-msg__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vt-chat-msg__author {
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vt-chat-msg__time {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+
+.vt-chat-msg__body {
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.vt-chat-msg--ai .vt-chat-msg__body {
+  color: var(--body);
+}
+
+.vt-chat-msg__hint {
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--mute);
+  margin-top: 2px;
+}
+
+.vt-chat-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+}
+
+.vt-chat-composer__field {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  max-height: 96px;
+  resize: none;
+  border: 1px solid var(--hairline);
+  border-radius: 20px;
+  background: var(--canvas-soft);
+  color: var(--ink);
+  padding: 10px 14px;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  outline: none;
+}
+
+@media (min-width: 640px) {
+  .vt-chat-composer__field {
+    font-size: 14px;
+  }
+}
+
+.vt-chat-composer__field::placeholder {
+  color: var(--mute);
+}
+
+.vt-chat-composer__field:disabled {
+  opacity: 0.5;
+}
+
+.vt-chat-composer__field:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-breeze) 55%, var(--hairline));
+}
+
+.vt-chat-model {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--mute);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 4px 2px;
+  max-width: 7.5rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.vt-chat-model:focus-visible {
+  color: var(--ink);
+}
+
+.vt-chat-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  border: none;
+  background: transparent;
+  color: var(--mute);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.vt-chat-icon-btn:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.vt-chat-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vt-chat-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: 2px;
+}
+
+.vt-chat-send {
+  flex-shrink: 0;
+}
+
+/* Header toolbar scroll on narrow screens */
+.vt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1px;
+}
+
+.vt-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* CodeMirror shell */
 .cm-editor {
   height: 100%;
   outline: none;
-  background: var(--canvas);
+  background: transparent;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 14px;
 }
@@ -78,8 +472,15 @@ body {
   min-height: 100%;
 }
 
+@media (max-width: 767px) {
+  .cm-content {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+}
+
 .cm-gutters {
-  background: var(--canvas);
+  background: transparent;
   border-right: 1px solid var(--hairline);
   color: var(--mute);
 }
@@ -129,7 +530,7 @@ body {
 
 .cm-vim-panel,
 .cm-panels {
-  background: var(--canvas);
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
   border-top: 1px solid var(--hairline);
   color: var(--body);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
@@ -162,11 +563,54 @@ body {
   font-size: 12px;
 }
 
+/* LaTeX completion tooltip */
+.cm-tooltip.cm-tooltip-autocomplete {
+  border: 1px solid var(--hairline) !important;
+  background: var(--canvas-card) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 12px 40px color-mix(in srgb, #000 55%, transparent);
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  max-height: 220px;
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  padding: 6px 12px;
+  line-height: 1.3;
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: color-mix(in srgb, var(--ink) 12%, transparent) !important;
+  color: var(--ink) !important;
+}
+
+.cm-completionLabel {
+  color: var(--ink);
+}
+
+.cm-completionMatchedText {
+  color: var(--accent-breeze);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cm-completionDetail {
+  margin-left: 10px;
+  color: var(--mute);
+  font-style: normal;
+  font-size: 11px;
+}
+
 /* Full-document preview */
 .latex-preview {
   color: var(--body);
   font-size: 16px;
   line-height: 1.7;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
 }
 
 .latex-preview .katex {
@@ -177,6 +621,7 @@ body {
   margin: 1em 0;
   overflow-x: auto;
   overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .latex-preview .math-error {
@@ -192,4 +637,43 @@ body {
 
 .latex-preview p:last-child {
   margin-bottom: 0;
+}
+
+.latex-preview h1,
+.latex-preview h2,
+.latex-preview h3 {
+  color: var(--ink);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0 0 0.6em;
+}
+
+.latex-preview h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.04em;
+}
+
+.latex-preview h2 {
+  font-size: 1.35rem;
+}
+
+.latex-preview h3 {
+  font-size: 1.15rem;
+}
+
+.latex-preview code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.9em;
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vt-overlay,
+  .vt-dialog,
+  .vt-chat-panel,
+  .vt-pill {
+    animation: none !important;
+    transition: none !important;
+  }
 }

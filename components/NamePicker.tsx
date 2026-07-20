@@ -44,7 +44,7 @@ export function NamePicker({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 px-4"
+      className="vt-overlay fixed inset-0 z-50 flex items-end justify-center bg-canvas/80 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -55,14 +55,11 @@ export function NamePicker({
         }
       }}
     >
-      <div className="w-full max-w-sm rounded-lg border border-hairline bg-canvas p-6">
-        <p
-          id={titleId}
-          className="font-mono text-xs uppercase tracking-[1.4px] text-ink"
-        >
+      <div className="vt-dialog w-full max-w-sm rounded-[var(--radius-sm)] border border-hairline bg-canvas-card p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <p id={titleId} className="vt-caption text-ink">
           Display name
         </p>
-        <p className="mt-2 text-sm text-body">
+        <p className="mt-2 text-sm leading-5 text-body">
           Shown on your cursor for collaborators.
         </p>
         <input
@@ -78,16 +75,17 @@ export function NamePicker({
               submit();
             }
           }}
-          className="mt-4 w-full rounded-sm border border-hairline bg-canvas-soft px-4 py-3 text-base text-ink outline-none placeholder:text-mute focus:border-body-mid"
+          className="mt-4 min-h-[var(--touch-min)] w-full rounded-[var(--radius-sm)] border border-hairline bg-canvas-soft px-4 py-3 text-base text-ink outline-none placeholder:text-mute focus:border-body-mid"
           autoComplete="nickname"
           spellCheck={false}
+          enterKeyHint="done"
         />
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
             disabled={!canSubmit}
             onClick={submit}
-            className="rounded-full border border-white/25 bg-ink px-4 py-2 text-sm text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
+            className="vt-pill vt-pill--solid vt-pill--label min-w-[7.5rem]"
           >
             {allowSkip ? "Save" : "Join room"}
           </button>
@@ -95,7 +93,7 @@ export function NamePicker({
             <button
               type="button"
               onClick={() => onCancel?.()}
-              className="rounded-full border border-white/25 px-4 py-2 text-sm text-ink"
+              className="vt-pill vt-pill--ghost vt-pill--label"
             >
               Cancel
             </button>

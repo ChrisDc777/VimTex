@@ -26,7 +26,7 @@ const VimEditor = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center px-5 font-mono text-xs uppercase tracking-[1.2px] text-mute">
+      <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
         Connecting room…
       </div>
     ),
@@ -99,26 +99,26 @@ export default function HomePage() {
   const namePickerOpen = needsName || editingName;
 
   return (
-    <div className="flex h-dvh flex-col bg-canvas text-ink">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-hairline px-4">
-        <div className="flex min-w-0 items-center gap-4">
-          <span className="font-mono text-sm uppercase tracking-[1.4px] text-ink">
-            VimTex
+    <div className="app-shell flex h-dvh flex-col text-ink">
+      <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
+        <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
+          <span className="vt-brand text-ink">VimTex</span>
+          <span className="vt-caption text-mute sm:hidden">
+            {vimModeLabel(vimMode)}
           </span>
-          <span className="hidden font-mono text-xs uppercase tracking-[1.2px] text-mute sm:inline">
+          <span className="vt-caption hidden text-mute sm:inline">
             {vimModeLabel(vimMode)}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="vt-toolbar sm:justify-end" role="toolbar" aria-label="Workspace tools">
           {roomId ? <ShareRoom roomId={roomId} /> : null}
           <button
             type="button"
             aria-pressed={chatOpen}
+            disabled={!ready}
             onClick={() => setChatOpen((v) => !v)}
             className={
-              chatOpen
-                ? "rounded-full bg-primary px-3 py-1 font-mono text-xs uppercase tracking-[1.2px] text-on-primary transition-colors"
-                : "rounded-full border border-hairline bg-canvas px-3 py-1 font-mono text-xs uppercase tracking-[1.2px] text-ink transition-colors hover:border-body-mid"
+              chatOpen ? "vt-pill vt-pill--solid" : "vt-pill vt-pill--ghost"
             }
           >
             Chat
@@ -155,14 +155,14 @@ export default function HomePage() {
                 onPeerCount={setPeerCount}
               />
             ) : (
-              <div className="flex h-full items-center px-5 font-mono text-xs uppercase tracking-[1.2px] text-mute">
+              <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
                 {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
               </div>
             )}
           </section>
 
           {isSplit ? (
-            <section className="min-h-0 flex-[0.45] bg-canvas">
+            <section className="min-h-0 flex-[0.45] bg-transparent">
               <LatexPreview note={note} />
             </section>
           ) : null}
