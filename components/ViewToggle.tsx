@@ -7,9 +7,9 @@ type ViewToggleProps = {
   onChange: (mode: ViewMode) => void;
 };
 
-const OPTIONS: { id: ViewMode; label: string }[] = [
-  { id: "realtime", label: "Realtime" },
-  { id: "split", label: "Split" },
+const OPTIONS: { id: ViewMode; label: string; short: string }[] = [
+  { id: "realtime", label: "Realtime", short: "Live" },
+  { id: "split", label: "Split", short: "Split" },
 ];
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
@@ -26,14 +26,16 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
             key={opt.id}
             type="button"
             aria-pressed={active}
+            aria-label={opt.label}
             onClick={() => onChange(opt.id)}
             className={
               active
-                ? "rounded-full bg-primary px-3 py-1 text-sm text-on-primary transition-colors"
-                : "rounded-full border border-hairline bg-canvas px-3 py-1 text-sm text-ink hover:border-body-mid transition-colors"
+                ? "vt-pill vt-pill--solid vt-pill--label"
+                : "vt-pill vt-pill--ghost vt-pill--label"
             }
           >
-            {opt.label}
+            <span className="sm:hidden">{opt.short}</span>
+            <span className="hidden sm:inline">{opt.label}</span>
           </button>
         );
       })}

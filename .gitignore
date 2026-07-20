@@ -44,3 +44,9 @@ next-env.d.ts
 /bug-hunt-artifacts/
 /scripts/bug-hunt*.mjs
 /scripts/probe-*.mjs
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

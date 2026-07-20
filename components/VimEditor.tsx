@@ -20,6 +20,7 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 import { mathInlineWidgets } from "@/lib/cm-math-widgets";
+import { latexCompletionExtension } from "@/lib/cm-latex-completion";
 import { getCollabWsBase } from "@/lib/collab";
 import type { RoomChatMessage } from "@/lib/room-chat";
 import { STARTER_NOTE } from "@/lib/starter-content";
@@ -54,7 +55,7 @@ type VimEditorProps = {
 const vimTexTheme = EditorView.theme(
   {
     "&": {
-      backgroundColor: "var(--canvas)",
+      backgroundColor: "transparent",
       color: "var(--ink)",
       height: "100%",
     },
@@ -69,7 +70,7 @@ const vimTexTheme = EditorView.theme(
       backgroundColor: "color-mix(in srgb, var(--ink) 18%, transparent)",
     },
     ".cm-gutters": {
-      backgroundColor: "var(--canvas)",
+      backgroundColor: "transparent",
       color: "var(--mute)",
       borderRight: "1px solid var(--hairline)",
     },
@@ -325,6 +326,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           highlightActiveLine(),
           drawSelection(),
           yUndoKeys,
+          ...latexCompletionExtension,
           keymap.of(defaultKeymap),
           vimTexTheme,
           EditorView.lineWrapping,

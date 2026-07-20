@@ -25,8 +25,11 @@ export function ShareRoom({ roomId }: ShareRoomProps) {
     <button
       type="button"
       onClick={copyLink}
-      className="rounded-full border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[1.2px] text-ink transition-colors hover:bg-ink hover:text-on-primary"
+      className={
+        copied ? "vt-pill vt-pill--solid" : "vt-pill vt-pill--ghost"
+      }
       title={`Room ${roomId}`}
+      aria-live="polite"
     >
       {copied ? "Copied" : "Share"}
     </button>

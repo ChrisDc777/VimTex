@@ -262,6 +262,9 @@ export function RoomChatSidebar({
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
+    if (inputRef.current) {
+      inputRef.current.style.height = "";
+    }
     editor.appendChatMessage(userMsg);
 
     if (mention) {
@@ -311,42 +314,31 @@ export function RoomChatSidebar({
 
   if (!open) return null;
 
+  const modelLabel =
+    AI_MODELS.find((m) => m.id === model)?.label ?? model;
+
   return (
     <aside
-      className="flex h-[min(48vh,420px)] min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-canvas md:h-full md:w-[340px] md:border-t-0 md:border-l"
+      className="vt-chat-panel flex h-[min(48vh,400px)] min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-canvas/95 backdrop-blur-sm md:h-full md:w-[min(100%,340px)] md:border-t-0 md:border-l"
       aria-label="Room chat"
     >
-      <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="font-mono text-xs uppercase tracking-[1.2px] text-ink">
-            Chat
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-mute">
-            {peerCount} {peerCount === 1 ? "peer" : "peers"}
+      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-hairline px-2 pl-3">
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          <span className="text-sm text-ink">Chat</span>
+          <span className="truncate text-xs text-mute">
+            {peerCount} online
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[1.2px] text-ink transition-colors hover:bg-ink hover:text-on-primary"
-        >
-          Close
-        </button>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-3 py-2">
-        <label
-          htmlFor="room-chat-model"
-          className="shrink-0 font-mono text-[10px] uppercase tracking-[1.2px] text-mute"
-          title="Used when a message mentions @ai"
-        >
-          Model
+        <label className="sr-only" htmlFor="room-chat-model">
+          Model for @ai
         </label>
         <select
           id="room-chat-model"
           value={model}
           onChange={(e) => setModel(e.target.value as AiModelId)}
-          className="min-w-0 flex-1 rounded-full border border-hairline bg-canvas px-3 py-1 font-mono text-xs text-ink outline-none"
+          className="vt-chat-model"
+          title={`Model: ${modelLabel}`}
+          aria-label="Model for @ai"
         >
           {AI_MODELS.map((m) => (
             <option key={m.id} value={m.id} className="bg-canvas text-ink">
@@ -354,71 +346,80 @@ export function RoomChatSidebar({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={onClose}
+          className="vt-chat-icon-btn"
+          aria-label="Close chat"
+        >
+          ×
+        </button>
       </div>
 
       <div
         ref={listRef}
         onScroll={onListScroll}
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3"
       >
         {messages.length === 0 ? (
-          <p className="font-mono text-xs uppercase tracking-[1.2px] text-mute">
-            Talk to collaborators. Tag @ai to edit the note.
+          <p className="text-sm text-mute">
+            Message the room. Mention @ai to edit the note.
           </p>
         ) : null}
 
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           const isAi = m.role === "ai";
+          const prev = messages[i - 1];
+          const continued =
+            !!prev &&
+            prev.role === m.role &&
+            prev.clientId === m.clientId &&
+            prev.authorName === m.authorName &&
+            m.createdAt - prev.createdAt < 120_000;
           const showError = error && errorForId === m.id;
           return (
-            <div key={m.id} className="space-y-1.5">
-              <div
-                className={
-                  isAi
-                    ? "mr-1 rounded-lg border border-primary/40 bg-canvas-card px-3 py-2 text-sm text-body"
-                    : "ml-2 rounded-lg border border-hairline bg-canvas-soft px-3 py-2 text-sm text-ink"
-                }
-                style={
-                  !isAi
-                    ? { borderLeftWidth: 3, borderLeftColor: m.authorColor }
-                    : undefined
-                }
-              >
-                <div className="mb-1 flex items-baseline justify-between gap-2">
+            <div
+              key={m.id}
+              className={
+                continued
+                  ? "vt-chat-msg vt-chat-msg--continued"
+                  : isAi
+                    ? "vt-chat-msg vt-chat-msg--ai"
+                    : "vt-chat-msg"
+              }
+            >
+              {!continued ? (
+                <div className="vt-chat-msg__meta">
                   <span
-                    className="font-mono text-[10px] uppercase tracking-[1.2px]"
-                    style={{ color: isAi ? undefined : m.authorColor }}
+                    className="vt-chat-msg__author"
+                    style={{ color: isAi ? "var(--primary)" : m.authorColor }}
                   >
-                    <span className={isAi ? "text-primary" : undefined}>
-                      {isAi ? "AI" : m.authorName}
-                    </span>
+                    {isAi ? "AI" : m.authorName}
                     {m.mentionAi ? (
-                      <span className="ml-1.5 text-mute">→ @ai</span>
+                      <span className="ml-1.5 font-normal text-mute">
+                        · @ai
+                      </span>
                     ) : null}
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] text-mute">
+                  <span className="vt-chat-msg__time">
                     {formatRelativeTime(m.createdAt, now)}
                   </span>
                 </div>
-                <div className="whitespace-pre-wrap break-words">
-                  {highlightMentions(m.text)}
-                </div>
-                {isAi && m.documentEdit != null ? (
-                  <p className="mt-2 font-mono text-[10px] uppercase tracking-[1.2px] text-mute">
-                    Applied to note
-                  </p>
-                ) : null}
+              ) : null}
+              <div className="vt-chat-msg__body">
+                {highlightMentions(m.text)}
               </div>
+              {isAi && m.documentEdit != null ? (
+                <p className="vt-chat-msg__hint">Applied to note</p>
+              ) : null}
               {showError ? (
-                <div className="space-y-1 pl-2">
-                  <p className="rounded-lg border border-hairline bg-canvas-card px-3 py-2 text-sm text-body">
-                    {error}
-                  </p>
+                <div className="mt-1 space-y-1">
+                  <p className="text-sm text-body">{error}</p>
                   <button
                     type="button"
                     onClick={() => retryAi(m)}
                     disabled={busy}
-                    className="rounded-full border border-hairline px-3 py-0.5 font-mono text-[10px] uppercase tracking-[1.2px] text-ink transition-colors hover:bg-ink hover:text-on-primary disabled:opacity-40"
+                    className="vt-chat-icon-btn h-auto min-h-0 px-0 text-xs text-accent-breeze"
                   >
                     Retry
                   </button>
@@ -429,16 +430,14 @@ export function RoomChatSidebar({
         })}
 
         {busy ? (
-          <p className="font-mono text-xs uppercase tracking-[1.2px] text-mute">
-            Thinking…
-          </p>
+          <p className="vt-chat-msg__hint mt-2">Thinking…</p>
         ) : null}
       </div>
 
-      <div className="relative shrink-0 border-t border-hairline p-3">
+      <div className="relative shrink-0">
         {mentionOpen && filteredMentions.length > 0 ? (
           <ul
-            className="absolute bottom-full left-3 right-3 mb-1 overflow-hidden rounded-lg border border-hairline bg-canvas-card shadow-sm"
+            className="absolute bottom-full left-2 right-2 mb-1 overflow-hidden rounded-xl border border-hairline bg-canvas-card"
             role="listbox"
           >
             {filteredMentions.map((tag, i) => (
@@ -453,13 +452,13 @@ export function RoomChatSidebar({
                   }}
                   className={
                     i === mentionIndex
-                      ? "flex w-full items-center gap-2 bg-ink px-3 py-2 text-left font-mono text-xs text-on-primary"
-                      : "flex w-full items-center gap-2 px-3 py-2 text-left font-mono text-xs text-ink hover:bg-canvas-soft"
+                      ? "flex w-full items-center gap-2 bg-ink px-3 py-2.5 text-left text-sm text-on-primary"
+                      : "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-ink hover:bg-canvas-soft"
                   }
                 >
-                  <span className="text-primary">@{tag}</span>
-                  <span className="text-[10px] uppercase tracking-[1.2px] opacity-70">
-                    {tag === "ai" ? "Ask the model" : "Alias for @ai"}
+                  <span className="font-medium">@{tag}</span>
+                  <span className="text-xs opacity-60">
+                    {tag === "ai" ? "Ask the model" : "Same as @ai"}
                   </span>
                 </button>
               </li>
@@ -467,51 +466,60 @@ export function RoomChatSidebar({
           </ul>
         ) : null}
 
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => {
-            const value = e.target.value;
-            setInput(value);
-            updateMentionState(value, e.target.selectionStart ?? value.length);
-          }}
-          onKeyUp={(e) => {
-            const el = e.currentTarget;
-            updateMentionState(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onClick={(e) => {
-            const el = e.currentTarget;
-            updateMentionState(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onKeyDown={onKeyDown}
-          rows={3}
-          placeholder="Message… use @ai to edit the note"
-          disabled={busy}
-          className="w-full resize-none rounded-lg border border-hairline bg-canvas-soft px-3 py-2 text-sm text-ink outline-none placeholder:text-mute disabled:opacity-50"
-        />
-        {mentionsAi(input) ? (
-          <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[1.2px] text-primary">
-            Will call AI with this instruction
-          </p>
-        ) : null}
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="vt-chat-composer">
           <button
             type="button"
             onClick={() => insertMention("ai")}
             disabled={busy}
-            className="rounded-full border border-hairline px-3 py-1 font-mono text-[10px] uppercase tracking-[1.2px] text-ink transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+            className="vt-chat-icon-btn shrink-0 text-xs"
+            aria-label="Insert @ai"
+            title="Insert @ai"
           >
             @ai
           </button>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInput(value);
+              updateMentionState(
+                value,
+                e.target.selectionStart ?? value.length,
+              );
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+            }}
+            onKeyUp={(e) => {
+              const el = e.currentTarget;
+              updateMentionState(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              updateMentionState(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder="Message…"
+            disabled={busy}
+            className="vt-chat-composer__field"
+          />
           <button
             type="button"
             onClick={() => void send()}
             disabled={busy || !input.trim()}
-            className="rounded-full border border-hairline px-4 py-1.5 font-mono text-xs uppercase tracking-[1.2px] text-ink transition-colors hover:bg-ink hover:text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
+            className="vt-pill vt-pill--solid vt-chat-send"
+            aria-label="Send message"
           >
             Send
           </button>
         </div>
+        {mentionsAi(input) ? (
+          <p className="px-3 pb-2 text-xs text-accent-breeze">
+            Will call AI with this instruction
+          </p>
+        ) : null}
       </div>
     </aside>
   );
