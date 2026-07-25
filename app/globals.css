@@ -21,6 +21,7 @@
   --surface-chrome: color-mix(in srgb, var(--canvas-soft) 75%, transparent);
   --surface-pane: color-mix(in srgb, var(--canvas-soft) 40%, var(--canvas));
   --surface-pane-preview: color-mix(in srgb, var(--canvas-card) 30%, var(--canvas));
+  --surface-pane-reference: color-mix(in srgb, var(--canvas-card) 30%, var(--canvas));
 
   /* Elevation */
   --shadow-sm: 0 4px 24px rgba(0, 0, 0, 0.35);
@@ -152,6 +153,35 @@ body {
 
 .vt-pane-preview {
   background: var(--surface-pane-preview);
+}
+
+.vt-pane-reference {
+  background: var(--surface-pane-reference);
+}
+
+.vt-reference-panel:focus-visible {
+  outline: none;
+}
+
+.vt-reference-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  object-fit: contain;
+  user-select: none;
+  border-radius: var(--radius-sm);
+}
+
+.vt-reference-empty {
+  display: flex;
+  min-height: 12rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  text-align: center;
 }
 
 .vt-pane-divider {
