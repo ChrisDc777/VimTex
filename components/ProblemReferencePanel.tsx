@@ -7,6 +7,7 @@ import {
   useState,
   type ClipboardEvent,
 } from "react";
+import { SidePanelHeader } from "@/components/SidePanelHeader";
 import {
   clearReferenceImage,
   loadReferenceImage,
@@ -158,29 +159,31 @@ export function ProblemReferencePanel({
       tabIndex={-1}
       onPaste={handlePasteEvent}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-hairline-strong px-4 py-2 sm:px-6">
-        <span className="vt-eyebrow">Problem</span>
-        {imageUrl ? (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handlePaste}
-              disabled={loading}
-              className="vt-pill vt-pill--ghost text-xs"
-            >
-              Replace
-            </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={loading}
-              className="vt-pill vt-pill--ghost text-xs"
-            >
-              Clear
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <SidePanelHeader
+        title="Problem"
+        actions={
+          imageUrl ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handlePaste}
+                disabled={loading}
+                className="vt-pill vt-pill--ghost text-xs"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={loading}
+                className="vt-pill vt-pill--ghost text-xs"
+              >
+                Clear
+              </button>
+            </div>
+          ) : null
+        }
+      />
 
       <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
         {imageUrl ? (

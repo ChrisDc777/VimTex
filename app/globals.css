@@ -365,6 +365,65 @@ body[data-pane-resizing] * {
   color: var(--mute);
 }
 
+.vt-panel-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--header-h);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.vt-panel-header__main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.vt-panel-header__main .vt-title {
+  flex-shrink: 0;
+}
+
+.vt-panel-header__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.vt-panel-header__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  border: none;
+  background: transparent;
+  color: var(--mute);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.vt-panel-header__icon-btn:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.vt-panel-header__icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vt-panel-header__icon-btn:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: 2px;
+}
+
 .vt-mode-chip {
   display: inline-flex;
   align-items: center;
@@ -971,11 +1030,6 @@ body[data-pane-resizing] * {
   border-top: 1px solid var(--hairline-strong);
   background: color-mix(in srgb, var(--canvas) 92%, transparent);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.vt-chat-header {
-  background: color-mix(in srgb, var(--canvas-soft) 60%, transparent);
-  border-bottom: 1px solid var(--hairline-strong);
 }
 
 .vt-chat-panel--desktop {

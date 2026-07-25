@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SidePanelHeader } from "@/components/SidePanelHeader";
 import { renderNoteToHtml } from "@/lib/render-note";
 
 type LatexPreviewProps = {
@@ -24,9 +25,7 @@ export function LatexPreview({ note, debounceMs = 75 }: LatexPreviewProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-hairline-strong px-4 py-2 sm:px-6">
-        <span className="vt-eyebrow">Preview</span>
-      </div>
+      <SidePanelHeader title="Preview" />
       <div
         className="latex-preview min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5"
         dangerouslySetInnerHTML={markup}
