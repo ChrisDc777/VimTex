@@ -594,19 +594,12 @@ body[data-pane-resizing] * {
   flex-shrink: 0;
 }
 
-.vt-brand-mark text {
-  font-family: var(--font-brand-mono), var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.04em;
-}
-
 .vt-brand-mark__v {
-  fill: var(--ink);
+  stroke: var(--ink);
 }
 
 .vt-brand-mark__t {
-  fill: var(--success);
+  stroke: var(--success);
 }
 
 .vt-status-dot {

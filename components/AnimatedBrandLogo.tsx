@@ -75,16 +75,30 @@ function BrandText({
   );
 }
 
+function StaticBrandText() {
+  return (
+    <span className="vt-brand__text" aria-hidden="true">
+      <span className="vt-brand__vim">Vim</span>
+      <span className="vt-brand__tex">Tex</span>
+    </span>
+  );
+}
+
 export function AnimatedBrandLogo() {
   const reducedMotion = usePrefersReducedMotion();
+  const [mounted, setMounted] = useState(false);
   const [seqIndex, setSeqIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sequence = BRAND_ANIM_SEQUENCES[seqIndex] ?? BRAND_ANIM_SEQUENCES[0];
   const step = sequence.steps[stepIndex] ?? sequence.steps[0];
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (!mounted || reducedMotion) return;
 
     const timer = window.setTimeout(() => {
       const nextStep = stepIndex + 1;
@@ -97,16 +111,13 @@ export function AnimatedBrandLogo() {
     }, step.delayMs);
 
     return () => window.clearTimeout(timer);
-  }, [reducedMotion, seqIndex, stepIndex, sequence.steps.length, step.delayMs]);
+  }, [mounted, reducedMotion, seqIndex, stepIndex, sequence.steps.length, step.delayMs]);
 
-  if (reducedMotion) {
+  if (!mounted || reducedMotion) {
     return (
       <div className="vt-brand vt-brand--animated" aria-label={BRAND_FINAL_TEXT}>
         <BrandLogoMark />
-        <span className="vt-brand__text" aria-hidden="true">
-          <span className="vt-brand__vim">Vim</span>
-          <span className="vt-brand__tex">Tex</span>
-        </span>
+        <StaticBrandText />
         <span className="sr-only">{BRAND_FINAL_TEXT}</span>
       </div>
     );

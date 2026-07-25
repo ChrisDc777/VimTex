@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { SafeSvg } from "@/components/SafeSvg";
 
 export type SidePanelRailProps = {
   side: "left" | "right";
@@ -70,7 +71,7 @@ export function SidePanelRailButton({
 
 export function ReferenceIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden>
+    <SafeSvg width={18} height={18} viewBox="0 0 16 16" fill="none" aria-hidden>
       <rect
         x="2.5"
         y="2.5"
@@ -86,13 +87,13 @@ export function ReferenceIcon() {
         strokeWidth="1.25"
         strokeLinecap="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }
 
 export function PreviewIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden>
+    <SafeSvg width={18} height={18} viewBox="0 0 16 16" fill="none" aria-hidden>
       <rect
         x="2"
         y="3"
@@ -108,19 +109,19 @@ export function PreviewIcon() {
         strokeWidth="1.25"
         strokeLinejoin="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }
 
 export function ChatIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden>
+    <SafeSvg width={18} height={18} viewBox="0 0 16 16" fill="none" aria-hidden>
       <path
         d="M3 4.5A1.5 1.5 0 0 1 4.5 3h7A1.5 1.5 0 0 1 13 4.5v4A1.5 1.5 0 0 1 11.5 10H7l-2.5 2v-2H4.5A1.5 1.5 0 0 1 3 8.5v-4Z"
         stroke="currentColor"
         strokeWidth="1.25"
         strokeLinejoin="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }

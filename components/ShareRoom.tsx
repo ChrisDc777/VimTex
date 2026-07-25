@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SafeSvg } from "@/components/SafeSvg";
 
 type ShareRoomProps = {
   roomId: string;
@@ -39,9 +40,9 @@ export function ShareRoom({ roomId }: ShareRoomProps) {
 
 function LinkIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
+    <SafeSvg
+      width={14}
+      height={14}
       viewBox="-1 -1 17 17"
       fill="none"
       aria-hidden
@@ -61,6 +62,6 @@ function LinkIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }
