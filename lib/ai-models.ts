@@ -2,10 +2,12 @@ export const AI_MODELS = [
   {
     id: "tencent/hy3:free",
     label: "HY3",
+    description: "Fast, general-purpose",
   },
   {
     id: "nvidia/nemotron-3-ultra-550b-a55b:free",
     label: "Nemotron Ultra",
+    description: "Larger reasoning model",
   },
 ] as const;
 

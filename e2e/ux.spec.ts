@@ -183,7 +183,7 @@ test.describe("VimTex UX shell", () => {
     const chat = page.getByRole("complementary", { name: /room chat/i });
     await expect(chat).toBeVisible();
 
-    await expect(chat.getByLabel(/model for @ai/i)).toBeVisible();
+    await expect(chat.getByRole("button", { name: /model:/i })).toBeVisible();
     await expect(chat.locator(".vt-chat-composer__field")).toBeVisible();
 
     const input = chat.getByPlaceholder(/^message/i);
