@@ -8,6 +8,14 @@ import { StatusBar } from "@/components/StatusBar";
 import { NamePicker } from "@/components/NamePicker";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
+import { SidePanel } from "@/components/SidePanel";
+import {
+  ChatIcon,
+  PreviewIcon,
+  ReferenceIcon,
+  SidePanelRail,
+  SidePanelRailButton,
+} from "@/components/SidePanelRail";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
   createCollabUser,
@@ -18,6 +26,7 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import { loadNote, saveNote } from "@/lib/storage";
+import { usePaneLayout } from "@/lib/use-pane-layout";
 import type { CollabStatus, CollabUser, VimMode } from "@/lib/types";
 
 const VimEditor = dynamic(
@@ -32,6 +41,8 @@ const VimEditor = dynamic(
   },
 );
 
+type RightPanelView = "preview" | "chat";
+
 export default function HomePage() {
   const [note, setNote] = useState("");
   const [vimMode, setVimMode] = useState<VimMode>("normal");
@@ -43,11 +54,23 @@ export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   const [user, setUser] = useState<CollabUser | null>(null);
   const [editingName, setEditingName] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [referenceOpen, setReferenceOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelView, setRightPanelView] =
+    useState<RightPanelView | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const referenceOpen = leftPanelOpen;
+  const previewOpen = rightPanelView === "preview";
+  const chatOpen = rightPanelView === "chat";
+  const rightPanelOpen = rightPanelView !== null;
+
+  const { layout, resizePane, resizeMobileBottom, resetPane } = usePaneLayout({
+    open: {
+      left: leftPanelOpen,
+      right: rightPanelOpen,
+    },
+  });
 
   useEffect(() => {
     try {
@@ -98,36 +121,53 @@ export default function HomePage() {
     setEditingName(true);
   }, []);
 
-  const togglePreview = useCallback(() => {
-    setPreviewOpen((open) => {
-      const next = !open;
-      if (!next) {
-        requestAnimationFrame(() => editorRef.current?.focus());
-      }
-      return next;
-    });
+  const focusEditor = useCallback(() => {
+    requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
-  const toggleReference = useCallback(() => {
-    setReferenceOpen((open) => {
-      const next = !open;
-      if (!next) {
-        requestAnimationFrame(() => editorRef.current?.focus());
+  const togglePreview = useCallback(() => {
+    setRightPanelView((view) => {
+      if (view === "preview") {
+        focusEditor();
+        return null;
       }
+      return "preview";
+    });
+  }, [focusEditor]);
+
+  const toggleReference = useCallback(() => {
+    setLeftPanelOpen((open) => {
+      const next = !open;
+      if (!next) focusEditor();
       return next;
     });
-  }, []);
+  }, [focusEditor]);
+
+  const toggleChat = useCallback(() => {
+    setRightPanelView((view) => {
+      if (view === "chat") {
+        focusEditor();
+        return null;
+      }
+      return "chat";
+    });
+  }, [focusEditor]);
+
+  const closeRightPanel = useCallback(() => {
+    setRightPanelView(null);
+    focusEditor();
+  }, [focusEditor]);
 
   const handleNewSheet = useCallback(() => {
     const newRoom = createRoomId();
     writeRoomToLocation(newRoom);
     setNote("");
     setLocalSeed(null);
-    setPreviewOpen(false);
-    setReferenceOpen(false);
+    setLeftPanelOpen(false);
+    setRightPanelView(null);
     setRoomId(newRoom);
-    requestAnimationFrame(() => editorRef.current?.focus());
-  }, []);
+    focusEditor();
+  }, [focusEditor]);
 
   const ready = hydrated && !!roomId && !!user;
 
@@ -137,67 +177,111 @@ export default function HomePage() {
         ready={ready}
         roomId={roomId}
         note={note}
-        referenceOpen={referenceOpen}
-        previewOpen={previewOpen}
-        chatOpen={chatOpen}
         onNewSheet={handleNewSheet}
-        onToggleReference={toggleReference}
-        onTogglePreview={togglePreview}
-        onToggleChat={() => setChatOpen((v) => !v)}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {referenceOpen ? (
-          <aside
-            className="vt-pane-reference flex min-h-0 w-full flex-col border-b border-hairline-strong md:w-[min(38vw,24rem)] md:border-b-0 md:border-r"
-            aria-label="Problem reference"
+      <div className="vt-workspace flex min-h-0 flex-1">
+        <SidePanelRail side="left" label="Left panels" disabled={!ready}>
+          <SidePanelRailButton
+            label="Problem"
+            pressed={referenceOpen}
+            disabled={!ready}
+            onClick={toggleReference}
+            icon={<ReferenceIcon />}
+          />
+        </SidePanelRail>
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
+          <SidePanel
+            side="left"
+            open={leftPanelOpen}
+            width={layout.left}
+            ariaLabel="Problem reference"
+            surfaceClassName="vt-pane-reference"
+            onResize={(delta) => resizePane("left", delta)}
+            onReset={() => resetPane("left")}
           >
             {roomId ? (
-              <ProblemReferencePanel open={referenceOpen} roomId={roomId} />
+              <ProblemReferencePanel open={leftPanelOpen} roomId={roomId} />
             ) : null}
-          </aside>
-        ) : null}
+          </SidePanel>
 
-        <main className="min-h-0 min-w-0 flex-1">
-          <section className="vt-pane h-full min-h-0">
-            {ready ? (
-              <VimEditor
-                ref={editorRef}
-                roomId={roomId}
-                user={user}
-                localSeed={localSeed}
-                onChange={setNote}
-                onVimModeChange={setVimMode}
-                onCollabStatus={setCollabStatus}
-                onPeerCount={setPeerCount}
-              />
-            ) : (
-              <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
-                Opening sheet…
-              </div>
-            )}
-          </section>
-        </main>
+          <main className="min-h-0 min-w-0 flex-1">
+            <section className="vt-pane h-full min-h-0">
+              {ready ? (
+                <VimEditor
+                  ref={editorRef}
+                  roomId={roomId}
+                  user={user}
+                  localSeed={localSeed}
+                  onChange={setNote}
+                  onVimModeChange={setVimMode}
+                  onCollabStatus={setCollabStatus}
+                  onPeerCount={setPeerCount}
+                />
+              ) : (
+                <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
+                  Opening sheet…
+                </div>
+              )}
+            </section>
+          </main>
 
-        {previewOpen ? (
-          <aside
-            className="vt-pane-preview flex min-h-0 w-full flex-col border-t border-hairline-strong md:w-[min(42vw,28rem)] md:border-t-0 md:border-l"
-            aria-label="Rendered preview"
+          <SidePanel
+            side="right"
+            open={rightPanelOpen}
+            width={layout.right}
+            mobileHeight={layout.mobileBottomHeight}
+            ariaLabel={
+              rightPanelView === "chat" ? "Room chat" : "Rendered preview"
+            }
+            surfaceClassName={
+              rightPanelView === "chat"
+                ? "vt-chat-panel vt-chat-panel--desktop bg-canvas/95 backdrop-blur-sm"
+                : "vt-pane-preview"
+            }
+            onResize={(delta) => resizePane("right", delta)}
+            onResizeMobile={(delta) => resizeMobileBottom(delta)}
+            onReset={() => resetPane("right")}
+            onResetMobile={() => resetPane("mobileBottomHeight")}
           >
-            <LatexPreview note={note} />
-          </aside>
-        ) : null}
+            {previewOpen ? <LatexPreview note={note} /> : null}
+            {user ? (
+              <div
+                className={
+                  chatOpen ? "flex h-full min-h-0 flex-col" : "hidden"
+                }
+                aria-hidden={!chatOpen}
+              >
+                <RoomChatSidebar
+                  open={rightPanelOpen}
+                  onClose={closeRightPanel}
+                  peerCount={peerCount}
+                  user={user}
+                  editorRef={editorRef}
+                  chatReady={ready}
+                />
+              </div>
+            ) : null}
+          </SidePanel>
+        </div>
 
-        {user ? (
-          <RoomChatSidebar
-            open={chatOpen}
-            onClose={() => setChatOpen(false)}
-            peerCount={peerCount}
-            user={user}
-            editorRef={editorRef}
-            chatReady={ready}
+        <SidePanelRail side="right" label="Right panels" disabled={!ready}>
+          <SidePanelRailButton
+            label="Preview"
+            pressed={previewOpen}
+            disabled={!ready}
+            onClick={togglePreview}
+            icon={<PreviewIcon />}
           />
-        ) : null}
+          <SidePanelRailButton
+            label="Chat"
+            pressed={chatOpen}
+            disabled={!ready}
+            onClick={toggleChat}
+            icon={<ChatIcon />}
+          />
+        </SidePanelRail>
       </div>
 
       <StatusBar

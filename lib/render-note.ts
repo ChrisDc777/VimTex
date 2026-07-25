@@ -378,10 +378,16 @@ function mergeAdjacentText(segments: NoteSegment[]): NoteSegment[] {
 export function renderMathToHtml(
   tex: string,
   displayMode: boolean,
+  opts?: { displaystyle?: boolean },
 ): { html: string; error?: string } {
   try {
+    const trimmed = tex.trim();
+    const source =
+      opts?.displaystyle && !displayMode
+        ? `\\displaystyle ${trimmed}`
+        : trimmed;
     return {
-      html: katex.renderToString(tex.trim(), {
+      html: katex.renderToString(source, {
         displayMode,
         throwOnError: true,
         strict: "ignore",

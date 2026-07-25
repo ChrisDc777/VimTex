@@ -68,7 +68,9 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
     if (seg.from < lastTo) continue;
 
-    const { html, error } = renderMathToHtml(seg.content, seg.display);
+    const { html, error } = renderMathToHtml(seg.content, seg.display, {
+      displaystyle: !seg.display,
+    });
 
     builder.add(
       seg.from,
