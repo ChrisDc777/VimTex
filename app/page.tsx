@@ -34,7 +34,7 @@ const VimEditor = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
+      <div className="flex h-full items-center px-4 text-sm text-mute sm:px-5">
         Opening sheet…
       </div>
     ),
@@ -220,7 +220,7 @@ export default function HomePage() {
                   onPeerCount={setPeerCount}
                 />
               ) : (
-                <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
+                <div className="flex h-full items-center px-4 text-sm text-mute sm:px-5">
                   Opening sheet…
                 </div>
               )}
@@ -235,11 +235,7 @@ export default function HomePage() {
             ariaLabel={
               rightPanelView === "chat" ? "Room chat" : "Rendered preview"
             }
-            surfaceClassName={
-              rightPanelView === "chat"
-                ? "vt-chat-panel vt-chat-panel--desktop bg-canvas/95 backdrop-blur-sm"
-                : "vt-pane-preview"
-            }
+            surfaceClassName="vt-pane-preview"
             onResize={(delta) => resizePane("right", delta)}
             onResizeMobile={(delta) => resizeMobileBottom(delta)}
             onReset={() => resetPane("right")}
