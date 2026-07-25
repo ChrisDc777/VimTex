@@ -2,10 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppHeader } from "@/components/AppHeader";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StatusBar } from "@/components/StatusBar";
-import { ExportMenu } from "@/components/ExportMenu";
-import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
@@ -134,72 +133,18 @@ export default function HomePage() {
 
   return (
     <div className="app-shell flex h-dvh flex-col text-ink">
-      <header className="vt-chrome flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
-        <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
-          <span className="vt-brand text-ink">
-            <span className="vt-brand-mark" aria-hidden />
-            VimTex
-          </span>
-          <span className="vt-mode-chip sm:hidden">
-            {vimModeLabel(vimMode)}
-          </span>
-          <span className="vt-mode-chip hidden sm:inline">
-            {vimModeLabel(vimMode)}
-          </span>
-        </div>
-        <div className="vt-toolbar sm:justify-end" role="toolbar" aria-label="Workspace tools">
-          <button
-            type="button"
-            disabled={!ready}
-            onClick={handleNewSheet}
-            className="vt-pill vt-pill--ghost"
-            title="Start a fresh sheet in a new room"
-          >
-            New
-          </button>
-          <button
-            type="button"
-            aria-pressed={referenceOpen}
-            disabled={!ready}
-            onClick={toggleReference}
-            className={
-              referenceOpen
-                ? "vt-pill vt-pill--solid vt-pill--glow"
-                : "vt-pill vt-pill--ghost"
-            }
-          >
-            Problem
-          </button>
-          <button
-            type="button"
-            aria-pressed={previewOpen}
-            disabled={!ready}
-            onClick={togglePreview}
-            className={
-              previewOpen
-                ? "vt-pill vt-pill--solid vt-pill--glow"
-                : "vt-pill vt-pill--ghost"
-            }
-          >
-            Preview
-          </button>
-          {roomId ? <ShareRoom roomId={roomId} /> : null}
-          <button
-            type="button"
-            aria-pressed={chatOpen}
-            disabled={!ready}
-            onClick={() => setChatOpen((v) => !v)}
-            className={
-              chatOpen
-                ? "vt-pill vt-pill--solid vt-pill--glow"
-                : "vt-pill vt-pill--ghost"
-            }
-          >
-            Chat
-          </button>
-          <ExportMenu note={note} />
-        </div>
-      </header>
+      <AppHeader
+        ready={ready}
+        roomId={roomId}
+        note={note}
+        referenceOpen={referenceOpen}
+        previewOpen={previewOpen}
+        chatOpen={chatOpen}
+        onNewSheet={handleNewSheet}
+        onToggleReference={toggleReference}
+        onTogglePreview={togglePreview}
+        onToggleChat={() => setChatOpen((v) => !v)}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {referenceOpen ? (
@@ -272,12 +217,4 @@ export default function HomePage() {
       />
     </div>
   );
-}
-
-function vimModeLabel(mode: VimMode): string {
-  const m = mode.toLowerCase();
-  if (m.startsWith("vis")) return "VISUAL";
-  if (m.startsWith("ins")) return "INSERT";
-  if (m.startsWith("rep")) return "REPLACE";
-  return "NORMAL";
 }
