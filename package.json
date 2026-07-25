@@ -2,11 +2,16 @@
   "name": "vimtex",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "NODE_ENV=development HOST=0.0.0.0 PORT=3001 node server.mjs",
     "build": "next build",
     "start": "NODE_ENV=production HOST=0.0.0.0 PORT=3001 node server.mjs",
+    "start:next": "next start -H 127.0.0.1 -p 3001",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001"
   },
