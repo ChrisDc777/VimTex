@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandLogoMark } from "@/components/BrandLogoMark";
 import {
   BRAND_ANIM_SEQUENCES,
   BRAND_FINAL_TEXT,
@@ -101,6 +102,7 @@ export function AnimatedBrandLogo() {
   if (reducedMotion) {
     return (
       <div className="vt-brand vt-brand--animated" aria-label={BRAND_FINAL_TEXT}>
+        <BrandLogoMark />
         <span className="vt-brand__text" aria-hidden="true">
           <span className="vt-brand__vim">Vim</span>
           <span className="vt-brand__tex">Tex</span>
@@ -112,6 +114,7 @@ export function AnimatedBrandLogo() {
 
   return (
     <div className="vt-brand vt-brand--animated" aria-label={BRAND_FINAL_TEXT}>
+      <BrandLogoMark />
       <BrandText step={step} />
       <span className="sr-only">{BRAND_FINAL_TEXT}</span>
     </div>

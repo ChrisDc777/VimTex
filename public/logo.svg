@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 20" fill="none" role="img" aria-label="VimTex">
+  <title>VimTex</title>
+  <text
+    x="0"
+    y="16"
+    font-family="JetBrains Mono, ui-monospace, monospace"
+    font-size="16"
+    font-weight="600"
+    fill="#e8eaed"
+  >
+    V
+  </text>
+  <text
+    x="11"
+    y="16"
+    font-family="JetBrains Mono, ui-monospace, monospace"
+    font-size="16"
+    font-weight="600"
+    fill="#6dba82"
+  >
+    T
+  </text>
+</svg>
