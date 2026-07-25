@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import { SheetMenu } from "@/components/SheetMenu";
 
 type AppHeaderProps = {
@@ -19,8 +20,8 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
-      <div className="vt-header__brand vt-brand">
-        <span className="vt-header__title">VimTex</span>
+      <div className="vt-header__brand">
+        <AnimatedBrandLogo />
       </div>
 
       <div className="vt-header__nav">
