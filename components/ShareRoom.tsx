@@ -39,7 +39,14 @@ export function ShareRoom({ roomId }: ShareRoomProps) {
 
 function LinkIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+    <svg
+      width="14"
+      height="14"
+      viewBox="-1 -1 17 17"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
       <path
         d="M6.25 8.75 8.75 6.25M5.5 9.5l-1.75 1.75a2.12 2.12 0 0 1-3-3l2.5-2.5a2.12 2.12 0 0 1 3 3L6.25 8"
         stroke="currentColor"
