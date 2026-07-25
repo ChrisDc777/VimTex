@@ -51,10 +51,11 @@ Use `\(...\)` when you need explicit inline boundaries in prose. Use `\[...\]` w
 
 Use **`@ai`** in the composer when room chat is available (Premium). For now, live share is disabled — AI chat via the room panel is part of the Premium tier.
 
-Create `.env` or `.env.local` (gitignored):
+Copy [`.env.example`](.env.example) to `.env` or `.env.local` (gitignored) and set your key:
 
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-...
+cp .env.example .env
+# edit OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
 Restart after changing env. The key stays on the server (`POST /api/chat`) — never in the browser.
@@ -63,6 +64,22 @@ Models (sidebar dropdown):
 
 - `tencent/hy3:free` (default)
 - `nvidia/nemotron-3-ultra-550b-a55b:free`
+
+---
+
+## Deploying to Vercel
+
+Solo **Local** mode deploys as a standard Next.js app. Live Share (WebSocket collab) is **not** available on Vercel — it requires a separate long-lived host running [`server.mjs`](server.mjs).
+
+1. Import this repo in the [Vercel dashboard](https://vercel.com/new) (framework: **Next.js**, build: `npm run build`).
+2. Set environment variables in the project settings (Production and Preview):
+   - `OPENROUTER_API_KEY` — required for `/api/chat` to work
+   - `NEXT_PUBLIC_APP_URL` — optional; used for OpenRouter attribution (defaults to `https://<vercel-url>`)
+3. Node **22** is used via [`.nvmrc`](.nvmrc) (minimum Node 20.9.0 for Next.js 16).
+4. Vercel runs `next build` / the managed Next server — **not** `npm start` / `server.mjs`.
+5. Consider enabling **Vercel Deployment Protection** or Firewall rate limits on production as an extra layer on `/api/chat` (middleware rate limiting is best-effort per function instance).
+
+After deploy, smoke-test: open a sheet, type LaTeX, confirm KaTeX renders. Local autosave (localStorage) works client-side without any server setup.
 
 ---
 

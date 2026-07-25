@@ -3,6 +3,10 @@ import { DEFAULT_AI_MODEL, isAiModelId } from "@/lib/ai-models";
 
 export const runtime = "nodejs";
 
+const MAX_BODY_BYTES = 64 * 1024;
+const MAX_INSTRUCTION_CHARS = 4_000;
+const MAX_DOCUMENT_CHARS = 100_000;
+
 type ChatRequestBody = {
   /** Preferred: single @ai instruction (no chat history). */
   instruction?: string;
@@ -15,6 +19,16 @@ type OpenRouterMessage = {
   content: string | null;
 };
 
+function appReferer(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "https://vimtex.local";
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -25,6 +39,11 @@ export async function POST(req: Request) {
       },
       { status: 500 },
     );
+  }
+
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return Response.json({ error: "Request body too large." }, { status: 413 });
   }
 
   let body: ChatRequestBody;
@@ -42,6 +61,9 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  if (instruction.length > MAX_INSTRUCTION_CHARS) {
+    return Response.json({ error: "instruction too long." }, { status: 400 });
+  }
 
   const model =
     typeof body.model === "string" && isAiModelId(body.model)
@@ -49,6 +71,9 @@ export async function POST(req: Request) {
       : DEFAULT_AI_MODEL;
 
   const document = typeof body.document === "string" ? body.document : "";
+  if (document.length > MAX_DOCUMENT_CHARS) {
+    return Response.json({ error: "document too long." }, { status: 400 });
+  }
 
   const openRouterMessages: OpenRouterMessage[] = [
     { role: "system", content: buildSystemPrompt(document) },
@@ -62,7 +87,7 @@ export async function POST(req: Request) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://vimtex.local",
+        "HTTP-Referer": appReferer(),
         "X-Title": "VimTex",
       },
       body: JSON.stringify({
