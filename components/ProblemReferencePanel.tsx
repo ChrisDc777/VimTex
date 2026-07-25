@@ -168,7 +168,7 @@ export function ProblemReferencePanel({
                 type="button"
                 onClick={handlePaste}
                 disabled={loading}
-                className="vt-pill vt-pill--ghost text-xs"
+                className="vt-btn vt-btn--ghost"
               >
                 Replace
               </button>
@@ -176,7 +176,7 @@ export function ProblemReferencePanel({
                 type="button"
                 onClick={handleClear}
                 disabled={loading}
-                className="vt-pill vt-pill--ghost text-xs"
+                className="vt-btn vt-btn--ghost"
               >
                 Clear
               </button>
@@ -202,7 +202,7 @@ export function ProblemReferencePanel({
               type="button"
               onClick={handlePaste}
               disabled={loading}
-              className="vt-pill vt-pill--solid vt-pill--glow"
+              className="vt-btn vt-btn--solid"
             >
               {loading ? "Reading…" : "Paste"}
             </button>
@@ -210,7 +210,7 @@ export function ProblemReferencePanel({
         )}
 
         {error ? (
-          <p className="mt-3 text-sm text-accent-sunset" role="alert">
+          <p className="mt-3 text-sm text-error" role="alert">
             {error}
           </p>
         ) : null}

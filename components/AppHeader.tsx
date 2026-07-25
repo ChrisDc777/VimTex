@@ -19,7 +19,6 @@ export function AppHeader({
   return (
     <header className="vt-header vt-chrome border-b">
       <div className="vt-header__brand vt-brand">
-        <span className="vt-brand-mark" aria-hidden />
         <span className="vt-header__title">VimTex</span>
       </div>
 

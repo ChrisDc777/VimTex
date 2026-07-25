@@ -417,7 +417,7 @@ export function RoomChatSidebar({
                     type="button"
                     onClick={() => retryAi(m)}
                     disabled={busy}
-                    className="vt-chat-icon-btn h-auto min-h-0 px-0 text-xs text-accent-breeze"
+                    className="vt-chat-icon-btn h-auto min-h-0 px-0 text-xs text-focus"
                   >
                     Retry
                   </button>
@@ -435,7 +435,7 @@ export function RoomChatSidebar({
       <div className="relative shrink-0">
         {mentionOpen && filteredMentions.length > 0 ? (
           <ul
-            className="vt-elevated--sm vt-dropdown absolute bottom-full left-2 right-2 mb-1 overflow-hidden rounded-xl"
+            className="vt-elevated--sm vt-dropdown absolute bottom-full left-2 right-2 mb-1 overflow-hidden"
             role="listbox"
           >
             {filteredMentions.map((tag, i) => (
@@ -450,8 +450,8 @@ export function RoomChatSidebar({
                   }}
                   className={
                     i === mentionIndex
-                      ? "flex w-full items-center gap-2 bg-ink px-3 py-2.5 text-left text-sm text-on-primary"
-                      : "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-ink hover:bg-canvas-soft"
+                      ? "flex w-full items-center gap-2 bg-canvas-mid px-3 py-2 text-left text-sm text-ink"
+                      : "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink hover:bg-canvas-mid"
                   }
                 >
                   <span className="font-medium">@{tag}</span>
@@ -469,7 +469,7 @@ export function RoomChatSidebar({
             type="button"
             onClick={() => insertMention("ai")}
             disabled={busy}
-            className="vt-chat-icon-btn shrink-0 text-xs"
+            className="vt-chat-composer__mention shrink-0"
             aria-label="Insert @ai"
             title="Insert @ai"
           >
@@ -509,8 +509,8 @@ export function RoomChatSidebar({
             disabled={busy || !input.trim()}
             className={
               input.trim()
-                ? "vt-pill vt-pill--solid vt-pill--glow vt-chat-send"
-                : "vt-pill vt-pill--ghost vt-chat-send"
+                ? "vt-btn vt-btn--solid vt-chat-send"
+                : "vt-btn vt-btn--ghost vt-chat-send"
             }
             aria-label="Send message"
           >
@@ -518,7 +518,7 @@ export function RoomChatSidebar({
           </button>
         </div>
         {mentionsAi(input) ? (
-          <p className="px-3 pb-2 text-xs text-accent-breeze">
+          <p className="px-3 pb-2 text-xs text-focus">
             Will call AI with this instruction
           </p>
         ) : null}

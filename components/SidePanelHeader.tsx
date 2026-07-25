@@ -14,7 +14,7 @@ export function SidePanelHeader({
   actions,
 }: SidePanelHeaderProps) {
   return (
-    <header className="vt-panel-header vt-chrome">
+    <header className="vt-panel-header">
       <div className="vt-panel-header__main">
         <h2 className="vt-title">{title}</h2>
         {meta ? <span className="vt-meta truncate">{meta}</span> : null}

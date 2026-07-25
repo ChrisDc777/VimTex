@@ -12,11 +12,11 @@ type StatusBarProps = {
 
 function formatMode(mode: VimMode): string {
   const m = mode.toLowerCase();
-  if (m.startsWith("vis")) return "VISUAL";
-  if (m.startsWith("ins")) return "INSERT";
-  if (m.startsWith("rep")) return "REPLACE";
-  if (m.startsWith("nor") || m === "normal") return "NORMAL";
-  return mode.toUpperCase();
+  if (m.startsWith("vis")) return "Visual";
+  if (m.startsWith("ins")) return "Insert";
+  if (m.startsWith("rep")) return "Replace";
+  if (m.startsWith("nor") || m === "normal") return "Normal";
+  return mode.charAt(0).toUpperCase() + mode.slice(1).toLowerCase();
 }
 
 function statusDotClass(status: CollabStatus): string {
@@ -42,22 +42,20 @@ export function StatusBar({
           <button
             type="button"
             onClick={onEditName}
-            className="vt-meta max-w-[40vw] truncate uppercase tracking-[1.2px] text-body underline-offset-2 hover:text-ink hover:underline sm:max-w-none"
+            className="vt-meta max-w-[40vw] truncate text-body underline-offset-2 hover:text-ink hover:underline sm:max-w-none"
             title="Change display name"
           >
             {userName}
           </button>
         ) : (
-          <span className="vt-meta truncate uppercase tracking-[1.2px]">
+          <span className="vt-meta truncate">
             {userName}
           </span>
         )}
         <span className="vt-meta shrink-0" aria-hidden>
           ·
         </span>
-        <span
-          className="vt-meta flex shrink-0 items-center gap-1.5 lowercase first-letter:uppercase"
-        >
+        <span className="vt-meta flex shrink-0 items-center gap-1.5">
           <span
             className={statusDotClass(collabStatus)}
             aria-hidden
