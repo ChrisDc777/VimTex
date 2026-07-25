@@ -43,6 +43,24 @@ test.describe("VimTex UX shell", () => {
     await expect(page.getByRole("button", { name: /^new$/i })).toBeVisible();
   });
 
+  test("problem panel toggle shows paste empty state", async ({ page }) => {
+    await openSheet(page);
+
+    const problem = page.getByRole("button", { name: /^problem$/i });
+    await problem.click();
+    await expect(problem).toHaveAttribute("aria-pressed", "true");
+
+    const panel = page.getByRole("complementary", { name: /problem reference/i });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("button", { name: /^paste$/i })).toBeVisible();
+    await expect(page.locator(".cm-editor")).toBeVisible();
+
+    await problem.click();
+    await expect(problem).toHaveAttribute("aria-pressed", "false");
+    await expect(panel).toHaveCount(0);
+    await expect(page.locator(".cm-editor")).toBeVisible();
+  });
+
   test("preview toggle keeps editor mounted", async ({ page }) => {
     await openSheet(page);
     const preview = page.getByRole("button", { name: /^preview$/i });

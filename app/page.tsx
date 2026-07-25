@@ -7,6 +7,7 @@ import { StatusBar } from "@/components/StatusBar";
 import { ExportMenu } from "@/components/ExportMenu";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
+import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -44,6 +45,7 @@ export default function HomePage() {
   const [user, setUser] = useState<CollabUser | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [referenceOpen, setReferenceOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -107,12 +109,23 @@ export default function HomePage() {
     });
   }, []);
 
+  const toggleReference = useCallback(() => {
+    setReferenceOpen((open) => {
+      const next = !open;
+      if (!next) {
+        requestAnimationFrame(() => editorRef.current?.focus());
+      }
+      return next;
+    });
+  }, []);
+
   const handleNewSheet = useCallback(() => {
     const newRoom = createRoomId();
     writeRoomToLocation(newRoom);
     setNote("");
     setLocalSeed(null);
     setPreviewOpen(false);
+    setReferenceOpen(false);
     setRoomId(newRoom);
     requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
@@ -146,6 +159,19 @@ export default function HomePage() {
           </button>
           <button
             type="button"
+            aria-pressed={referenceOpen}
+            disabled={!ready}
+            onClick={toggleReference}
+            className={
+              referenceOpen
+                ? "vt-pill vt-pill--solid vt-pill--glow"
+                : "vt-pill vt-pill--ghost"
+            }
+          >
+            Problem
+          </button>
+          <button
+            type="button"
             aria-pressed={previewOpen}
             disabled={!ready}
             onClick={togglePreview}
@@ -176,6 +202,17 @@ export default function HomePage() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        {referenceOpen ? (
+          <aside
+            className="vt-pane-reference flex min-h-0 w-full flex-col border-b border-hairline-strong md:w-[min(38vw,24rem)] md:border-b-0 md:border-r"
+            aria-label="Problem reference"
+          >
+            {roomId ? (
+              <ProblemReferencePanel open={referenceOpen} roomId={roomId} />
+            ) : null}
+          </aside>
+        ) : null}
+
         <main className="min-h-0 min-w-0 flex-1">
           <section className="vt-pane h-full min-h-0">
             {ready ? (
