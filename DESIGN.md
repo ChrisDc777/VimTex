@@ -174,7 +174,7 @@ VimTex is a keyboard-first Vim + LaTeX scratchpad. The interface should feel lik
 
 ### Spacing
 
-4px base unit. Panel padding: 16–20px. Header/footer height: 48px / 36px. Touch targets: minimum 40px (44px on mobile).
+4px base unit. Panel padding: 16–20px. Header/footer height: 40px. Touch targets: minimum 40px (44px on mobile).
 
 ### Responsive
 
@@ -243,10 +243,13 @@ Pills (`9999px`) are **not** used for controls.
 - Body: Geist 16px, line-height 1.7
 - KaTeX inherits `ink`
 
-### Status bar
-- Vim mode: Geist Mono 12px/500, sentence case ("Normal", "Insert")
-- Metadata: Geist Mono 12px/400, sentence case
-- Status dot: semantic color, no glow
+### Status bar (`vt-footer`)
+- Three zones: **mode** (left), **identity** (center), **connection** (right)
+- Height: `--footer-h` (40px); background `canvas-soft`, top hairline
+- Vim mode: `vt-mode-chip`, Geist Mono 12px/500, sentence case; abbreviated on mobile (`N` / `I` / `V` / `R`)
+- Identity: editable `vt-footer__name-chip` (mono, hairline border); opens name picker
+- Connection: status dot + human label ("Connected", "Connecting…", "Offline"); peer count when connected (`2 peers`)
+- Status zone uses `aria-live="polite"`; connecting dot pulses subtly
 
 ### Buttons
 

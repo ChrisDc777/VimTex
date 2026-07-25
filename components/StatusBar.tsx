@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  abbreviateVimMode,
+  formatCollabStatus,
+  formatPeerCount,
+  formatVimMode,
+  statusDotClass,
+} from "@/lib/status-labels";
 import type { CollabStatus, VimMode } from "@/lib/types";
 
 type StatusBarProps = {
@@ -10,21 +17,6 @@ type StatusBarProps = {
   onEditName?: () => void;
 };
 
-function formatMode(mode: VimMode): string {
-  const m = mode.toLowerCase();
-  if (m.startsWith("vis")) return "Visual";
-  if (m.startsWith("ins")) return "Insert";
-  if (m.startsWith("rep")) return "Replace";
-  if (m.startsWith("nor") || m === "normal") return "Normal";
-  return mode.charAt(0).toUpperCase() + mode.slice(1).toLowerCase();
-}
-
-function statusDotClass(status: CollabStatus): string {
-  if (status === "connected") return "vt-status-dot vt-status-dot--connected";
-  if (status === "disconnected") return "vt-status-dot vt-status-dot--error";
-  return "vt-status-dot vt-status-dot--connecting";
-}
-
 export function StatusBar({
   vimMode,
   collabStatus,
@@ -32,49 +24,53 @@ export function StatusBar({
   userName,
   onEditName,
 }: StatusBarProps) {
+  const modeLabel = formatVimMode(vimMode);
+  const modeShort = abbreviateVimMode(vimMode);
+  const statusLabel = formatCollabStatus(collabStatus);
+
   return (
-    <footer className="vt-chrome flex min-h-[var(--footer-h)] shrink-0 items-center justify-between gap-3 border-t px-3 py-1.5 sm:gap-4 sm:px-4">
-      <span className="vt-mode-chip hidden sm:inline">
-        {formatMode(vimMode)}
-      </span>
-      <span className="flex min-w-0 flex-1 items-center justify-end gap-x-2 overflow-hidden sm:flex-none sm:justify-start">
+    <footer className="vt-footer">
+      <div className="vt-footer__mode">
+        <span className="vt-mode-chip" title={modeLabel}>
+          <span className="vt-footer__mode-full">{modeLabel}</span>
+          <span className="vt-footer__mode-short" aria-hidden>
+            {modeShort}
+          </span>
+        </span>
+      </div>
+
+      <div className="vt-footer__identity">
         {onEditName ? (
           <button
             type="button"
             onClick={onEditName}
-            className="vt-meta max-w-[40vw] truncate text-body underline-offset-2 hover:text-ink hover:underline sm:max-w-none"
+            className="vt-footer__name-chip"
+            aria-label="Change display name"
             title="Change display name"
           >
             {userName}
           </button>
         ) : (
-          <span className="vt-meta truncate">
+          <span className="vt-footer__name-chip vt-footer__name-chip--static">
             {userName}
           </span>
         )}
-        <span className="vt-meta shrink-0" aria-hidden>
-          ·
-        </span>
-        <span className="vt-meta flex shrink-0 items-center gap-1.5">
-          <span
-            className={statusDotClass(collabStatus)}
-            aria-hidden
-          />
-          {collabStatus}
-        </span>
+      </div>
+
+      <div className="vt-footer__status" role="status" aria-live="polite">
+        <span className={statusDotClass(collabStatus)} aria-hidden />
+        <span className="vt-footer__status-label">{statusLabel}</span>
         {collabStatus === "connected" ? (
           <>
-            <span className="vt-meta shrink-0" aria-hidden>
+            <span className="vt-footer__status-sep" aria-hidden>
               ·
             </span>
-            <span className="vt-meta shrink-0">{peerCount} online</span>
+            <span className="vt-footer__peer-count">
+              {formatPeerCount(peerCount)}
+            </span>
           </>
         ) : null}
-        <span className="vt-meta hidden shrink-0 sm:inline" aria-hidden>
-          ·
-        </span>
-        <span className="vt-meta hidden shrink-0 sm:inline">live room</span>
-      </span>
+      </div>
     </footer>
   );
 }

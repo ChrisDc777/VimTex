@@ -259,14 +259,26 @@ test.describe("VimTex UX shell", () => {
   test("status bar exposes editable name", async ({ page }) => {
     await openSheet(page);
 
-    const nameBtn = page.locator("footer button").first();
+    const nameBtn = page.getByRole("button", { name: /change display name/i });
     await nameBtn.click();
     const dialog = page.getByRole("dialog", { name: /display name/i });
     await expect(dialog).toBeVisible();
     await dialog.getByPlaceholder(/axion/i).fill("Renamed");
     await dialog.getByRole("button", { name: /^save$/i }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("button", { name: /^renamed$/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /change display name/i }),
+    ).toHaveText("Renamed");
+  });
+
+  test("status bar shows vim mode on mobile", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only footer check");
+
+    await openSheet(page);
+
+    const modeShort = page.locator(".vt-footer__mode-short");
+    await expect(modeShort).toBeVisible();
+    await expect(modeShort).toHaveText(/^[NIVR]$/);
   });
 });
 
