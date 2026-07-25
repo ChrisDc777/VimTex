@@ -146,6 +146,34 @@ test.describe("VimTex UX shell", () => {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
 
+  test("desktop workspace does not scroll horizontally with both panes open", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop-only overflow check");
+
+    await page.setViewportSize({ width: 900, height: 720 });
+    await openSheet(page);
+
+    await page.getByRole("button", { name: /^problem$/i }).click();
+    await page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^preview$/i })
+      .click();
+
+    await expect(
+      page.getByRole("complementary", { name: /problem reference/i }),
+    ).toBeVisible();
+    await expect(page.locator(".latex-preview")).toBeVisible();
+
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
+
+    const editorBox = await page.locator("main").boundingBox();
+    expect(editorBox).toBeTruthy();
+    expect(editorBox!.width).toBeGreaterThanOrEqual(280);
+  });
+
   test("chat stream has no message cards", async ({ page }) => {
     await openSheet(page);
 

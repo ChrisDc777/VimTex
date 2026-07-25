@@ -24,6 +24,12 @@ export const PANE_LIMITS = {
   editorMin: 280,
 } as const;
 
+/** Matches `--rail-w` in globals.css */
+export const RAIL_WIDTH = 40;
+
+/** Matches `.vt-pane-resize-handle--vertical` width */
+export const RESIZE_HANDLE_WIDTH = 12;
+
 const STORAGE_PREFIX = "vimtex:pane:";
 
 const STORAGE_KEYS: Record<keyof PaneLayout, string> = {
@@ -100,6 +106,99 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function clampPaneSide(pane: PaneId, width: number): number {
+  const { min, max } = PANE_LIMITS[pane];
+  return clamp(width, min, max);
+}
+
+export function availablePaneBudget(
+  viewportWidth: number,
+  open: PaneOpenState,
+): number {
+  const openPaneCount = (open.left ? 1 : 0) + (open.right ? 1 : 0);
+  const chrome =
+    2 * RAIL_WIDTH +
+    openPaneCount * RESIZE_HANDLE_WIDTH +
+    PANE_LIMITS.editorMin;
+  return Math.max(0, viewportWidth - chrome);
+}
+
+function shrinkPanesToBudget(
+  left: number,
+  right: number,
+  budget: number,
+  open: PaneOpenState,
+): { left: number; right: number } {
+  let nextLeft = open.left ? left : 0;
+  let nextRight = open.right ? right : 0;
+
+  if (!open.left && !open.right) {
+    return { left, right };
+  }
+
+  const shrink = (excess: number) => {
+    while (excess > 0) {
+      const leftMin = open.left ? PANE_LIMITS.left.min : 0;
+      const rightMin = open.right ? PANE_LIMITS.right.min : 0;
+      const leftSlack = open.left ? nextLeft - leftMin : 0;
+      const rightSlack = open.right ? nextRight - rightMin : 0;
+      const totalSlack = leftSlack + rightSlack;
+
+      if (totalSlack <= 0) break;
+
+      if (leftSlack >= rightSlack && leftSlack > 0) {
+        const take = Math.min(excess, leftSlack);
+        nextLeft -= take;
+        excess -= take;
+        continue;
+      }
+
+      if (rightSlack > 0) {
+        const take = Math.min(excess, rightSlack);
+        nextRight -= take;
+        excess -= take;
+        continue;
+      }
+
+      break;
+    }
+  };
+
+  const total = nextLeft + nextRight;
+  if (total > budget) {
+    shrink(total - budget);
+  }
+
+  return {
+    left: open.left ? nextLeft : left,
+    right: open.right ? nextRight : right,
+  };
+}
+
+export function fitPaneLayoutToViewport(
+  layout: PaneLayout,
+  viewportWidth: number,
+  open: PaneOpenState,
+): PaneLayout {
+  if (!open.left && !open.right) {
+    return layout;
+  }
+
+  const budget = availablePaneBudget(viewportWidth, open);
+  const fitted = shrinkPanesToBudget(
+    clampPaneSide("left", layout.left),
+    clampPaneSide("right", layout.right),
+    budget,
+    open,
+  );
+
+  if (fitted.left === layout.left && fitted.right === layout.right) {
+    return layout;
+  }
+
+  return { ...layout, ...fitted };
+}
+
 export function clampPaneWidth(
   pane: PaneId,
   nextWidth: number,
@@ -107,22 +206,12 @@ export function clampPaneWidth(
   viewportWidth: number,
   open: PaneOpenState,
 ): number {
-  const { min, max } = PANE_LIMITS[pane];
-  let width = clamp(nextWidth, min, max);
-
-  const left = pane === "left" ? width : open.left ? current.left : 0;
-  const right = pane === "right" ? width : open.right ? current.right : 0;
-
-  const maxSide = Math.max(
-    PANE_LIMITS[pane].min,
-    viewportWidth - PANE_LIMITS.editorMin,
+  const fitted = fitPaneLayoutToViewport(
+    { ...current, [pane]: nextWidth },
+    viewportWidth,
+    open,
   );
-  const total = left + right;
-  if (total > maxSide) {
-    width = Math.max(min, width - (total - maxSide));
-  }
-
-  return width;
+  return fitted[pane];
 }
 
 export function clampMobileBottomHeight(

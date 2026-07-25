@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clampMobileBottomHeight,
   clampPaneWidth,
+  fitPaneLayoutToViewport,
   loadPaneLayout,
   PANE_DEFAULTS,
   savePaneLayout,
@@ -20,11 +21,27 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
   const [layout, setLayout] = useState<PaneLayout>(PANE_DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
   const viewportRef = useRef({ width: 1280, height: 800 });
+  const openRef = useRef(open);
 
   useEffect(() => {
-    setLayout(loadPaneLayout());
+    openRef.current = open;
+  }, [open]);
+
+  const fitToViewport = useCallback(
+    (current: PaneLayout, viewportWidth = viewportRef.current.width) =>
+      fitPaneLayoutToViewport(current, viewportWidth, openRef.current),
+    [],
+  );
+
+  useEffect(() => {
+    const loaded = loadPaneLayout();
+    viewportRef.current = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+    setLayout(fitToViewport(loaded));
     setHydrated(true);
-  }, []);
+  }, [fitToViewport]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -32,16 +49,21 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
   }, [layout, hydrated]);
 
   useEffect(() => {
+    if (!hydrated) return;
+    setLayout((current) => fitToViewport(current));
+  }, [open.left, open.right, hydrated, fitToViewport]);
+
+  useEffect(() => {
     const updateViewport = () => {
-      viewportRef.current = {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      };
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      viewportRef.current = { width, height };
+      setLayout((current) => fitToViewport(current, width));
     };
     updateViewport();
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
-  }, []);
+  }, [fitToViewport]);
 
   const resizePane = useCallback(
     (pane: PaneId, delta: number) => {
@@ -73,12 +95,17 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
     });
   }, []);
 
-  const resetPane = useCallback((key: keyof PaneLayout) => {
-    setLayout((current) => ({
-      ...current,
-      [key]: PANE_DEFAULTS[key],
-    }));
-  }, []);
+  const resetPane = useCallback(
+    (key: keyof PaneLayout) => {
+      setLayout((current) =>
+        fitToViewport({
+          ...current,
+          [key]: PANE_DEFAULTS[key],
+        }),
+      );
+    },
+    [fitToViewport],
+  );
 
   return {
     layout,
