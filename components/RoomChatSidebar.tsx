@@ -26,6 +26,7 @@ import {
   type RoomChatMessage,
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
+import { SidePanelHeader } from "@/components/SidePanelHeader";
 import type { VimEditorHandle } from "@/components/VimEditor";
 
 export type RoomChatSidebarProps = {
@@ -319,39 +320,39 @@ export function RoomChatSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="vt-chat-header flex min-h-11 shrink-0 items-center gap-2 px-2 pl-3">
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <span className="vt-title">Chat</span>
-          <span className="vt-meta truncate">
-            {peerCount} online
-          </span>
-        </div>
-        <label className="sr-only" htmlFor="room-chat-model">
-          Model for @ai
-        </label>
-        <select
-          id="room-chat-model"
-          value={model}
-          onChange={(e) => setModel(e.target.value as AiModelId)}
-          className="vt-chat-model"
-          title={`Model: ${modelLabel}`}
-          aria-label="Model for @ai"
-        >
-          {AI_MODELS.map((m) => (
-            <option key={m.id} value={m.id} className="bg-canvas text-ink">
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={onClose}
-          className="vt-chat-icon-btn"
-          aria-label="Close chat"
-        >
-          ×
-        </button>
-      </div>
+      <SidePanelHeader
+        title="Chat"
+        meta={`${peerCount} online`}
+        actions={
+          <>
+            <label className="sr-only" htmlFor="room-chat-model">
+              Model for @ai
+            </label>
+            <select
+              id="room-chat-model"
+              value={model}
+              onChange={(e) => setModel(e.target.value as AiModelId)}
+              className="vt-chat-model"
+              title={`Model: ${modelLabel}`}
+              aria-label="Model for @ai"
+            >
+              {AI_MODELS.map((m) => (
+                <option key={m.id} value={m.id} className="bg-canvas text-ink">
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onClose}
+              className="vt-panel-header__icon-btn"
+              aria-label="Close chat"
+            >
+              ×
+            </button>
+          </>
+        }
+      />
 
       <div
         ref={listRef}
