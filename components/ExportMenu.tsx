@@ -4,15 +4,20 @@ import { exportAsMd, exportAsTex } from "@/lib/export";
 
 type ExportMenuProps = {
   note: string;
+  compact?: boolean;
 };
 
-export function ExportMenu({ note }: ExportMenuProps) {
+export function ExportMenu({ note, compact }: ExportMenuProps) {
+  const pillClass = compact
+    ? "vt-pill vt-pill--ghost vt-pill--label vt-pill--compact"
+    : "vt-pill vt-pill--ghost vt-pill--label";
+
   return (
-    <div className="flex items-center gap-1.5" aria-label="Export">
+    <div className="flex items-center gap-1" aria-label="Export">
       <button
         type="button"
         onClick={() => exportAsTex(note)}
-        className="vt-pill vt-pill--ghost vt-pill--label"
+        className={pillClass}
         title="Export as LaTeX"
       >
         .tex
@@ -20,7 +25,7 @@ export function ExportMenu({ note }: ExportMenuProps) {
       <button
         type="button"
         onClick={() => exportAsMd(note)}
-        className="vt-pill vt-pill--ghost vt-pill--label"
+        className={pillClass}
         title="Export as Markdown"
       >
         .md

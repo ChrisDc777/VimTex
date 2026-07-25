@@ -40,7 +40,7 @@ test.describe("VimTex UX shell", () => {
     await expect(page.getByText("VimTex").first()).toBeVisible();
     await expect(page.locator(".cm-editor.cm-focused")).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole("button", { name: /^preview$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^new$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^sheet$/i })).toBeVisible();
   });
 
   test("problem panel toggle shows paste empty state", async ({ page }) => {
@@ -75,22 +75,25 @@ test.describe("VimTex UX shell", () => {
     await expect(page.locator(".cm-editor")).toBeVisible();
   });
 
-  test("toolbar pills meet touch target height", async ({ page }, testInfo) => {
+  test("header controls meet touch target height", async ({ page }, testInfo) => {
     await openSheet(page);
 
-    const pills = page.locator("header .vt-pill");
-    const count = await pills.count();
+    const controls = page.locator(
+      "header .vt-view-toggle, header .vt-header-btn",
+    );
+    const count = await controls.count();
     expect(count).toBeGreaterThan(3);
 
     for (let i = 0; i < count; i++) {
-      const box = await pills.nth(i).boundingBox();
-      expect(box, `pill ${i} has box`).toBeTruthy();
-      expect(box!.height, `pill ${i} height on ${testInfo.project.name}`).toBeGreaterThanOrEqual(
-        40,
-      );
+      const box = await controls.nth(i).boundingBox();
+      expect(box, `control ${i} has box`).toBeTruthy();
+      expect(
+        box!.height,
+        `control ${i} height on ${testInfo.project.name}`,
+      ).toBeGreaterThanOrEqual(40);
     }
 
-    const brand = page.locator(".vt-brand");
+    const brand = page.locator(".vt-header__brand");
     await expect(brand).toBeVisible();
     const brandBox = await brand.boundingBox();
     expect(brandBox!.width).toBeGreaterThan(40);
@@ -101,10 +104,10 @@ test.describe("VimTex UX shell", () => {
 
     await openSheet(page);
 
-    const toolbar = page.locator(".vt-toolbar");
+    const toolbar = page.locator(".vt-header__nav");
     await expect(toolbar).toBeVisible();
 
-    const newBtn = page.getByRole("button", { name: /^new$/i });
+    const newBtn = page.getByRole("button", { name: /^sheet$/i });
     const preview = page.getByRole("button", { name: /^preview$/i });
     await expect(newBtn).toBeVisible();
     await expect(preview).toBeVisible();
@@ -258,7 +261,8 @@ test.describe("Inline scratchpad contract", () => {
     await expect.poll(async () => editorText(page)).toContain("to be cleared");
 
     const urlBefore = page.url();
-    await page.getByRole("button", { name: /^new$/i }).click();
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await page.getByRole("menuitem", { name: /new sheet/i }).click();
     await expect.poll(() => page.url()).not.toBe(urlBefore);
     await expect.poll(async () => editorText(page)).not.toMatch(/to be cleared/);
 

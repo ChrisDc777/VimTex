@@ -26,14 +26,34 @@ export function ShareRoom({ roomId }: ShareRoomProps) {
       type="button"
       onClick={copyLink}
       className={
-        copied
-          ? "vt-pill vt-pill--solid vt-pill--glow"
-          : "vt-pill vt-pill--ghost"
+        copied ? "vt-header-btn vt-header-btn--success" : "vt-header-btn"
       }
-      title={`Room ${roomId}`}
+      title={`Copy link for room ${roomId}`}
       aria-live="polite"
     >
+      <LinkIcon />
       {copied ? "Copied" : "Share"}
     </button>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+      <path
+        d="M6.25 8.75 8.75 6.25M5.5 9.5l-1.75 1.75a2.12 2.12 0 0 1-3-3l2.5-2.5a2.12 2.12 0 0 1 3 3L6.25 8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 5.5l1.75-1.75a2.12 2.12 0 0 1 3 3l-2.5 2.5a2.12 2.12 0 0 1-3-3L8.75 6.25"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
