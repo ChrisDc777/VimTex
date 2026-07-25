@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ChangeEvent,
   type ClipboardEvent,
 } from "react";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
@@ -53,6 +54,8 @@ export function ProblemReferencePanel({
   const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const imageUrlRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const revokeImageUrl = useCallback((url: string | null) => {
     if (url) URL.revokeObjectURL(url);
@@ -111,18 +114,48 @@ export function ProblemReferencePanel({
     try {
       const blob = await imageFromSystemClipboard();
       if (!blob) {
-        setError("No image found on the clipboard. Copy a screenshot first.");
+        setError(
+          "No image on the clipboard. Choose an image or take a photo instead.",
+        );
         return;
       }
       await applyImageBlob(blob);
     } catch {
       setError(
-        "Could not read the clipboard. Try pasting with Ctrl+V in this panel.",
+        "Could not read the clipboard. Choose an image or paste with Ctrl+V in this panel.",
       );
     } finally {
       setLoading(false);
     }
   }, [applyImageBlob]);
+
+  const handleChooseImage = useCallback(() => {
+    setError(null);
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleTakePhoto = useCallback(() => {
+    setError(null);
+    cameraInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+
+      setLoading(true);
+      try {
+        await applyImageBlob(file);
+      } catch {
+        setError("Could not save the selected image.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyImageBlob],
+  );
 
   const handlePasteEvent = useCallback(
     async (event: ClipboardEvent<HTMLDivElement>) => {
@@ -159,6 +192,26 @@ export function ProblemReferencePanel({
       tabIndex={-1}
       onPaste={handlePasteEvent}
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        aria-hidden
+        tabIndex={-1}
+        onChange={handleFileChange}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        aria-hidden
+        tabIndex={-1}
+        onChange={handleFileChange}
+      />
+
       <SidePanelHeader
         title="Problem"
         actions={
@@ -166,7 +219,7 @@ export function ProblemReferencePanel({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={handlePaste}
+                onClick={handleChooseImage}
                 disabled={loading}
                 className="vt-btn vt-btn--ghost"
               >
@@ -196,16 +249,34 @@ export function ProblemReferencePanel({
         ) : (
           <div className="vt-reference-empty">
             <p className="text-sm text-body-mid">
-              Paste a screenshot of the problem you are solving.
+              Add a screenshot of the problem you are solving.
             </p>
-            <button
-              type="button"
-              onClick={handlePaste}
-              disabled={loading}
-              className="vt-btn vt-btn--solid"
-            >
-              {loading ? "Reading…" : "Paste"}
-            </button>
+            <div className="flex flex-col items-center gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={handlePaste}
+                disabled={loading}
+                className="vt-btn vt-btn--solid"
+              >
+                {loading ? "Reading…" : "Paste"}
+              </button>
+              <button
+                type="button"
+                onClick={handleChooseImage}
+                disabled={loading}
+                className="vt-btn"
+              >
+                Choose image
+              </button>
+              <button
+                type="button"
+                onClick={handleTakePhoto}
+                disabled={loading}
+                className="vt-btn"
+              >
+                Take photo
+              </button>
+            </div>
           </div>
         )}
 

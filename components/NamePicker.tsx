@@ -54,8 +54,14 @@ export function NamePicker({
           onCancel?.();
         }
       }}
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget && allowSkip) onCancel?.();
+      }}
     >
-      <div className="vt-dialog vt-elevated w-full max-w-sm rounded-[var(--radius-sm)] p-6">
+      <div
+        className="vt-dialog vt-elevated w-full max-w-sm rounded-[var(--radius-sm)] p-6"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <p id={titleId} className="vt-caption text-ink">
           Display name
         </p>

@@ -11,10 +11,20 @@ export type PaneOpenState = {
   right: boolean;
 };
 
+export const MOBILE_LAYOUT_BREAKPOINT = 768;
+
+export function isMobileLayout(viewportWidth: number): boolean {
+  return viewportWidth < MOBILE_LAYOUT_BREAKPOINT;
+}
+
+export function defaultMobileBottomHeight(viewportHeight: number): number {
+  return Math.round(Math.min(320, viewportHeight * 0.4));
+}
+
 export const PANE_DEFAULTS: PaneLayout = {
   left: 384,
   right: 448,
-  mobileBottomHeight: 400,
+  mobileBottomHeight: 320,
 };
 
 export const PANE_LIMITS = {
@@ -116,8 +126,9 @@ export function availablePaneBudget(
   open: PaneOpenState,
 ): number {
   const openPaneCount = (open.left ? 1 : 0) + (open.right ? 1 : 0);
+  const railChrome = isMobileLayout(viewportWidth) ? 0 : 2 * RAIL_WIDTH;
   const chrome =
-    2 * RAIL_WIDTH +
+    railChrome +
     openPaneCount * RESIZE_HANDLE_WIDTH +
     PANE_LIMITS.editorMin;
   return Math.max(0, viewportWidth - chrome);

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clampMobileBottomHeight,
   clampPaneWidth,
+  defaultMobileBottomHeight,
   fitPaneLayoutToViewport,
+  isMobileLayout,
   loadPaneLayout,
   PANE_DEFAULTS,
   savePaneLayout,
@@ -12,6 +14,7 @@ import {
   type PaneLayout,
   type PaneOpenState,
 } from "@/lib/pane-layout";
+import { useVisualViewport } from "@/lib/use-visual-viewport";
 
 type UsePaneLayoutOptions = {
   open: PaneOpenState;
@@ -22,6 +25,8 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
   const [hydrated, setHydrated] = useState(false);
   const viewportRef = useRef({ width: 1280, height: 800 });
   const openRef = useRef(open);
+  const savedMobileHeightRef = useRef<number | null>(null);
+  const { keyboardOpen, height: visualHeight } = useVisualViewport();
 
   useEffect(() => {
     openRef.current = open;
@@ -34,12 +39,17 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
   );
 
   useEffect(() => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    viewportRef.current = { width, height };
+
     const loaded = loadPaneLayout();
-    viewportRef.current = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-    setLayout(fitToViewport(loaded));
+    const next = { ...loaded };
+    if (isMobileLayout(width) && loaded.mobileBottomHeight === PANE_DEFAULTS.mobileBottomHeight) {
+      next.mobileBottomHeight = defaultMobileBottomHeight(height);
+    }
+
+    setLayout(fitToViewport(next));
     setHydrated(true);
   }, [fitToViewport]);
 
@@ -64,6 +74,38 @@ export function usePaneLayout({ open }: UsePaneLayoutOptions) {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, [fitToViewport]);
+
+  useEffect(() => {
+    if (!hydrated || !open.right) return;
+
+    if (keyboardOpen) {
+      setLayout((current) => {
+        if (savedMobileHeightRef.current == null) {
+          savedMobileHeightRef.current = current.mobileBottomHeight;
+        }
+        const capped = clampMobileBottomHeight(
+          Math.round(visualHeight * 0.25),
+          viewportRef.current.height,
+        );
+        if (capped === current.mobileBottomHeight) return current;
+        return { ...current, mobileBottomHeight: capped };
+      });
+      return;
+    }
+
+    if (savedMobileHeightRef.current != null) {
+      const restored = savedMobileHeightRef.current;
+      savedMobileHeightRef.current = null;
+      setLayout((current) => {
+        const clamped = clampMobileBottomHeight(
+          restored,
+          viewportRef.current.height,
+        );
+        if (clamped === current.mobileBottomHeight) return current;
+        return { ...current, mobileBottomHeight: clamped };
+      });
+    }
+  }, [keyboardOpen, visualHeight, hydrated, open.right]);
 
   const resizePane = useCallback(
     (pane: PaneId, delta: number) => {

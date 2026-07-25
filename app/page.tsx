@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { BottomPanelTabs } from "@/components/BottomPanelTabs";
 import { EditorTabBar } from "@/components/EditorTabBar";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StatusBar } from "@/components/StatusBar";
@@ -246,7 +247,7 @@ export default function HomePage() {
         onPremiumLiveShare={openPremiumDialog}
       />
 
-      <div className="vt-workspace flex min-h-0 flex-1">
+      <div className="vt-workspace flex min-h-0 min-w-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
           <main className="min-h-0 min-w-0 flex-1">
             <section className="vt-pane flex h-full min-h-0 flex-col">
@@ -334,7 +335,12 @@ export default function HomePage() {
           </SidePanel>
         </div>
 
-        <SidePanelRail side="right" label="Right panels" disabled={!ready}>
+        <SidePanelRail
+          side="right"
+          label="Right panels"
+          disabled={!ready}
+          className="hidden md:flex"
+        >
           <SidePanelRailButton
             label="Problem"
             pressed={problemOpen}
@@ -359,6 +365,15 @@ export default function HomePage() {
           />
         </SidePanelRail>
       </div>
+
+      <BottomPanelTabs
+        problemOpen={problemOpen}
+        previewOpen={previewOpen}
+        disabled={!ready}
+        onToggleProblem={toggleProblem}
+        onTogglePreview={togglePreview}
+        onToggleChat={toggleChat}
+      />
 
       <StatusBar
         vimMode={vimMode}
