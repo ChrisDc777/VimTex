@@ -7,6 +7,7 @@ type AppHeaderProps = {
   ready: boolean;
   roomId: string | null;
   note: string;
+  canNewSheet?: boolean;
   onNewSheet: () => void;
 };
 
@@ -14,6 +15,7 @@ export function AppHeader({
   ready,
   roomId,
   note,
+  canNewSheet = true,
   onNewSheet,
 }: AppHeaderProps) {
   return (
@@ -25,7 +27,12 @@ export function AppHeader({
       <div className="vt-header__nav">
         <div className="vt-header__actions" aria-label="Collaboration and file">
           {roomId ? <ShareRoom roomId={roomId} /> : null}
-          <SheetMenu note={note} disabled={!ready} onNewSheet={onNewSheet} />
+          <SheetMenu
+            note={note}
+            disabled={!ready}
+            canNewSheet={canNewSheet}
+            onNewSheet={onNewSheet}
+          />
         </div>
       </div>
     </header>

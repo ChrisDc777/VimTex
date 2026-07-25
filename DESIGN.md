@@ -161,15 +161,15 @@ VimTex is a keyboard-first Vim + LaTeX scratchpad. The interface should feel lik
 
 ```
 [Header — chrome]
-[Left rail] | [Problem?] | [Editor — elevated] | [Preview|Chat?] | [Right rail]
+[Editor — elevated] | [Problem|Preview|Chat?] | [Right rail]
 [Status bar — chrome]
 ```
 
 ### Pane hierarchy
 
 1. **Editor** — `canvas-elevated`, no side border on focus; visually dominant
-2. **Side panes** — `canvas-card`, recessed; Problem and Preview share the same tier
-3. **Rails** — `canvas` with slim vertical accent on active button
+2. **Side pane** — `canvas-card`, recessed; Problem, Preview, and Chat share one right panel
+3. **Rail** — `canvas` on the right with slim vertical accent on active button
 4. **Chrome** — header and footer at `canvas-soft`
 
 ### Spacing
@@ -214,6 +214,18 @@ Pills (`9999px`) are **not** used for controls.
 ### Panel header (`vt-panel-header`)
 - Title: Geist 14px/500, sentence case
 - Actions: ghost buttons or compact controls, not pills
+
+### Editor tab bar (`vt-editor-tabs`)
+- Height: `--panel-header-h` (40px), same as panel headers
+- Sits above the CodeMirror editor inside the editor pane
+- Fixed tab width: `--editor-tab-w` (9rem); labels truncate with ellipsis
+- New tab (+) sits immediately after the last tab
+- Active tab: `ink` text, subtle fill, 2px `focus` bottom accent
+- Inactive tab: `body-mid` text; hover → `canvas-mid` fill
+- Close button: 28×28, visible on hover/focus and always on active tab
+- New tab (+): trailing ghost button; disabled at 5 tabs
+- Double-click tab label to rename; custom name persists in tab session storage
+- Maximum 5 open tabs
 
 ### Side rails (`vt-panel-rail`)
 - Width: 48px

@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function clearAppState(page: Page) {
   await page.addInitScript(() => {
+    if (document.cookie.includes("vimtex_test_cleared=1")) return;
+    document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
     try {
       localStorage.clear();
       sessionStorage.clear();

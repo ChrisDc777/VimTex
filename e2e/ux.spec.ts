@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function clearAppState(page: Page) {
   await page.addInitScript(() => {
+    if (document.cookie.includes("vimtex_test_cleared=1")) return;
+    document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
     try {
       localStorage.clear();
       sessionStorage.clear();
@@ -50,7 +52,9 @@ test.describe("VimTex UX shell", () => {
   test("problem panel toggle shows paste empty state", async ({ page }) => {
     await openSheet(page);
 
-    const problem = page.getByRole("button", { name: /^problem$/i });
+    const problem = page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^problem$/i });
     await problem.click();
     await expect(problem).toHaveAttribute("aria-pressed", "true");
 
@@ -146,7 +150,7 @@ test.describe("VimTex UX shell", () => {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
 
-  test("desktop workspace does not scroll horizontally with both panes open", async ({
+  test("desktop workspace does not scroll horizontally with right pane open", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop-only overflow check");
@@ -154,16 +158,14 @@ test.describe("VimTex UX shell", () => {
     await page.setViewportSize({ width: 900, height: 720 });
     await openSheet(page);
 
-    await page.getByRole("button", { name: /^problem$/i }).click();
     await page
       .getByRole("navigation", { name: /right panels/i })
-      .getByRole("button", { name: /^preview$/i })
+      .getByRole("button", { name: /^problem$/i })
       .click();
 
     await expect(
       page.getByRole("complementary", { name: /problem reference/i }),
     ).toBeVisible();
-    await expect(page.locator(".latex-preview")).toBeVisible();
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -196,8 +198,12 @@ test.describe("VimTex UX shell", () => {
   test("preview and chat share the right panel", async ({ page }) => {
     await openSheet(page);
 
-    const preview = page.getByRole("button", { name: /^preview$/i });
-    const chat = page.getByRole("button", { name: /^chat$/i });
+    const preview = page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^preview$/i });
+    const chat = page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^chat$/i });
 
     await preview.click();
     await expect(preview).toHaveAttribute("aria-pressed", "true");
@@ -217,11 +223,14 @@ test.describe("VimTex UX shell", () => {
 
     await openSheet(page);
 
-    await page.getByRole("button", { name: /^problem$/i }).click();
+    await page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^problem$/i })
+      .click();
     const panel = page.getByRole("complementary", { name: /problem reference/i });
     await expect(panel).toBeVisible();
 
-    const handle = page.getByRole("separator", { name: /resize left panel/i });
+    const handle = page.getByRole("separator", { name: /resize right panel/i });
     await expect(handle).toBeVisible();
 
     const boxBefore = await panel.boundingBox();
@@ -236,7 +245,7 @@ test.describe("VimTex UX shell", () => {
     );
     await page.mouse.down();
     await page.mouse.move(
-      handleBox!.x + handleBox!.width / 2 + 80,
+      handleBox!.x + handleBox!.width / 2 - 80,
       handleBox!.y + handleBox!.height / 2,
       { steps: 8 },
     );
@@ -371,5 +380,151 @@ test.describe("Inline scratchpad contract", () => {
     await page.goto(urlBefore, { waitUntil: "domcontentloaded" });
     await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
     await expect.poll(async () => editorText(page)).toContain("to be cleared");
+  });
+});
+
+test.describe("Editor tabs", () => {
+  test("new sheet creates a second tab", async ({ page }) => {
+    await openSheet(page);
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await expect(tablist.getByRole("tab")).toHaveCount(1);
+
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+    await expect(tablist.getByRole("tab")).toHaveCount(2);
+  });
+
+  test("clicking inactive tab switches editor content", async ({ page }) => {
+    await openSheet(page);
+    await insertMode(page);
+    await page.keyboard.type("tab-one-content");
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+    await insertMode(page);
+    await page.keyboard.type("tab-two-content");
+    await page.keyboard.press("Escape");
+
+    const tabs = page.getByRole("tablist", { name: /open documents/i });
+    await tabs.getByRole("tab", { name: /untitled/i }).first().click();
+    await expect.poll(async () => editorText(page)).toContain("tab-one-content");
+    await expect.poll(async () => editorText(page)).not.toContain("tab-two-content");
+
+    await tabs.getByRole("tab").last().click();
+    await expect.poll(async () => editorText(page)).toContain("tab-two-content");
+  });
+
+  test("closing a tab removes it and activates neighbor", async ({ page }) => {
+    await openSheet(page);
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await expect(tablist.getByRole("tab")).toHaveCount(2);
+
+    await tablist.getByRole("button", { name: /^close /i }).first().click();
+    await expect(tablist.getByRole("tab")).toHaveCount(1);
+    await expect(page.locator(".cm-editor")).toBeVisible();
+  });
+
+  test("new tab button disabled at five tabs", async ({ page }) => {
+    await openSheet(page);
+    const newTab = page.getByRole("button", { name: /^new tab$/i });
+
+    for (let i = 0; i < 4; i += 1) {
+      await newTab.click();
+    }
+
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await expect(tablist.getByRole("tab")).toHaveCount(5);
+    await expect(newTab).toBeDisabled();
+
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await expect(
+      page.getByRole("menuitem", { name: /new sheet/i }),
+    ).toBeDisabled();
+  });
+
+  test("refresh restores tab list and active tab", async ({ page }) => {
+    await openSheet(page);
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await tablist.getByRole("tab").last().click();
+
+    const url = page.url();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
+    const tablistAfter = page.getByRole("tablist", { name: /open documents/i });
+    await expect(tablistAfter.getByRole("tab")).toHaveCount(2);
+    await expect(tablistAfter.getByRole("tab", { selected: true })).toHaveCount(1);
+    await expect(page).toHaveURL(url);
+  });
+
+  test("double-click rename persists custom title", async ({ page }) => {
+    await openSheet(page);
+    const tab = page
+      .getByRole("tablist", { name: /open documents/i })
+      .getByRole("tab")
+      .first();
+    await tab.dblclick();
+
+    const rename = page.getByRole("textbox", { name: /rename tab/i });
+    await expect(rename).toBeVisible();
+    await rename.fill("Homework 2");
+    await rename.press("Enter");
+
+    await expect(
+      page.getByRole("tab", { name: "Homework 2" }),
+    ).toBeVisible();
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
+    await expect(
+      page.getByRole("tab", { name: "Homework 2" }),
+    ).toBeVisible();
+  });
+
+  test("refresh restores open side panel", async ({ page }) => {
+    await openSheet(page);
+
+    await page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^preview$/i })
+      .click();
+    await expect(page.locator(".latex-preview")).toBeVisible();
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator(".latex-preview")).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation", { name: /right panels/i })
+        .getByRole("button", { name: /^preview$/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("switching tabs keeps the open side panel", async ({ page }) => {
+    await openSheet(page);
+
+    await page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^preview$/i })
+      .click();
+    await expect(page.locator(".latex-preview")).toBeVisible();
+
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+    await expect(page.locator(".latex-preview")).toBeVisible();
+
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await tablist.getByRole("tab").first().click();
+    await expect(page.locator(".latex-preview")).toBeVisible();
+  });
+
+  test("auto-title updates from \\title{}", async ({ page }) => {
+    await openSheet(page);
+    await insertMode(page);
+    await page.keyboard.type("\\title{My Document}");
+    await page.keyboard.press("Escape");
+
+    await expect(
+      page.getByRole("tab", { name: "My Document" }),
+    ).toBeVisible({ timeout: 5_000 });
   });
 });
