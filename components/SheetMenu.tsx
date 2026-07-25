@@ -6,10 +6,16 @@ import { exportAsMd, exportAsTex } from "@/lib/export";
 type SheetMenuProps = {
   note: string;
   disabled?: boolean;
+  canNewSheet?: boolean;
   onNewSheet: () => void;
 };
 
-export function SheetMenu({ note, disabled, onNewSheet }: SheetMenuProps) {
+export function SheetMenu({
+  note,
+  disabled,
+  canNewSheet = true,
+  onNewSheet,
+}: SheetMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -61,10 +67,14 @@ export function SheetMenu({ note, disabled, onNewSheet }: SheetMenuProps) {
             type="button"
             role="menuitem"
             className="vt-header-menu__item"
+            disabled={!canNewSheet}
+            title={canNewSheet ? undefined : "Maximum 5 tabs"}
             onClick={() => run(onNewSheet)}
           >
             <span className="vt-header-menu__label">New sheet</span>
-            <span className="vt-header-menu__hint">Fresh room</span>
+            <span className="vt-header-menu__hint">
+              {canNewSheet ? "Fresh room" : "Max 5 tabs"}
+            </span>
           </button>
           <div className="vt-header-menu__divider" role="separator" />
           <button

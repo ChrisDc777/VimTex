@@ -56,6 +56,7 @@
   --touch-min: 44px;
   --header-h: 40px;
   --panel-header-h: 40px;
+  --editor-tab-w: 9rem;
   --rail-w: 40px;
   --footer-h: 36px;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -414,6 +415,160 @@ body[data-pane-resizing] * {
 }
 
 .vt-panel-header__icon-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vt-editor-tabs {
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  height: var(--panel-header-h);
+  min-height: var(--panel-header-h);
+  border-bottom: 1px solid var(--hairline-strong);
+  padding: 0 var(--space-lg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.vt-editor-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.vt-editor-tabs__list {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+
+.vt-editor-tab {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: var(--editor-tab-w);
+  min-width: var(--editor-tab-w);
+  max-width: var(--editor-tab-w);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--body-mid);
+}
+
+.vt-editor-tab:hover {
+  background: var(--canvas-mid);
+}
+
+.vt-editor-tab--active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--canvas-mid) 70%, transparent);
+  box-shadow: inset 0 -2px 0 var(--focus);
+}
+
+.vt-editor-tab__select {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0 0 var(--space-sm);
+  height: 100%;
+}
+
+.vt-editor-tab__select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.vt-editor-tab__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vt-editor-tab__close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  margin-right: var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.vt-editor-tab:hover .vt-editor-tab__close,
+.vt-editor-tab--active .vt-editor-tab__close,
+.vt-editor-tab__close:focus-visible {
+  opacity: 1;
+}
+
+.vt-editor-tab__close:hover:not(:disabled) {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--canvas-mid) 80%, transparent);
+}
+
+.vt-editor-tab__close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vt-editor-tab__rename {
+  width: calc(var(--editor-tab-w) - var(--space-sm));
+  min-width: 0;
+  margin: 0 var(--space-xs);
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  background: var(--canvas-soft);
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.vt-editor-tab__rename:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vt-editor-tabs__new {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  align-self: center;
+  margin-left: var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+}
+
+.vt-editor-tabs__new:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--canvas-mid);
+}
+
+.vt-editor-tabs__new:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vt-editor-tabs__new:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
