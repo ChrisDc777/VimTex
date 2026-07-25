@@ -119,6 +119,8 @@ body {
 
 /* App shell: respect notches / home indicator */
 .app-shell {
+  max-width: 100%;
+  overflow-x: clip;
   padding-top: var(--safe-top);
   padding-right: var(--safe-right);
   padding-bottom: var(--safe-bottom);
