@@ -36,13 +36,17 @@ async function editorText(page: Page) {
   return page.locator(".cm-content").innerText();
 }
 
+async function panelNav(page: Page) {
+  return page.getByRole("navigation", { name: /right panels/i }).last();
+}
+
 test.describe("VimTex UX shell", () => {
   test("opens directly into editor without name modal", async ({ page }) => {
     await openSheet(page);
     await expect(page.getByText("VimTex").first()).toBeVisible();
     await expect(page.locator(".cm-editor.cm-focused")).toBeVisible({ timeout: 5_000 });
     await expect(
-      page.getByRole("navigation", { name: /right panels/i }).getByRole("button", {
+      (await panelNav(page)).getByRole("button", {
         name: /^preview$/i,
       }),
     ).toBeVisible();
@@ -52,9 +56,9 @@ test.describe("VimTex UX shell", () => {
   test("problem panel toggle shows paste empty state", async ({ page }) => {
     await openSheet(page);
 
-    const problem = page
-      .getByRole("navigation", { name: /right panels/i })
-      .getByRole("button", { name: /^problem$/i });
+    const problem = (await panelNav(page)).getByRole("button", {
+      name: /^problem$/i,
+    });
     await problem.click();
     await expect(problem).toHaveAttribute("aria-pressed", "true");
 
@@ -71,7 +75,9 @@ test.describe("VimTex UX shell", () => {
 
   test("preview toggle keeps editor mounted", async ({ page }) => {
     await openSheet(page);
-    const preview = page.getByRole("button", { name: /^preview$/i });
+    const preview = (await panelNav(page)).getByRole("button", {
+      name: /^preview$/i,
+    });
     await preview.click();
     await expect(preview).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".latex-preview")).toBeVisible();
@@ -99,7 +105,11 @@ test.describe("VimTex UX shell", () => {
       ).toBeGreaterThanOrEqual(40);
     }
 
-    const railButtons = page.locator(".vt-panel-rail__btn");
+    const railButtons = page.locator(
+      testInfo.project.name === "mobile"
+        ? ".vt-bottom-tabs__btn"
+        : ".vt-panel-rail__btn",
+    );
     const railCount = await railButtons.count();
     expect(railCount).toBeGreaterThanOrEqual(3);
 
@@ -127,27 +137,269 @@ test.describe("VimTex UX shell", () => {
     await expect(toolbar).toBeVisible();
 
     const newBtn = page.getByRole("button", { name: /^sheet$/i });
-    const preview = page
-      .getByRole("navigation", { name: /right panels/i })
-      .getByRole("button", { name: /^preview$/i });
     await expect(newBtn).toBeVisible();
-    await expect(preview).toBeVisible();
 
     const toolbarBox = await toolbar.boundingBox();
     const newBox = await newBtn.boundingBox();
-    const previewBox = await preview.boundingBox();
     expect(toolbarBox).toBeTruthy();
     expect(newBox).toBeTruthy();
-    expect(previewBox).toBeTruthy();
     expect(newBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y - 2);
     expect(newBox!.y + newBox!.height).toBeLessThanOrEqual(
       toolbarBox!.y + toolbarBox!.height + 4,
     );
-    expect(previewBox!.y).toBeGreaterThan(toolbarBox!.y + toolbarBox!.height);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
+  });
+
+  test("mobile bottom tabs visible and rail hidden", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only layout check");
+
+    await openSheet(page);
+
+    await expect(page.locator(".vt-bottom-tabs")).toBeVisible();
+    await expect(page.locator(".vt-panel-rail")).toBeHidden();
+  });
+
+  test("mobile bottom tab toggles preview panel", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only tab toggle");
+
+    await openSheet(page);
+    const preview = (await panelNav(page)).getByRole("button", {
+      name: /^preview$/i,
+    });
+
+    await preview.click();
+    await expect(preview).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".latex-preview")).toBeVisible();
+
+    await preview.click();
+    await expect(preview).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".latex-preview")).toHaveCount(0);
+  });
+
+  test("mobile tab close buttons are visible without hover", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only tab close check");
+
+    await openSheet(page);
+    await page.getByRole("button", { name: /^new tab$/i }).click();
+
+    const closeBtn = page
+      .getByRole("tablist", { name: /open documents/i })
+      .getByRole("button", { name: /^close /i })
+      .first();
+    await expect(closeBtn).toBeVisible();
+    await expect(closeBtn).toHaveCSS("opacity", "1");
+  });
+
+  test("mobile tab overflow menu renames tab", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only rename menu");
+
+    await openSheet(page);
+    const tab = page
+      .getByRole("tablist", { name: /open documents/i })
+      .getByRole("tab")
+      .first();
+    await tab.click();
+
+    await page
+      .getByRole("button", { name: /^tab actions for /i })
+      .click();
+    await page.getByRole("menuitem", { name: /^rename$/i }).click();
+
+    const rename = page.getByRole("textbox", { name: /rename tab/i });
+    await expect(rename).toBeVisible();
+    await rename.fill("Mobile Sheet");
+    await rename.press("Enter");
+
+    await expect(page.getByRole("tab", { name: "Mobile Sheet" })).toBeVisible();
+  });
+
+  test("mobile bottom tab touch targets meet minimum size", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only touch targets");
+
+    await openSheet(page);
+
+    const buttons = page.locator(".vt-bottom-tabs__btn");
+    const count = await buttons.count();
+    expect(count).toBeGreaterThanOrEqual(3);
+
+    for (let i = 0; i < count; i++) {
+      const box = await buttons.nth(i).boundingBox();
+      expect(box, `bottom tab ${i} has box`).toBeTruthy();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("problem panel supports image file upload on mobile", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only upload check");
+
+    await openSheet(page);
+    await (await panelNav(page))
+      .getByRole("button", { name: /^problem$/i })
+      .click();
+
+    const panel = page.getByRole("complementary", { name: /problem reference/i });
+    await expect(panel).toBeVisible();
+
+    const fileInput = panel.locator('input[type="file"]').first();
+    await fileInput.setInputFiles({
+      name: "problem.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    });
+
+    await expect(panel.locator('img[alt="Problem reference"]')).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
+  test("mobile sheet menu opens and new sheet works", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only sheet menu check");
+
+    await openSheet(page);
+
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: /new sheet/i }),
+    ).toBeVisible();
+
+    const tablist = page.getByRole("tablist", { name: /open documents/i });
+    await expect(tablist.getByRole("tab")).toHaveCount(1);
+
+    await menu.getByRole("menuitem", { name: /new sheet/i }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(tablist.getByRole("tab")).toHaveCount(2);
+  });
+
+  test("mobile sheet menu stays within viewport", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only menu bounds check");
+
+    await openSheet(page);
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+
+    const viewport = page.viewportSize();
+    expect(viewport).toBeTruthy();
+    const menuBox = await menu.boundingBox();
+    expect(menuBox).toBeTruthy();
+    expect(menuBox!.x).toBeGreaterThanOrEqual(-1);
+    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(viewport!.width + 1);
+  });
+
+  test("mobile header brand is centered", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only brand centering");
+
+    await openSheet(page);
+
+    const brand = page.locator(".vt-header__brand");
+    const header = page.locator(".vt-header");
+    await expect(brand).toBeVisible();
+
+    const brandBox = await brand.boundingBox();
+    const headerBox = await header.boundingBox();
+    expect(brandBox).toBeTruthy();
+    expect(headerBox).toBeTruthy();
+
+    const brandCenter = brandBox!.x + brandBox!.width / 2;
+    const headerCenter = headerBox!.x + headerBox!.width / 2;
+    expect(Math.abs(brandCenter - headerCenter)).toBeLessThan(8);
+  });
+
+  test("mobile premium dialog plans stack vertically and stay centered", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only pricing layout");
+
+    await openSheet(page);
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await page.getByRole("menuitem", { name: /live share/i }).click();
+
+    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
+    await expect(dialog).toBeVisible();
+
+    const cards = dialog.locator(".vt-pricing-card");
+    await expect(cards).toHaveCount(3);
+
+    const firstBox = await cards.nth(0).boundingBox();
+    const secondBox = await cards.nth(1).boundingBox();
+    const dialogBox = await dialog.boundingBox();
+    expect(firstBox).toBeTruthy();
+    expect(secondBox).toBeTruthy();
+    expect(dialogBox).toBeTruthy();
+
+    expect(secondBox!.y).toBeGreaterThan(firstBox!.y + firstBox!.height - 4);
+
+    const dialogCenter = dialogBox!.x + dialogBox!.width / 2;
+    const viewport = page.viewportSize();
+    expect(viewport).toBeTruthy();
+    expect(Math.abs(dialogCenter - viewport!.width / 2)).toBeLessThan(24);
+  });
+
+  test("mobile premium dialog close controls stay visible", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only premium dialog check");
+
+    await openSheet(page);
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await page.getByRole("menuitem", { name: /live share/i }).click();
+
+    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
+    await expect(dialog).toBeVisible();
+
+    const closeBtn = dialog.getByRole("button", { name: /^close$/i });
+    const maybeLater = dialog.getByRole("button", { name: /maybe later/i });
+
+    await expect(closeBtn).toBeVisible();
+    await expect(maybeLater).toBeVisible();
+
+    const dialogBox = await dialog.boundingBox();
+    const closeBox = await closeBtn.boundingBox();
+    const footerBox = await maybeLater.boundingBox();
+    expect(dialogBox).toBeTruthy();
+    expect(closeBox).toBeTruthy();
+    expect(footerBox).toBeTruthy();
+    expect(closeBox!.y).toBeGreaterThanOrEqual(dialogBox!.y - 2);
+    expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
+      dialogBox!.y + dialogBox!.height + 4,
+    );
+
+    await closeBtn.click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("mobile premium dialog dismisses from backdrop tap", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile-only backdrop dismiss");
+
+    await openSheet(page);
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await page.getByRole("menuitem", { name: /live share/i }).click();
+
+    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
+    await expect(dialog).toBeVisible();
+
+    const dialogBox = await dialog.boundingBox();
+    expect(dialogBox).toBeTruthy();
+    await page.touchscreen.tap(8, Math.round(dialogBox!.y / 2));
+
+    await expect(dialog).toBeHidden();
   });
 
   test("desktop workspace does not scroll horizontally with right pane open", async ({
@@ -158,8 +410,7 @@ test.describe("VimTex UX shell", () => {
     await page.setViewportSize({ width: 900, height: 720 });
     await openSheet(page);
 
-    await page
-      .getByRole("navigation", { name: /right panels/i })
+    await (await panelNav(page))
       .getByRole("button", { name: /^problem$/i })
       .click();
 
@@ -194,8 +445,7 @@ test.describe("VimTex UX shell", () => {
   test("chat rail opens premium plans dialog", async ({ page }) => {
     await openSheet(page);
 
-    await page
-      .getByRole("navigation", { name: /right panels/i })
+    await (await panelNav(page))
       .getByRole("button", { name: /^chat$/i })
       .click();
 
@@ -207,9 +457,9 @@ test.describe("VimTex UX shell", () => {
   test("preview panel still opens on the right", async ({ page }) => {
     await openSheet(page);
 
-    const preview = page
-      .getByRole("navigation", { name: /right panels/i })
-      .getByRole("button", { name: /^preview$/i });
+    const preview = (await panelNav(page)).getByRole("button", {
+      name: /^preview$/i,
+    });
 
     await preview.click();
     await expect(preview).toHaveAttribute("aria-pressed", "true");
@@ -222,8 +472,7 @@ test.describe("VimTex UX shell", () => {
 
     await openSheet(page);
 
-    await page
-      .getByRole("navigation", { name: /right panels/i })
+    await (await panelNav(page))
       .getByRole("button", { name: /^problem$/i })
       .click();
     const panel = page.getByRole("complementary", { name: /problem reference/i });
@@ -510,8 +759,7 @@ test.describe("Editor tabs", () => {
   test("refresh restores open side panel", async ({ page }) => {
     await openSheet(page);
 
-    await page
-      .getByRole("navigation", { name: /right panels/i })
+    await (await panelNav(page))
       .getByRole("button", { name: /^preview$/i })
       .click();
     await expect(page.locator(".latex-preview")).toBeVisible();
@@ -520,17 +768,14 @@ test.describe("Editor tabs", () => {
     await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".latex-preview")).toBeVisible();
     await expect(
-      page
-        .getByRole("navigation", { name: /right panels/i })
-        .getByRole("button", { name: /^preview$/i }),
+      (await panelNav(page)).getByRole("button", { name: /^preview$/i }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 
   test("switching tabs keeps the open side panel", async ({ page }) => {
     await openSheet(page);
 
-    await page
-      .getByRole("navigation", { name: /right panels/i })
+    await (await panelNav(page))
       .getByRole("button", { name: /^preview$/i })
       .click();
     await expect(page.locator(".latex-preview")).toBeVisible();

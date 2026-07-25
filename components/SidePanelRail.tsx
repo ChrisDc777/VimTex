@@ -7,6 +7,7 @@ export type SidePanelRailProps = {
   side: "left" | "right";
   label: string;
   disabled?: boolean;
+  className?: string;
   children: ReactNode;
 };
 
@@ -14,11 +15,12 @@ export function SidePanelRail({
   side,
   label,
   disabled,
+  className,
   children,
 }: SidePanelRailProps) {
   return (
     <nav
-      className={`vt-panel-rail vt-panel-rail--${side}`}
+      className={`vt-panel-rail vt-panel-rail--${side}${className ? ` ${className}` : ""}`}
       aria-label={label}
       aria-disabled={disabled || undefined}
       data-disabled={disabled ? "true" : undefined}

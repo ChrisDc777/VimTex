@@ -7,10 +7,13 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type PointerEvent,
 } from "react";
 import { SafeSvg } from "@/components/SafeSvg";
 import { resolveTabTitle } from "@/lib/document-title";
 import { MAX_TABS, type EditorTab } from "@/lib/tab-storage";
+
+const LONG_PRESS_MS = 500;
 
 type EditorTabBarProps = {
   tabs: EditorTab[];
@@ -36,7 +39,11 @@ export function EditorTabBar({
   const tablistId = useId();
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [menuRoomId, setMenuRoomId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const getTitle = useCallback(
     (tab: EditorTab) =>
@@ -49,6 +56,7 @@ export function EditorTabBar({
 
   const startRename = useCallback(
     (tab: EditorTab) => {
+      setMenuRoomId(null);
       setEditingRoomId(tab.roomId);
       setRenameValue(getTitle(tab));
     },
@@ -67,12 +75,38 @@ export function EditorTabBar({
     setRenameValue("");
   }, []);
 
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (editingRoomId) {
       renameInputRef.current?.focus();
       renameInputRef.current?.select();
     }
   }, [editingRoomId]);
+
+  useEffect(() => {
+    if (!menuRoomId) return;
+
+    const close = (event: Event) => {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setMenuRoomId(null);
+    };
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setMenuRoomId(null);
+    };
+
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuRoomId]);
 
   const onTabKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -89,6 +123,35 @@ export function EditorTabBar({
     [onSelect, tabs],
   );
 
+  const onTabPointerDown = useCallback(
+    (tab: EditorTab) => (event: PointerEvent<HTMLButtonElement>) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      longPressTriggeredRef.current = false;
+      clearLongPress();
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTriggeredRef.current = true;
+        startRename(tab);
+      }, LONG_PRESS_MS);
+    },
+    [clearLongPress, startRename],
+  );
+
+  const onTabPointerUp = useCallback(() => {
+    clearLongPress();
+  }, [clearLongPress]);
+
+  const onTabClick = useCallback(
+    (tab: EditorTab) => () => {
+      if (longPressTriggeredRef.current) {
+        longPressTriggeredRef.current = false;
+        return;
+      }
+      setMenuRoomId(null);
+      onSelect(tab.roomId);
+    },
+    [onSelect],
+  );
+
   return (
     <header className="vt-editor-tabs">
       <div
@@ -102,6 +165,7 @@ export function EditorTabBar({
           const title = getTitle(tab);
           const editing = editingRoomId === tab.roomId;
           const showClose = tabs.length > 1;
+          const menuOpen = menuRoomId === tab.roomId;
 
           return (
             <div
@@ -136,13 +200,62 @@ export function EditorTabBar({
                   aria-controls={`${tablistId}-panel-${tab.roomId}`}
                   tabIndex={active ? 0 : -1}
                   className="vt-editor-tab__select"
-                  onClick={() => onSelect(tab.roomId)}
+                  onClick={onTabClick(tab)}
                   onDoubleClick={() => startRename(tab)}
+                  onPointerDown={onTabPointerDown(tab)}
+                  onPointerUp={onTabPointerUp}
+                  onPointerCancel={onTabPointerUp}
+                  onPointerLeave={onTabPointerUp}
                   onKeyDown={(event) => onTabKeyDown(event, index)}
                 >
                   <span className="vt-editor-tab__label vt-title">{title}</span>
                 </button>
               )}
+
+              {active && !editing ? (
+                <div className="vt-editor-tab__menu-wrap" ref={menuOpen ? menuRef : null}>
+                  <button
+                    type="button"
+                    className="vt-editor-tab__menu-btn"
+                    aria-label={`Tab actions for ${title}`}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenuRoomId((current) =>
+                        current === tab.roomId ? null : tab.roomId,
+                      );
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {menuOpen ? (
+                    <div className="vt-editor-tab__menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="vt-editor-tab__menu-item"
+                        onClick={() => startRename(tab)}
+                      >
+                        Rename
+                      </button>
+                      {showClose ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="vt-editor-tab__menu-item"
+                          onClick={() => {
+                            setMenuRoomId(null);
+                            onClose(tab.roomId);
+                          }}
+                        >
+                          Close
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {showClose && !editing ? (
                 <button

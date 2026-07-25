@@ -119,6 +119,7 @@ export function ChatComposer({
           onKeyDown={onKeyDown}
           rows={1}
           placeholder="Message…"
+          enterKeyHint="send"
           disabled={busy}
           className="vt-chat-composer__field"
         />
