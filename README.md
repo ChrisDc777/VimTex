@@ -2,9 +2,11 @@
 
 **Vim keybindings. Inline LaTeX. Your scratch sheet.**
 
-A keyboard-first math scratchpad — open the app, type TeX on a blank sheet, and watch KaTeX render in place as you work. No separate math mode, no preview pane required. Share a room link when you want to collaborate; export when you are done.
+A keyboard-first math scratchpad — open the app, type TeX on a blank sheet, and watch KaTeX render in place as you work. No separate math mode, no preview pane required. Export when you are done.
 
 Your sheet autosaves locally per room. Refresh restores it. **New** starts a fresh room without erasing older sheets.
+
+**Live share** (real-time collaboration and room chat) is a **Premium** feature — shown in the Sheet menu but not available on the free tier yet. Solo editing works fully offline in **Local** mode.
 
 ---
 
@@ -18,20 +20,15 @@ npm start
 
 Open **[http://localhost:3001](http://localhost:3001)**. You land on a blank sheet (`?room=…`). Type immediately.
 
-For local development (same custom server + Yjs WebSocket):
+For local development:
 
 ```bash
 npm run dev
 ```
 
-### Share outside localhost
+### Live share (Premium — coming soon)
 
-```bash
-npm start
-npm run tunnel   # needs cloudflared
-```
-
-Open the printed `https://*.trycloudflare.com` link on two devices with the same room — carets, edits, and chat sync live.
+Real-time collaboration requires a WebSocket server (`server.mjs`). It is disabled in the app UI for now and surfaced as a Premium upgrade path. Solo **Local** mode does not need the WebSocket server for editing.
 
 ---
 
@@ -44,15 +41,15 @@ Open the printed `https://*.trycloudflare.com` link on two devices with the same
 | **Inline by default** | Bare commands like `\frac{1}{2}` render inline; use `\[...\]` for display math |
 | **Vim editor** | CodeMirror 6 + Replit Vim — motions, modes, Tab/Enter to hop `\frac{}{}` fields |
 | **Local autosave** | Each room restores after refresh; **New** opens a clean sheet in a new room |
-| **Optional tools** | **Preview** (rendered export view), **Share**, **Chat**, `.tex` / `.md` export |
+| **Optional tools** | **Preview** (rendered export view), **Live share** (Premium), **Chat** (Premium), `.tex` / `.md` export |
 
 Use `\(...\)` when you need explicit inline boundaries in prose. Use `\[...\]` when you want a displayed equation. No `$` delimiters.
 
 ---
 
-## AI in the room
+## AI assistant
 
-Toggle **Chat**, then mention **`@ai`** or **`@vimtex`**. Only the sender hits OpenRouter; everyone sees the reply and document patch via Yjs.
+Use **`@ai`** in the composer when room chat is available (Premium). For now, live share is disabled — AI chat via the room panel is part of the Premium tier.
 
 Create `.env` or `.env.local` (gitignored):
 

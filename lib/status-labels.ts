@@ -19,6 +19,7 @@ export function abbreviateVimMode(mode: VimMode): string {
 }
 
 export function formatCollabStatus(status: CollabStatus): string {
+  if (status === "local") return "Local";
   if (status === "connected") return "Connected";
   if (status === "disconnected") return "Offline";
   return "Connecting…";
@@ -29,6 +30,7 @@ export function formatPeerCount(count: number): string {
 }
 
 export function statusDotClass(status: CollabStatus): string {
+  if (status === "local") return "vt-status-dot vt-status-dot--local";
   if (status === "connected") return "vt-status-dot vt-status-dot--connected";
   if (status === "disconnected") return "vt-status-dot vt-status-dot--error";
   return "vt-status-dot vt-status-dot--connecting";

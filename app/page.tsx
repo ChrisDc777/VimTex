@@ -7,6 +7,7 @@ import { EditorTabBar } from "@/components/EditorTabBar";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StatusBar } from "@/components/StatusBar";
 import { NamePicker } from "@/components/NamePicker";
+import { PremiumPlansDialog } from "@/components/PremiumPlansDialog";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
@@ -47,12 +48,13 @@ export default function HomePage() {
   const [vimMode, setVimMode] = useState<VimMode>("normal");
   const [localSeed, setLocalSeed] = useState<string | null>(null);
   const [collabStatus, setCollabStatus] =
-    useState<CollabStatus>("connecting");
+    useState<CollabStatus>("local");
   const [peerCount, setPeerCount] = useState(1);
   const [hydrated, setHydrated] = useState(false);
   const [urlRoomId, setUrlRoomId] = useState<string | null>(null);
   const [user, setUser] = useState<CollabUser | null>(null);
   const [editingName, setEditingName] = useState(false);
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -201,15 +203,13 @@ export default function HomePage() {
     });
   }, [focusEditor]);
 
+  const openPremiumDialog = useCallback(() => {
+    setPremiumDialogOpen(true);
+  }, []);
+
   const toggleChat = useCallback(() => {
-    setRightPanelView((view) => {
-      if (view === "chat") {
-        focusEditor();
-        return null;
-      }
-      return "chat";
-    });
-  }, [focusEditor]);
+    openPremiumDialog();
+  }, [openPremiumDialog]);
 
   const closeRightPanel = useCallback(() => {
     setRightPanelView(null);
@@ -240,10 +240,10 @@ export default function HomePage() {
     <div className="app-shell flex h-dvh flex-col text-ink">
       <AppHeader
         ready={ready}
-        roomId={roomId}
         note={note}
         canNewSheet={canNewTab}
         onNewSheet={handleNewSheet}
+        onPremiumLiveShare={openPremiumDialog}
       />
 
       <div className="vt-workspace flex min-h-0 flex-1">
@@ -351,8 +351,9 @@ export default function HomePage() {
           />
           <SidePanelRailButton
             label="Chat"
-            pressed={chatOpen}
+            pressed={false}
             disabled={!ready}
+            premium
             onClick={toggleChat}
             icon={<ChatIcon />}
           />
@@ -365,6 +366,11 @@ export default function HomePage() {
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
+      />
+
+      <PremiumPlansDialog
+        open={premiumDialogOpen}
+        onClose={() => setPremiumDialogOpen(false)}
       />
 
       <NamePicker
