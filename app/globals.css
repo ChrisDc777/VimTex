@@ -590,7 +590,23 @@ body[data-pane-resizing] * {
 }
 
 .vt-brand-mark {
-  display: none;
+  display: block;
+  flex-shrink: 0;
+}
+
+.vt-brand-mark text {
+  font-family: var(--font-brand-mono), var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.vt-brand-mark__v {
+  fill: var(--ink);
+}
+
+.vt-brand-mark__t {
+  fill: var(--success);
 }
 
 .vt-status-dot {
@@ -897,8 +913,7 @@ body[data-pane-resizing] * {
 .vt-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-width: 5.5ch;
+  gap: 10px;
   font-family: var(--font-brand-mono), var(--font-geist-mono), ui-monospace, monospace;
   font-size: 16px;
   font-weight: 600;
@@ -913,6 +928,7 @@ body[data-pane-resizing] * {
 .vt-brand__text {
   display: inline-flex;
   align-items: baseline;
+  min-width: 5.5ch;
   white-space: pre;
 }
 
@@ -1068,7 +1084,7 @@ body[data-pane-resizing] * {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  min-width: 5.5ch;
+  min-width: 72px;
 }
 
 .vt-header__nav {
