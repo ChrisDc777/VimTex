@@ -318,10 +318,7 @@ export function RoomChatSidebar({
     AI_MODELS.find((m) => m.id === model)?.label ?? model;
 
   return (
-    <aside
-      className="vt-chat-panel vt-chat-panel--desktop flex h-[min(48vh,400px)] min-h-0 w-full shrink-0 flex-col border-t border-hairline-strong bg-canvas/95 backdrop-blur-sm md:h-full md:w-[min(100%,340px)] md:border-t-0 md:border-l"
-      aria-label="Room chat"
-    >
+    <div className="flex h-full min-h-0 flex-col">
       <div className="vt-chat-header flex min-h-11 shrink-0 items-center gap-2 px-2 pl-3">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           <span className="vt-title">Chat</span>
@@ -525,6 +522,6 @@ export function RoomChatSidebar({
           </p>
         ) : null}
       </div>
-    </aside>
+    </div>
   );
 }

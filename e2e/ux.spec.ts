@@ -39,7 +39,11 @@ test.describe("VimTex UX shell", () => {
     await openSheet(page);
     await expect(page.getByText("VimTex").first()).toBeVisible();
     await expect(page.locator(".cm-editor.cm-focused")).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("button", { name: /^preview$/i })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: /right panels/i }).getByRole("button", {
+        name: /^preview$/i,
+      }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: /^sheet$/i })).toBeVisible();
   });
 
@@ -78,11 +82,9 @@ test.describe("VimTex UX shell", () => {
   test("header controls meet touch target height", async ({ page }, testInfo) => {
     await openSheet(page);
 
-    const controls = page.locator(
-      "header .vt-view-toggle, header .vt-header-btn",
-    );
+    const controls = page.locator("header .vt-header-btn");
     const count = await controls.count();
-    expect(count).toBeGreaterThan(3);
+    expect(count).toBeGreaterThan(0);
 
     for (let i = 0; i < count; i++) {
       const box = await controls.nth(i).boundingBox();
@@ -90,6 +92,19 @@ test.describe("VimTex UX shell", () => {
       expect(
         box!.height,
         `control ${i} height on ${testInfo.project.name}`,
+      ).toBeGreaterThanOrEqual(40);
+    }
+
+    const railButtons = page.locator(".vt-panel-rail__btn");
+    const railCount = await railButtons.count();
+    expect(railCount).toBeGreaterThanOrEqual(3);
+
+    for (let i = 0; i < railCount; i++) {
+      const box = await railButtons.nth(i).boundingBox();
+      expect(box, `rail button ${i} has box`).toBeTruthy();
+      expect(
+        box!.height,
+        `rail button ${i} height on ${testInfo.project.name}`,
       ).toBeGreaterThanOrEqual(40);
     }
 
@@ -108,18 +123,23 @@ test.describe("VimTex UX shell", () => {
     await expect(toolbar).toBeVisible();
 
     const newBtn = page.getByRole("button", { name: /^sheet$/i });
-    const preview = page.getByRole("button", { name: /^preview$/i });
+    const preview = page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^preview$/i });
     await expect(newBtn).toBeVisible();
     await expect(preview).toBeVisible();
 
     const toolbarBox = await toolbar.boundingBox();
     const newBox = await newBtn.boundingBox();
+    const previewBox = await preview.boundingBox();
     expect(toolbarBox).toBeTruthy();
     expect(newBox).toBeTruthy();
+    expect(previewBox).toBeTruthy();
     expect(newBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y - 2);
     expect(newBox!.y + newBox!.height).toBeLessThanOrEqual(
       toolbarBox!.y + toolbarBox!.height + 4,
     );
+    expect(previewBox!.y).toBeGreaterThan(toolbarBox!.y + toolbarBox!.height);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -143,6 +163,60 @@ test.describe("VimTex UX shell", () => {
     await expect(chat.getByText("hello stream")).toBeVisible();
     await expect(chat.locator(".vt-chat-msg")).toHaveCount(1);
     await expect(chat.locator(".vt-chat-msg .rounded-lg.border")).toHaveCount(0);
+  });
+
+  test("preview and chat share the right panel", async ({ page }) => {
+    await openSheet(page);
+
+    const preview = page.getByRole("button", { name: /^preview$/i });
+    const chat = page.getByRole("button", { name: /^chat$/i });
+
+    await preview.click();
+    await expect(preview).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".latex-preview")).toBeVisible();
+    await expect(page.getByRole("complementary")).toHaveCount(1);
+
+    await chat.click();
+    await expect(chat).toHaveAttribute("aria-pressed", "true");
+    await expect(preview).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".latex-preview")).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: /room chat/i })).toBeVisible();
+    await expect(page.getByRole("complementary")).toHaveCount(1);
+  });
+
+  test("desktop panes can be resized with drag handles", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop-only resize check");
+
+    await openSheet(page);
+
+    await page.getByRole("button", { name: /^problem$/i }).click();
+    const panel = page.getByRole("complementary", { name: /problem reference/i });
+    await expect(panel).toBeVisible();
+
+    const handle = page.getByRole("separator", { name: /resize left panel/i });
+    await expect(handle).toBeVisible();
+
+    const boxBefore = await panel.boundingBox();
+    expect(boxBefore).toBeTruthy();
+
+    const handleBox = await handle.boundingBox();
+    expect(handleBox).toBeTruthy();
+
+    await page.mouse.move(
+      handleBox!.x + handleBox!.width / 2,
+      handleBox!.y + handleBox!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      handleBox!.x + handleBox!.width / 2 + 80,
+      handleBox!.y + handleBox!.height / 2,
+      { steps: 8 },
+    );
+    await page.mouse.up();
+
+    const boxAfter = await panel.boundingBox();
+    expect(boxAfter).toBeTruthy();
+    expect(boxAfter!.width).toBeGreaterThan(boxBefore!.width + 40);
   });
 
   test("status bar exposes editable name", async ({ page }) => {
