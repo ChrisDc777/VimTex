@@ -1,23 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 20" fill="none" role="img" aria-label="VimTex">
   <title>VimTex</title>
-  <text
-    x="0"
-    y="16"
-    font-family="JetBrains Mono, ui-monospace, monospace"
-    font-size="16"
-    font-weight="600"
-    fill="#e8eaed"
-  >
-    V
-  </text>
-  <text
-    x="11"
-    y="16"
-    font-family="JetBrains Mono, ui-monospace, monospace"
-    font-size="16"
-    font-weight="600"
-    fill="#6dba82"
-  >
-    T
-  </text>
+  <path
+    d="M1.5 3.5 5.75 16.5 10 3.5"
+    stroke="#e8eaed"
+    stroke-width="2.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M13 3.5h9.5" stroke="#6dba82" stroke-width="2.25" stroke-linecap="round" />
+  <path d="M17.75 3.5V16.5" stroke="#6dba82" stroke-width="2.25" stroke-linecap="round" />
 </svg>

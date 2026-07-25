@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
 
 type SheetMenuProps = {
@@ -115,9 +116,9 @@ export function SheetMenu({
 
 function ChevronIcon({ className }: { className?: string }) {
   return (
-    <svg
-      width="14"
-      height="14"
+    <SafeSvg
+      width={14}
+      height={14}
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden
@@ -130,6 +131,6 @@ function ChevronIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }

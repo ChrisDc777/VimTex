@@ -8,6 +8,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
+import { SafeSvg } from "@/components/SafeSvg";
 import { resolveTabTitle } from "@/lib/document-title";
 import { MAX_TABS, type EditorTab } from "@/lib/tab-storage";
 
@@ -176,26 +177,26 @@ export function EditorTabBar({
 
 function CloseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <SafeSvg width={14} height={14} viewBox="0 0 14 14" fill="none" aria-hidden>
       <path
         d="M3.5 3.5 10.5 10.5M10.5 3.5 3.5 10.5"
         stroke="currentColor"
         strokeWidth="1.25"
         strokeLinecap="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }
 
 function PlusIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <SafeSvg width={14} height={14} viewBox="0 0 14 14" fill="none" aria-hidden>
       <path
         d="M7 3.5v7M3.5 7h7"
         stroke="currentColor"
         strokeWidth="1.25"
         strokeLinecap="round"
       />
-    </svg>
+    </SafeSvg>
   );
 }
