@@ -31,6 +31,7 @@ export type SidePanelRailButtonProps = {
   label: string;
   pressed: boolean;
   disabled?: boolean;
+  premium?: boolean;
   onClick: () => void;
   icon: ReactNode;
 };
@@ -39,21 +40,26 @@ export function SidePanelRailButton({
   label,
   pressed,
   disabled,
+  premium,
   onClick,
   icon,
 }: SidePanelRailButtonProps) {
+  const title = premium ? "Premium — live room chat" : label;
+
   return (
     <button
       type="button"
       aria-pressed={pressed}
       aria-label={label}
-      title={label}
+      title={title}
       disabled={disabled}
       onClick={onClick}
       className={
         pressed
           ? "vt-panel-rail__btn vt-panel-rail__btn--active"
-          : "vt-panel-rail__btn"
+          : premium
+            ? "vt-panel-rail__btn vt-panel-rail__btn--premium"
+            : "vt-panel-rail__btn"
       }
     >
       {icon}

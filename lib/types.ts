@@ -1,6 +1,6 @@
 export type VimMode = string;
 
-export type CollabStatus = "connecting" | "connected" | "disconnected";
+export type CollabStatus = "local" | "connecting" | "connected" | "disconnected";
 
 export type CollabUser = {
   name: string;

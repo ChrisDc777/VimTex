@@ -218,6 +218,22 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       setAwarenessUser(provider, user);
     }, [user.name, user.color, user.colorLight, user]);
 
+    // Seed from local autosave when it arrives after the editor mounts.
+    useEffect(() => {
+      const ydoc = ydocRef.current;
+      const ytext = ytextRef.current;
+      const um = undoManagerRef.current;
+      if (!ydoc || !ytext || !um) return;
+
+      const seed = localSeed?.trim();
+      if (!seed || ytext.length > 0) return;
+
+      ydoc.transact(() => {
+        ytext.insert(0, seed);
+      }, "local-seed");
+      um.clear();
+    }, [localSeed]);
+
     useEffect(() => {
       if (!hostRef.current) return;
 
@@ -229,7 +245,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       ychatRef.current = ychat;
       const wsBase = getCollabWsBase();
       const provider = new WebsocketProvider(wsBase, roomId, ydoc, {
-        connect: true,
+        connect: false,
       });
       providerRef.current = provider;
 
@@ -239,23 +255,8 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       const um = new Y.UndoManager(ytext);
       undoManagerRef.current = um;
 
-      const updatePeerCount = () => {
-        onPeerCountRef.current(provider.awareness.getStates().size);
-      };
-
-      const onStatus = (event: { status: string }) => {
-        if (
-          event.status === "connected" ||
-          event.status === "disconnected" ||
-          event.status === "connecting"
-        ) {
-          onCollabStatusRef.current(event.status);
-        }
-      };
-
-      provider.on("status", onStatus);
-      provider.awareness.on("change", updatePeerCount);
-      updatePeerCount();
+      onCollabStatusRef.current("local");
+      onPeerCountRef.current(1);
 
       const emitText = () => {
         onChangeRef.current(ytext.toString());
@@ -263,22 +264,16 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
 
       ytext.observe(emitText);
 
-      let seeded = false;
-      const maybeSeed = (synced: boolean) => {
-        if (!synced || seeded) return;
-        seeded = true;
-        if (ytext.length === 0) {
-          const seed = localSeedRef.current?.trim();
-          if (seed) {
-            ydoc.transact(() => {
-              ytext.insert(0, seed);
-            }, "local-seed");
-            um.clear();
-          }
+      if (ytext.length === 0) {
+        const seed = localSeedRef.current?.trim();
+        if (seed) {
+          ydoc.transact(() => {
+            ytext.insert(0, seed);
+          }, "local-seed");
+          um.clear();
         }
-        emitText();
-      };
-      provider.on("sync", maybeSeed);
+      }
+      emitText();
 
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -362,9 +357,6 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         cm?.off("vim-mode-change", onMode);
         CodeMirror.commands.undo = prevUndo;
         CodeMirror.commands.redo = prevRedo;
-        provider.off("status", onStatus);
-        provider.off("sync", maybeSeed);
-        provider.awareness.off("change", updatePeerCount);
         ytext.unobserve(emitText);
         provider.destroy();
         um.destroy();

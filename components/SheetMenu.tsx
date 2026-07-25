@@ -8,6 +8,7 @@ type SheetMenuProps = {
   disabled?: boolean;
   canNewSheet?: boolean;
   onNewSheet: () => void;
+  onPremiumLiveShare: () => void;
 };
 
 export function SheetMenu({
@@ -15,6 +16,7 @@ export function SheetMenu({
   disabled,
   canNewSheet = true,
   onNewSheet,
+  onPremiumLiveShare,
 }: SheetMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,16 @@ export function SheetMenu({
             <span className="vt-header-menu__hint">
               {canNewSheet ? "Fresh room" : "Max 5 tabs"}
             </span>
+          </button>
+          <div className="vt-header-menu__divider" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="vt-header-menu__item vt-header-menu__item--premium"
+            onClick={() => run(onPremiumLiveShare)}
+          >
+            <span className="vt-header-menu__label">Live share</span>
+            <span className="vt-header-menu__hint">Premium</span>
           </button>
           <div className="vt-header-menu__divider" role="separator" />
           <button

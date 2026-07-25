@@ -1,22 +1,21 @@
 "use client";
 
-import { ShareRoom } from "@/components/ShareRoom";
 import { SheetMenu } from "@/components/SheetMenu";
 
 type AppHeaderProps = {
   ready: boolean;
-  roomId: string | null;
   note: string;
   canNewSheet?: boolean;
   onNewSheet: () => void;
+  onPremiumLiveShare: () => void;
 };
 
 export function AppHeader({
   ready,
-  roomId,
   note,
   canNewSheet = true,
   onNewSheet,
+  onPremiumLiveShare,
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
@@ -25,13 +24,13 @@ export function AppHeader({
       </div>
 
       <div className="vt-header__nav">
-        <div className="vt-header__actions" aria-label="Collaboration and file">
-          {roomId ? <ShareRoom roomId={roomId} /> : null}
+        <div className="vt-header__actions" aria-label="File">
           <SheetMenu
             note={note}
             disabled={!ready}
             canNewSheet={canNewSheet}
             onNewSheet={onNewSheet}
+            onPremiumLiveShare={onPremiumLiveShare}
           />
         </div>
       </div>

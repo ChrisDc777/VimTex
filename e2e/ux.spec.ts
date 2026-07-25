@@ -176,45 +176,44 @@ test.describe("VimTex UX shell", () => {
     expect(editorBox!.width).toBeGreaterThanOrEqual(280);
   });
 
-  test("chat stream has no message cards", async ({ page }) => {
+  test("live share is premium-gated in sheet menu", async ({ page }) => {
     await openSheet(page);
 
-    await page.getByRole("button", { name: /^chat$/i }).click();
-    const chat = page.getByRole("complementary", { name: /room chat/i });
-    await expect(chat).toBeVisible();
+    await expect(page.getByRole("button", { name: /^share$/i })).toHaveCount(0);
 
-    await expect(chat.getByRole("button", { name: /model:/i })).toBeVisible();
-    await expect(chat.locator(".vt-chat-composer__field")).toBeVisible();
+    await page.getByRole("button", { name: /^sheet$/i }).click();
+    await page.getByRole("menuitem", { name: /live share/i }).click();
 
-    const input = chat.getByPlaceholder(/^message/i);
-    await input.fill("hello stream");
-    await chat.getByRole("button", { name: /send message/i }).click();
-
-    await expect(chat.getByText("hello stream")).toBeVisible();
-    await expect(chat.locator(".vt-chat-msg")).toHaveCount(1);
-    await expect(chat.locator(".vt-chat-msg .rounded-lg.border")).toHaveCount(0);
+    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Pro" })).toBeVisible();
+    await dialog.getByRole("button", { name: /maybe later/i }).click();
+    await expect(dialog).toBeHidden();
   });
 
-  test("preview and chat share the right panel", async ({ page }) => {
+  test("chat rail opens premium plans dialog", async ({ page }) => {
+    await openSheet(page);
+
+    await page
+      .getByRole("navigation", { name: /right panels/i })
+      .getByRole("button", { name: /^chat$/i })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
+    await expect(dialog).toBeVisible();
+    await expect(page.getByRole("complementary", { name: /room chat/i })).toHaveCount(0);
+  });
+
+  test("preview panel still opens on the right", async ({ page }) => {
     await openSheet(page);
 
     const preview = page
       .getByRole("navigation", { name: /right panels/i })
       .getByRole("button", { name: /^preview$/i });
-    const chat = page
-      .getByRole("navigation", { name: /right panels/i })
-      .getByRole("button", { name: /^chat$/i });
 
     await preview.click();
     await expect(preview).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".latex-preview")).toBeVisible();
-    await expect(page.getByRole("complementary")).toHaveCount(1);
-
-    await chat.click();
-    await expect(chat).toHaveAttribute("aria-pressed", "true");
-    await expect(preview).toHaveAttribute("aria-pressed", "false");
-    await expect(page.locator(".latex-preview")).toHaveCount(0);
-    await expect(page.getByRole("complementary", { name: /room chat/i })).toBeVisible();
     await expect(page.getByRole("complementary")).toHaveCount(1);
   });
 
@@ -254,6 +253,12 @@ test.describe("VimTex UX shell", () => {
     const boxAfter = await panel.boundingBox();
     expect(boxAfter).toBeTruthy();
     expect(boxAfter!.width).toBeGreaterThan(boxBefore!.width + 40);
+  });
+
+  test("status bar shows local mode", async ({ page }) => {
+    await openSheet(page);
+
+    await expect(page.locator(".vt-footer__status-label")).toHaveText("Local");
   });
 
   test("status bar exposes editable name", async ({ page }) => {
@@ -354,6 +359,15 @@ test.describe("Inline scratchpad contract", () => {
     await page.keyboard.press("Escape");
 
     await expect.poll(async () => editorText(page)).toContain("x = 42");
+
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          (id) => localStorage.getItem(`vimtex:note:${id}`),
+          room,
+        ),
+      )
+      .toContain("x = 42");
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
