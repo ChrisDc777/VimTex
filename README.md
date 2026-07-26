@@ -38,7 +38,7 @@ Real-time collaboration requires a WebSocket server (`server.mjs`). It is disabl
 |---|---|
 | **One surface** | Type prose and math in the same editor — rendered math stays on the line |
 | **Caret reveals source** | Move the cursor into math to edit the raw TeX; move away to see KaTeX |
-| **Inline by default** | Bare commands like `\frac{1}{2}` render inline; use `\[...\]` for display math |
+| **Inline by default** | `2^5`, `\frac{1}{2}`, and similar expressions render inline; use `\[...\]` for display math |
 | **Vim editor** | CodeMirror 6 + Replit Vim — motions, modes, Tab/Enter to hop `\frac{}{}` fields |
 | **Local autosave** | Each room restores after refresh; **New** opens a clean sheet in a new room |
 | **Optional tools** | **Preview** (rendered export view), **Live share** (Premium), **Chat** (Premium), `.tex` / `.md` export |

@@ -562,6 +562,30 @@ test.describe("Inline scratchpad contract", () => {
     await expect(widget).not.toHaveClass(/cm-math-display/);
   });
 
+  test("bare numeric math like 2^5 renders without delimiters", async ({ page }) => {
+    await openSheet(page);
+    await insertMode(page);
+    await page.keyboard.insertText("2^5");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("o");
+
+    const widget = page.locator(".cm-math-widget").first();
+    await expect(widget).toBeAttached({ timeout: 5_000 });
+    await expect(widget).not.toHaveClass(/cm-math-display/);
+    await expect(widget.locator("math")).toBeVisible();
+  });
+
+  test("plain integers in prose stay literal text", async ({ page }) => {
+    await openSheet(page);
+    await insertMode(page);
+    await page.keyboard.type("chapter 42");
+    await page.keyboard.press("Escape");
+    await page.locator(".cm-content").click({ position: { x: 4, y: 4 } });
+
+    await expect(page.locator(".cm-math-widget")).toHaveCount(0);
+    await expect.poll(async () => editorText(page)).toContain("chapter 42");
+  });
+
   test("caret inside math reveals raw source", async ({ page }) => {
     await openSheet(page);
     await insertMode(page);
