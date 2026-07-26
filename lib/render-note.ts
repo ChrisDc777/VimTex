@@ -28,6 +28,41 @@ function looksLikeTexCommandAt(text: string, index: number): boolean {
   return next !== undefined && /[a-zA-Z]/.test(next);
 }
 
+function consumeNumber(text: string, from: number): number {
+  let i = from;
+  while (i < text.length && /[0-9]/.test(text[i]!)) i += 1;
+  if (
+    text[i] === "." &&
+    i + 1 < text.length &&
+    /[0-9]/.test(text[i + 1]!)
+  ) {
+    i += 1;
+    while (i < text.length && /[0-9]/.test(text[i]!)) i += 1;
+  }
+  return i;
+}
+
+/** `2^5`, `3.14`, `2+3` — not bare integers like prose "chapter 42". */
+function looksLikeBareMathAt(text: string, index: number): boolean {
+  const ch = text[index];
+  if (ch === undefined) return false;
+  if (/[0-9]/.test(ch)) return true;
+  if (/[a-zA-Z]/.test(ch)) {
+    const next = text[index + 1];
+    return next === "^" || next === "_" || next === "=";
+  }
+  return false;
+}
+
+function isValidBareMathSpan(text: string, start: number, end: number): boolean {
+  const span = text.slice(start, end);
+  if (/[a-zA-Z]/.test(text[start]!)) {
+    const next = text[start + 1];
+    return next === "^" || next === "_" || next === "=";
+  }
+  return /[\^_+\-*/=]/.test(span) || /\d\.\d/.test(span);
+}
+
 function consumeBraced(text: string, from: number): number {
   if (text[from] !== "{") return from;
   let depth = 0;
@@ -102,17 +137,8 @@ function consumeTeXSuffix(text: string, from: number): number {
   return i;
 }
 
-/**
- * Span from `start` at `\` through the TeX expression (command + args, then
- * math operators / further commands). Stops before adjacent English words.
- */
-function endOfTeXSpan(text: string, start: number): number {
-  if (!looksLikeTexCommandAt(text, start)) return start;
-
-  let i = start + 1;
-  while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
-  i = consumeTeXSuffix(text, i);
-
+function continueMathChars(text: string, from: number): number {
+  let i = from;
   while (i < text.length) {
     while (i < text.length && text[i] === " ") i += 1;
     if (i >= text.length) break;
@@ -120,6 +146,12 @@ function endOfTeXSpan(text: string, start: number): number {
     if (looksLikeTexCommandAt(text, i)) {
       i += 1;
       while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
+      i = consumeTeXSuffix(text, i);
+      continue;
+    }
+
+    if (/[0-9]/.test(text[i]!)) {
+      i = consumeNumber(text, i);
       i = consumeTeXSuffix(text, i);
       continue;
     }
@@ -147,6 +179,7 @@ function endOfTeXSpan(text: string, start: number): number {
       (i + 1 >= text.length || !/[a-zA-Z]/.test(text[i + 1]!))
     ) {
       i += 1;
+      i = consumeTeXSuffix(text, i);
       continue;
     }
 
@@ -154,6 +187,34 @@ function endOfTeXSpan(text: string, start: number): number {
   }
 
   return i;
+}
+
+/**
+ * Span from `start` at `\` through the TeX expression (command + args, then
+ * math operators / further commands). Stops before adjacent English words.
+ */
+function endOfTeXSpan(text: string, start: number): number {
+  if (!looksLikeTexCommandAt(text, start)) return start;
+
+  let i = start + 1;
+  while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
+  i = consumeTeXSuffix(text, i);
+  return continueMathChars(text, i);
+}
+
+/** Span for `2^5`, `x^2`, `2+3` without delimiters or a leading `\`. */
+function endOfBareMathSpan(text: string, start: number): number {
+  if (!looksLikeBareMathAt(text, start)) return start;
+
+  let i = start;
+  if (/[0-9]/.test(text[i]!)) {
+    i = consumeNumber(text, i);
+  } else {
+    i += 1;
+  }
+  i = consumeTeXSuffix(text, i);
+  i = continueMathChars(text, i);
+  return i > start ? i : start;
 }
 
 function startsWithAt(text: string, index: number, token: string): boolean {
@@ -304,20 +365,29 @@ function autoMathLines(content: string, baseOffset: number): NoteSegment[] {
   return segments;
 }
 
-/** Extract `\frac{}{}`-style spans from a single line of prose + math. */
+/** Extract TeX command and bare math spans from a single line of prose + math. */
 function parseInlineAutoMath(line: string, baseOffset: number): NoteSegment[] {
   const segments: NoteSegment[] = [];
   let i = 0;
   let textStart = 0;
 
   while (i < line.length) {
-    if (!looksLikeTexCommandAt(line, i)) {
+    const fromCommand = looksLikeTexCommandAt(line, i);
+    const fromBare = !fromCommand && looksLikeBareMathAt(line, i);
+    if (!fromCommand && !fromBare) {
       i += 1;
       continue;
     }
 
-    const spanEnd = endOfTeXSpan(line, i);
+    const spanEnd = fromCommand
+      ? endOfTeXSpan(line, i)
+      : endOfBareMathSpan(line, i);
     if (spanEnd <= i) {
+      i += 1;
+      continue;
+    }
+
+    if (fromBare && !isValidBareMathSpan(line, i, spanEnd)) {
       i += 1;
       continue;
     }
