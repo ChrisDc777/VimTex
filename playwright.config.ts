@@ -31,9 +31,16 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start:next",
+    // Full stack: Next + Yjs WebSocket (required for collab E2E).
+    command: "npm run start",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORT: String(PORT),
+      NODE_ENV: "production",
+    },
   },
 });
