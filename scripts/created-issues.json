@@ -1,0 +1,230 @@
+[
+  {
+    "number": 1,
+    "title": "Epic: M0 - Foundation and UI convergence",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/1",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 2,
+    "title": "Configure fork remotes and contribution workflow",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/2",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 3,
+    "title": "Cross-platform dev scripts and lockfile policy",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/3",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 4,
+    "title": "Define truthful room lifetime and idle cleanup",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/4",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 5,
+    "title": "Extract shared workspace controller and document buffer",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/5",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 6,
+    "title": "Restore Classic Collaborative as default shell",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/6",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 7,
+    "title": "Add optional Quiet Craft UI variant toggle",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/7",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 8,
+    "title": "Merge bare-math parser and render improvements",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/8",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 9,
+    "title": "Port CI, typecheck, and API rate limits from redesign",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/9",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 10,
+    "title": "Add two-client collaboration E2E tests",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/10",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 11,
+    "title": "RFC: VimTex naming conflict with lervag/vimtex plugin",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/11",
+    "milestone": "M0 - Foundation and UI convergence"
+  },
+  {
+    "number": 12,
+    "title": "Epic: M1 - Core editing and activation",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/12",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 13,
+    "title": "Define canonical Markdown+TeX document format",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/13",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 14,
+    "title": "Add standard (non-Vim) editing mode",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/14",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 15,
+    "title": "First-run onboarding and Vim cheatsheet",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/15",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 16,
+    "title": "Session templates and recent rooms",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/16",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 17,
+    "title": "Command palette for workspace actions",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/17",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 18,
+    "title": "Share and export UX polish",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/18",
+    "milestone": "M1 - Core editing and activation"
+  },
+  {
+    "number": 19,
+    "title": "Epic: M2 - Collaboration and persistence",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/19",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 20,
+    "title": "RFC: Production collaboration and persistence architecture",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/20",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 21,
+    "title": "Reconnect UX and offline editing banner",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/21",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 22,
+    "title": "Enhanced presence: peer list, selections, typing indicator",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/22",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 23,
+    "title": "Permission-aware share links (read-only)",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/23",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 24,
+    "title": "Room TTL, expiry, and optional password",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/24",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 25,
+    "title": "Snapshots and version history",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/25",
+    "milestone": "M2 - Collaboration and persistence"
+  },
+  {
+    "number": 26,
+    "title": "Epic: M3 - AI mathematical workflows",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/26",
+    "milestone": "M3 - AI mathematical workflows"
+  },
+  {
+    "number": 27,
+    "title": "AI diff preview with accept/reject workflow",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/27",
+    "milestone": "M3 - AI mathematical workflows"
+  },
+  {
+    "number": 28,
+    "title": "Selection-aware and inline AI actions",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/28",
+    "milestone": "M3 - AI mathematical workflows"
+  },
+  {
+    "number": 29,
+    "title": "AI streaming, cancel, and usage quotas",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/29",
+    "milestone": "M3 - AI mathematical workflows"
+  },
+  {
+    "number": 30,
+    "title": "Epic: M4 - Import, export, and polish",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/30",
+    "milestone": "M4 - Import, export, and polish"
+  },
+  {
+    "number": 31,
+    "title": "Import LaTeX and Markdown files",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/31",
+    "milestone": "M4 - Import, export, and polish"
+  },
+  {
+    "number": 32,
+    "title": "PDF export and equation image export",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/32",
+    "milestone": "M4 - Import, export, and polish"
+  },
+  {
+    "number": 33,
+    "title": "Delight polish: toasts, empty states, metadata",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/33",
+    "milestone": "M4 - Import, export, and polish"
+  },
+  {
+    "number": 34,
+    "title": "Epic: M5 - Production and SaaS readiness",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/34",
+    "milestone": "M5 - Production and SaaS readiness"
+  },
+  {
+    "number": 35,
+    "title": "Observability: structured logging and error tracking",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/35",
+    "milestone": "M5 - Production and SaaS readiness"
+  },
+  {
+    "number": 36,
+    "title": "Privacy-respecting product analytics",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/36",
+    "milestone": "M5 - Production and SaaS readiness"
+  },
+  {
+    "number": 37,
+    "title": "RFC: Optional accounts and saved workspaces",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/37",
+    "milestone": "M5 - Production and SaaS readiness"
+  },
+  {
+    "number": 38,
+    "title": "RFC: Billing, entitlements, and subscription tiers",
+    "url": "https://github.com/ChrisDc777/VimTex/issues/38",
+    "milestone": "M5 - Production and SaaS readiness"
+  }
+]
