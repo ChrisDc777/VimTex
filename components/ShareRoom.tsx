@@ -5,36 +5,68 @@ import { SafeSvg } from "@/components/SafeSvg";
 
 type ShareRoomProps = {
   roomId: string;
+  /** Classic uses outline pill chrome; Quiet Craft keeps header-btn styling. */
+  variant?: "classic" | "quietCraft";
 };
 
-export function ShareRoom({ roomId }: ShareRoomProps) {
+export function ShareRoom({ roomId, variant = "quietCraft" }: ShareRoomProps) {
   const [copied, setCopied] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
 
-  const copyLink = async () => {
+  const roomUrl = () => {
     const url = new URL(window.location.href);
     url.searchParams.set("room", roomId);
+    return url.toString();
+  };
+
+  const copyLink = async () => {
+    const href = roomUrl();
     try {
-      await navigator.clipboard.writeText(url.toString());
+      await navigator.clipboard.writeText(href);
       setCopied(true);
+      setFallbackUrl(null);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Fallback: leave URL updated via history already.
+      setFallbackUrl(href);
+      setCopied(false);
+      try {
+        window.prompt("Copy this room link:", href);
+      } catch {
+        // ignore
+      }
     }
   };
 
   return (
-    <button
-      type="button"
-      onClick={copyLink}
-      className={
-        copied ? "vt-header-btn vt-header-btn--success" : "vt-header-btn"
-      }
-      title={`Copy link for room ${roomId}`}
-      aria-live="polite"
-    >
-      <LinkIcon />
-      {copied ? "Copied" : "Share"}
-    </button>
+    <div className="relative flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => void copyLink()}
+        className={
+          variant === "classic"
+            ? copied
+              ? "vt-pill vt-pill--ghost text-[color:var(--accent-breeze)]"
+              : "vt-pill vt-pill--ghost"
+            : copied
+              ? "vt-header-btn vt-header-btn--success"
+              : "vt-header-btn"
+        }
+        title={`Copy link for room ${roomId}`}
+        aria-live="polite"
+      >
+        <LinkIcon />
+        {copied ? "Copied" : "Share"}
+      </button>
+      {fallbackUrl ? (
+        <input
+          readOnly
+          value={fallbackUrl}
+          aria-label="Room URL"
+          className="vt-pill vt-pill--ghost max-w-[12rem] truncate px-2 text-xs"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+      ) : null}
+    </div>
   );
 }
 
