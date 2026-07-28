@@ -89,6 +89,20 @@ Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter
 
 ---
 
+## Planning and roadmap
+
+Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex)** (fork; upstream: [boscochanam/VimTex](https://github.com/boscochanam/VimTex)).
+
+| Doc | Description |
+|-----|-------------|
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased milestones M0–M5 |
+| [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index and execution order |
+| [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) | Positioning and personas |
+| [docs/UI_VARIANTS.md](docs/UI_VARIANTS.md) | Classic vs Quiet Craft shells |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Fork/upstream workflow |
+
+---
+
 ## License
 
 Private / experimental — use at your own risk. Do not store secrets in the buffer.
