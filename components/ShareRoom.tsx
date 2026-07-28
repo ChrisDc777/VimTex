@@ -5,11 +5,11 @@ import { SafeSvg } from "@/components/SafeSvg";
 
 type ShareRoomProps = {
   roomId: string;
-  /** Classic uses outline pill chrome; Quiet Craft keeps header-btn styling. */
-  variant?: "classic" | "quietCraft";
+  /** Studio uses outline pill chrome; Forge keeps header-btn styling. */
+  variant?: "studio" | "forge";
 };
 
-export function ShareRoom({ roomId, variant = "quietCraft" }: ShareRoomProps) {
+export function ShareRoom({ roomId, variant = "forge" }: ShareRoomProps) {
   const [copied, setCopied] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
 
@@ -43,19 +43,20 @@ export function ShareRoom({ roomId, variant = "quietCraft" }: ShareRoomProps) {
         type="button"
         onClick={() => void copyLink()}
         className={
-          variant === "classic"
+          variant === "studio"
             ? copied
-              ? "vt-pill vt-pill--ghost text-[color:var(--accent-breeze)]"
-              : "vt-pill vt-pill--ghost"
+              ? "vt-pill vt-pill--ghost vt-pill--icon text-[color:var(--accent-breeze)]"
+              : "vt-pill vt-pill--ghost vt-pill--icon"
             : copied
               ? "vt-header-btn vt-header-btn--success"
               : "vt-header-btn"
         }
-        title={`Copy link for room ${roomId}`}
+        title={copied ? "Link copied" : `Copy link for room ${roomId}`}
+        aria-label={copied ? "Link copied" : "Copy room link"}
         aria-live="polite"
       >
-        <LinkIcon />
-        {copied ? "Copied" : "Share"}
+        {copied ? <CheckIcon /> : <LinkIcon />}
+        {variant === "studio" ? null : copied ? "Copied" : "Share"}
       </button>
       {fallbackUrl ? (
         <input
@@ -67,6 +68,27 @@ export function ShareRoom({ roomId, variant = "quietCraft" }: ShareRoomProps) {
         />
       ) : null}
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M3.5 8.25 6.5 11.25 12.5 4.75"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
   );
 }
 

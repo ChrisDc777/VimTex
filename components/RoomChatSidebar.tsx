@@ -184,7 +184,7 @@ export function RoomChatSidebar({
 
       const instruction = stripAiMention(userMsg.text);
       if (!instruction) {
-        setError("Add an instruction after @ai.");
+        setError("Add an instruction after @vimothy.");
         setErrorForId(userMsg.id);
         return;
       }
@@ -219,7 +219,7 @@ export function RoomChatSidebar({
         const aiMsg: RoomChatMessage = {
           id: newChatMessageId(),
           clientId,
-          authorName: "AI",
+          authorName: "Vimothy",
           authorColor: "var(--primary)",
           role: "ai",
           text: parsed.message,

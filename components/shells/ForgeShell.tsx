@@ -58,15 +58,15 @@ const VimEditor = dynamic(
   },
 );
 
-type QuietCraftShellProps = {
+type ForgeShellProps = {
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
 };
 
-export function QuietCraftShell({
+export function ForgeShell({
   uiVariant,
   onUiVariantChange,
-}: QuietCraftShellProps) {
+}: ForgeShellProps) {
   const [note, setNote] = useState("");
   const [vimMode, setVimMode] = useState<VimMode>("normal");
   const [editorMode, setEditorMode] = useState<EditorMode>("vim");
@@ -276,7 +276,7 @@ export function QuietCraftShell({
   const ready = hydrated && !!roomId && !!user;
 
   return (
-    <div className="app-shell ui-quiet-craft flex h-dvh flex-col text-ink">
+    <div className="app-shell ui-forge flex h-dvh flex-col text-ink">
       <AppHeader
         ready={ready}
         note={note}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/ai-models";
 import {
   AI_MENTION_SUGGESTIONS,
+  AI_MENTION_TAG,
   mentionsAi,
   stripAiMention,
 } from "@/lib/chat-mentions";
@@ -27,9 +28,13 @@ import {
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
 import type { VimEditorHandle } from "@/components/VimEditor";
+import { SendIcon } from "@/components/chat/icons";
 
-export type ClassicRoomChatProps = {
-  open: boolean;
+export type StudioRoomChatProps = {
+  /** When false, render nothing (legacy standalone aside). */
+  open?: boolean;
+  /** Render inner panel only — parent supplies sizing chrome (SidePanel). */
+  embedded?: boolean;
   onClose: () => void;
   peerCount: number;
   user: CollabUser;
@@ -40,7 +45,7 @@ export type ClassicRoomChatProps = {
 
 function highlightMentions(text: string): ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const re = /@(?:ai|vimtex)\b/gi;
+  const re = /@(?:vimothy|ai|vimtex)\b/gi;
   let last = 0;
   let match: RegExpExecArray | null;
   let key = 0;
@@ -59,14 +64,15 @@ function highlightMentions(text: string): ReactNode[] {
   return parts.length > 0 ? parts : [text];
 }
 
-export function ClassicRoomChat({
-  open,
+export function StudioRoomChat({
+  open = true,
+  embedded = false,
   onClose,
   peerCount,
   user,
   editorRef,
   chatReady,
-}: ClassicRoomChatProps) {
+}: StudioRoomChatProps) {
   const [model, setModel] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -181,7 +187,7 @@ export function ClassicRoomChat({
 
       const instruction = stripAiMention(userMsg.text);
       if (!instruction) {
-        setError("Add an instruction after @ai.");
+        setError("Add an instruction after @vimothy.");
         setErrorForId(userMsg.id);
         return;
       }
@@ -216,7 +222,7 @@ export function ClassicRoomChat({
         const aiMsg: RoomChatMessage = {
           id: newChatMessageId(),
           clientId,
-          authorName: "AI",
+          authorName: "Vimothy",
           authorColor: "var(--primary)",
           role: "ai",
           text: parsed.message,
@@ -299,7 +305,7 @@ export function ClassicRoomChat({
       }
       if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
-        insertMention(filteredMentions[mentionIndex] ?? "ai");
+        insertMention(filteredMentions[mentionIndex] ?? AI_MENTION_TAG);
         return;
       }
       if (e.key === "Escape") {
@@ -320,35 +326,12 @@ export function ClassicRoomChat({
   const modelLabel =
     AI_MODELS.find((m) => m.id === model)?.label ?? model;
 
-  return (
-    <aside
-      className="vt-chat-panel flex h-[min(48vh,400px)] min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-canvas/95 backdrop-blur-sm md:h-full md:w-[min(100%,340px)] md:border-t-0 md:border-l"
-      aria-label="Room chat"
-    >
-      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-hairline px-2 pl-3">
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <span className="text-sm text-ink">Chat</span>
-          <span className="truncate text-xs text-mute">
-            {peerCount} online
-          </span>
-        </div>
-        <label className="sr-only" htmlFor="room-chat-model">
-          Model for @ai
-        </label>
-        <select
-          id="room-chat-model"
-          value={model}
-          onChange={(e) => setModel(e.target.value as AiModelId)}
-          className="vt-chat-model"
-          title={`Model: ${modelLabel}`}
-          aria-label="Model for @ai"
-        >
-          {AI_MODELS.map((m) => (
-            <option key={m.id} value={m.id} className="bg-canvas text-ink">
-              {m.label}
-            </option>
-          ))}
-        </select>
+  const panel = (
+    <>
+      <div className="vt-chat-panel__header">
+        <p className="vt-chat-panel__title">
+          Chat <span>· {peerCount} online</span>
+        </p>
         <button
           type="button"
           onClick={onClose}
@@ -362,11 +345,11 @@ export function ClassicRoomChat({
       <div
         ref={listRef}
         onScroll={onListScroll}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-3"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2.5 py-2"
       >
         {messages.length === 0 ? (
-          <p className="text-sm text-mute">
-            Message the room. Mention @ai to edit the note.
+          <p className="text-xs leading-relaxed text-mute">
+            Message the room. Type @ to ask Vimothy.
           </p>
         ) : null}
 
@@ -400,12 +383,7 @@ export function ClassicRoomChat({
                     className="vt-chat-msg__author"
                     style={{ color: isAi ? "var(--primary)" : m.authorColor }}
                   >
-                    {isAi ? "AI" : isSelf ? "You" : m.authorName}
-                    {m.mentionAi ? (
-                      <span className="ml-1.5 font-normal text-mute">
-                        · @ai
-                      </span>
-                    ) : null}
+                    {isAi ? "Vimothy" : isSelf ? "You" : m.authorName}
                   </span>
                   <span className="vt-chat-msg__time">
                     {formatRelativeTime(m.createdAt, now)}
@@ -420,7 +398,7 @@ export function ClassicRoomChat({
               ) : null}
               {showError ? (
                 <div className="mt-1 space-y-1">
-                  <p className="text-sm text-body">{error}</p>
+                  <p className="text-xs text-body">{error}</p>
                   <button
                     type="button"
                     onClick={() => retryAi(m)}
@@ -443,7 +421,7 @@ export function ClassicRoomChat({
       <div className="relative shrink-0">
         {mentionOpen && filteredMentions.length > 0 ? (
           <ul
-            className="absolute bottom-full left-2 right-2 mb-1 overflow-hidden rounded-xl border border-hairline bg-canvas-card"
+            className="absolute bottom-full left-2 right-2 mb-1 overflow-hidden rounded-lg border border-hairline bg-canvas-card text-sm"
             role="listbox"
           >
             {filteredMentions.map((tag, i) => (
@@ -458,14 +436,12 @@ export function ClassicRoomChat({
                   }}
                   className={
                     i === mentionIndex
-                      ? "flex w-full items-center gap-2 bg-ink px-3 py-2.5 text-left text-sm text-on-primary"
-                      : "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-ink hover:bg-canvas-soft"
+                      ? "flex w-full items-center gap-2 bg-ink px-2.5 py-2 text-left text-xs text-on-primary"
+                      : "flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-ink hover:bg-canvas-soft"
                   }
                 >
                   <span className="font-medium">@{tag}</span>
-                  <span className="text-xs opacity-60">
-                    {tag === "ai" ? "Ask the model" : "Same as @ai"}
-                  </span>
+                  <span className="text-[10px] opacity-60">Ask the model</span>
                 </button>
               </li>
             ))}
@@ -473,16 +449,6 @@ export function ClassicRoomChat({
         ) : null}
 
         <div className="vt-chat-composer">
-          <button
-            type="button"
-            onClick={() => insertMention("ai")}
-            disabled={busy}
-            className="vt-chat-icon-btn shrink-0 text-xs"
-            aria-label="Insert @ai"
-            title="Insert @ai"
-          >
-            @ai
-          </button>
           <textarea
             ref={inputRef}
             value={input}
@@ -495,7 +461,7 @@ export function ClassicRoomChat({
               );
               const el = e.currentTarget;
               el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+              el.style.height = `${Math.min(el.scrollHeight, 88)}px`;
             }}
             onKeyUp={(e) => {
               const el = e.currentTarget;
@@ -515,18 +481,53 @@ export function ClassicRoomChat({
             type="button"
             onClick={() => void send()}
             disabled={busy || !input.trim()}
-            className="vt-pill vt-pill--solid vt-chat-send"
+            className={
+              !busy && input.trim()
+                ? "vt-chat-send vt-chat-send--active"
+                : "vt-chat-send"
+            }
             aria-label="Send message"
           >
-            Send
+            <SendIcon />
           </button>
         </div>
         {mentionsAi(input) ? (
-          <p className="px-3 pb-2 text-xs text-accent-breeze">
-            Will call AI with this instruction
-          </p>
+          <div className="vt-chat-composer__meta">
+            <label className="sr-only" htmlFor="room-chat-model">
+              Model
+            </label>
+            <select
+              id="room-chat-model"
+              value={model}
+              onChange={(e) => setModel(e.target.value as AiModelId)}
+              className="vt-chat-model"
+              title={`Model: ${modelLabel}`}
+              aria-label="AI model"
+            >
+              {AI_MODELS.map((m) => (
+                <option key={m.id} value={m.id} className="bg-canvas text-ink">
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">{panel}</div>
+    );
+  }
+
+  return (
+    <aside
+      className="vt-chat-panel flex h-[min(48vh,400px)] min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-canvas/95 backdrop-blur-sm md:h-full md:w-[min(100%,340px)] md:border-t-0 md:border-l"
+      aria-label="Room chat"
+    >
+      {panel}
     </aside>
   );
 }

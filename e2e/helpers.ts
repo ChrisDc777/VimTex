@@ -1,17 +1,17 @@
 import { expect, type Page } from "@playwright/test";
 
-type UiVariant = "classic" | "quietCraft";
+type UiVariant = "studio" | "forge";
 
 /** Clear storage once per browser context and pin the UI variant. */
 export async function prepareApp(
   page: Page,
   opts: {
     variant?: UiVariant;
-    /** When set, Classic skips the name gate. */
+    /** When set, Studio skips the name gate. */
     displayName?: string;
   } = {},
 ) {
-  const variant = opts.variant ?? "classic";
+  const variant = opts.variant ?? "studio";
   const displayName = opts.displayName;
   await page.addInitScript(
     ({ variant: v, displayName: name }) => {
@@ -31,13 +31,13 @@ export async function prepareApp(
   );
 }
 
-export async function joinClassicRoom(
+export async function joinStudioRoom(
   page: Page,
   opts: { room?: string; name?: string } = {},
 ) {
-  const room = opts.room ?? `classic-${Date.now().toString(16)}`;
+  const room = opts.room ?? `studio-${Date.now().toString(16)}`;
   const name = opts.name ?? "Tester";
-  await prepareApp(page, { variant: "classic" });
+  await prepareApp(page, { variant: "studio" });
   await page.goto(`/?room=${room}`, { waitUntil: "domcontentloaded" });
 
   const dialog = page.getByRole("dialog", { name: /display name/i });
@@ -46,18 +46,18 @@ export async function joinClassicRoom(
   await dialog.getByRole("button", { name: /^join room$/i }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator(".ui-classic")).toBeVisible();
+  await expect(page.locator(".ui-studio")).toBeVisible();
   return room;
 }
 
-/** Quiet Craft: no required name gate; editor ready immediately. */
-export async function openQuietCraft(
+/** Forge: no required name gate; editor ready immediately. */
+export async function openForge(
   page: Page,
   opts: { room?: string; displayName?: string } = {},
 ) {
   const room = opts.room ?? `sheet-${Date.now().toString(16)}`;
   await prepareApp(page, {
-    variant: "quietCraft",
+    variant: "forge",
     displayName: opts.displayName,
   });
   await page.goto(`/?room=${room}`, { waitUntil: "domcontentloaded" });
@@ -121,7 +121,7 @@ export async function waitConnected(page: Page, timeout = 20_000) {
     .poll(
       async () =>
         page
-          .locator(".vt-classic-footer__meta, .vt-footer__status-label")
+          .locator(".vt-studio-footer__meta, .vt-footer__status-label")
           .first()
           .innerText()
           .catch(() => ""),

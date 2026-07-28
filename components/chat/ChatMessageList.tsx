@@ -6,8 +6,8 @@ import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
 import { RefreshIcon } from "@/components/chat/icons";
 
 const EMPTY_SUGGESTIONS = [
-  "@ai fix the equation in section 2",
-  "@ai tighten the introduction",
+  "@vimothy fix the equation in section 2",
+  "@vimothy tighten the introduction",
 ];
 
 type ChatMessageListProps = {
@@ -50,7 +50,7 @@ export function ChatMessageList({
           <div className="vt-chat-empty">
             <p className="vt-chat-empty__title">Message the room</p>
             <p className="vt-chat-empty__subtitle">
-              Mention @ai to edit the note
+              Mention @vimothy to edit the note
             </p>
             <div className="vt-chat-empty__suggestions">
               {EMPTY_SUGGESTIONS.map((suggestion) => (
@@ -83,7 +83,7 @@ export function ChatMessageList({
                     color: block.isAi ? "var(--primary)" : block.authorColor,
                   }}
                 >
-                  {block.isSelf ? "You" : block.isAi ? "AI" : block.authorName}
+                  {block.isSelf ? "You" : block.isAi ? "Vimothy" : block.authorName}
                 </span>
                 <span className="vt-chat-block__time">
                   {formatRelativeTime(block.startedAt, now)}

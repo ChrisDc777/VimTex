@@ -5,7 +5,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
-import { mentionsAi } from "@/lib/chat-mentions";
+import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
 import type { AiModelId } from "@/lib/ai-models";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
@@ -60,7 +60,7 @@ export function ChatComposer({
       }
       if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
-        onMentionSelect(filteredMentions[mentionIndex] ?? "ai");
+        onMentionSelect(filteredMentions[mentionIndex] ?? AI_MENTION_TAG);
         return;
       }
       if (e.key === "Escape") {
