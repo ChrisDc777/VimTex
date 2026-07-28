@@ -11,6 +11,7 @@ import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ClassicRoomChat } from "@/components/classic/ClassicRoomChat";
+import { EditorModeToggle } from "@/components/EditorModeToggle";
 import { UiVariantToggle } from "@/components/UiVariantToggle";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -21,6 +22,11 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
+import {
+  loadEditorMode,
+  saveEditorMode,
+  type EditorMode,
+} from "@/lib/editor-mode";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
 import { loadViewMode, saveViewMode } from "@/lib/storage";
 import { STARTER_NOTE } from "@/lib/starter-content";
@@ -50,6 +56,7 @@ export function ClassicShell({
 }: ClassicShellProps) {
   const [note, setNote] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [editorMode, setEditorMode] = useState<EditorMode>("vim");
   const [vimMode, setVimMode] = useState<VimMode>("normal");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [collabStatus, setCollabStatus] =
@@ -73,10 +80,18 @@ export function ClassicShell({
     const storedMode = loadViewMode();
     if (storedMode != null) setViewMode(storedMode);
 
+    const mode = loadEditorMode();
+    setEditorMode(mode);
+
     const storedName = loadDisplayName();
     if (storedName) {
       setUser(createCollabUser({ name: storedName }));
       setNeedsName(false);
+    } else if (mode === "standard") {
+      // Standard invitees skip the name modal.
+      setUser(createCollabUser());
+      setNeedsName(false);
+      if (!loadOnboardingSeen()) setOnboardingOpen(true);
     } else {
       setUser(createCollabUser());
       setNeedsName(true);
@@ -88,6 +103,16 @@ export function ClassicShell({
     if (!hydrated) return;
     saveViewMode(viewMode);
   }, [viewMode, hydrated]);
+
+  const handleEditorMode = useCallback((mode: EditorMode) => {
+    saveEditorMode(mode);
+    setEditorMode(mode);
+    if (mode === "standard") {
+      setNeedsName(false);
+      setEditingName(false);
+    }
+    requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
 
   const handleViewMode = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -131,10 +156,10 @@ export function ClassicShell({
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
           <span className="vt-brand text-ink">VimTex</span>
           <span className="vt-caption text-mute sm:hidden">
-            {vimModeLabel(vimMode)}
+            {editorMode === "standard" ? "STANDARD" : vimModeLabel(vimMode)}
           </span>
           <span className="vt-caption hidden text-mute sm:inline">
-            {vimModeLabel(vimMode)}
+            {editorMode === "standard" ? "STANDARD" : vimModeLabel(vimMode)}
           </span>
         </div>
         <div
@@ -142,6 +167,7 @@ export function ClassicShell({
           role="toolbar"
           aria-label="Workspace tools"
         >
+          <EditorModeToggle value={editorMode} onChange={handleEditorMode} />
           {roomId ? <ShareRoom roomId={roomId} variant="classic" /> : null}
           <button
             type="button"
@@ -177,10 +203,12 @@ export function ClassicShell({
           >
             {ready && roomId && user ? (
               <VimEditor
+                key={`${roomId}-${editorMode}`}
                 ref={editorRef}
                 roomId={roomId}
                 user={user}
                 collaborationEnabled
+                vimEnabled={editorMode === "vim"}
                 inlineMath={viewMode === "realtime"}
                 emptyRoomSeed={STARTER_NOTE}
                 showPlaceholder={false}
@@ -216,12 +244,14 @@ export function ClassicShell({
       </div>
 
       <ClassicStatusBar
-        vimMode={vimMode}
+        vimMode={editorMode === "standard" ? "standard" : vimMode}
         collabStatus={collabStatus}
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
-        onOpenCheatsheet={() => setCheatsheetOpen(true)}
+        onOpenCheatsheet={
+          editorMode === "vim" ? () => setCheatsheetOpen(true) : undefined
+        }
       />
 
       <NamePicker

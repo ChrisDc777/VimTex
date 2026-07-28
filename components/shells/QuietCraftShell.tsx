@@ -10,6 +10,7 @@ import { StatusBar } from "@/components/StatusBar";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
+import { EditorModeToggle } from "@/components/EditorModeToggle";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
@@ -35,6 +36,11 @@ import {
 } from "@/lib/panel-storage";
 import { saveNote } from "@/lib/storage";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
+import {
+  loadEditorMode,
+  saveEditorMode,
+  type EditorMode,
+} from "@/lib/editor-mode";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
@@ -63,6 +69,7 @@ export function QuietCraftShell({
 }: QuietCraftShellProps) {
   const [note, setNote] = useState("");
   const [vimMode, setVimMode] = useState<VimMode>("normal");
+  const [editorMode, setEditorMode] = useState<EditorMode>("vim");
   const [localSeed, setLocalSeed] = useState<string | null>(null);
   const [collabStatus, setCollabStatus] =
     useState<CollabStatus>("connecting");
@@ -149,6 +156,7 @@ export function QuietCraftShell({
     try {
       setUrlRoomId(readRoomFromLocation());
       setRightPanelView(loadRightPanelView());
+      setEditorMode(loadEditorMode());
       const storedName = loadDisplayName();
       setUser(
         createCollabUser(storedName ? { name: storedName } : undefined),
@@ -159,6 +167,12 @@ export function QuietCraftShell({
     } finally {
       setHydrated(true);
     }
+  }, []);
+
+  const handleEditorMode = useCallback((mode: EditorMode) => {
+    saveEditorMode(mode);
+    setEditorMode(mode);
+    requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
   useEffect(() => {
@@ -272,7 +286,8 @@ export function QuietCraftShell({
         uiVariant={uiVariant}
         onUiVariantChange={onUiVariantChange}
         headerExtra={
-          <div className="hidden sm:block">
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <EditorModeToggle value={editorMode} onChange={handleEditorMode} />
             <UiVariantToggle value={uiVariant} onChange={onUiVariantChange} />
           </div>
         }
@@ -300,11 +315,12 @@ export function QuietCraftShell({
                     aria-label="Document editor"
                   >
                     <VimEditor
-                      key={roomId}
+                      key={`${roomId}-${editorMode}`}
                       ref={editorRef}
                       roomId={roomId}
                       user={user}
                       collaborationEnabled
+                      vimEnabled={editorMode === "vim"}
                       inlineMath
                       localSeed={localSeed}
                       onChange={handleNoteChange}
@@ -409,12 +425,14 @@ export function QuietCraftShell({
       />
 
       <StatusBar
-        vimMode={vimMode}
+        vimMode={editorMode === "standard" ? "standard" : vimMode}
         collabStatus={collabStatus}
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
-        onOpenCheatsheet={() => setCheatsheetOpen(true)}
+        onOpenCheatsheet={
+          editorMode === "vim" ? () => setCheatsheetOpen(true) : undefined
+        }
       />
 
       <NamePicker

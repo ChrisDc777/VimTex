@@ -2,6 +2,7 @@ import type { CollabStatus, VimMode } from "@/lib/types";
 
 export function formatVimMode(mode: VimMode): string {
   const m = mode.toLowerCase();
+  if (m === "standard") return "Standard";
   if (m.startsWith("vis")) return "Visual";
   if (m.startsWith("ins")) return "Insert";
   if (m.startsWith("rep")) return "Replace";
@@ -11,6 +12,7 @@ export function formatVimMode(mode: VimMode): string {
 
 export function abbreviateVimMode(mode: VimMode): string {
   const m = mode.toLowerCase();
+  if (m === "standard") return "S";
   if (m.startsWith("vis")) return "V";
   if (m.startsWith("ins")) return "I";
   if (m.startsWith("rep")) return "R";
