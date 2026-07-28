@@ -26,8 +26,8 @@ export function EditorModeToggle({ value, onChange }: EditorModeToggleProps) {
           aria-pressed={value === opt.id}
           title={
             opt.id === "vim"
-              ? "Vim keybindings"
-              : "Standard editing — no Vim modal for invitees"
+              ? "Vim keys (Esc, i, hjkl…). Name gate on Classic first visit."
+              : "Normal typing — no Vim modes. Invitees skip the name gate."
           }
           onClick={() => {
             saveEditorMode(opt.id);
