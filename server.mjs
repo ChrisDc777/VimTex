@@ -1,6 +1,10 @@
 /**
  * Production/dev server: Next.js + Yjs WebSocket on the same port.
  * Room URL shape: ws(s)://host/<roomId>
+ *
+ * In-memory Yjs rooms with no clients are destroyed after YROOM_IDLE_MS
+ * (default 30 minutes; see scripts/y-ws/utils.js). YPERSISTENCE keeps disk
+ * copies; without it, a server restart also clears all rooms.
  */
 import { createServer } from "node:http";
 import { createRequire } from "node:module";

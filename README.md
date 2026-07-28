@@ -1,12 +1,12 @@
 # VimTex
 
-**Vim keybindings. Inline LaTeX. Your scratch sheet.**
+**Vim keybindings. Live LaTeX. Shared buffer. Zero setup.**
 
-A keyboard-first math scratchpad — open the app, type TeX on a blank sheet, and watch KaTeX render in place as you work. No separate math mode, no preview pane required. Export when you are done.
+A collaborative math scratchpad — open a room, type TeX like Vim, and watch KaTeX render as you go. Share the link; everyone edits the same buffer in realtime. Ask `@ai` to rewrite an equation and the whole room sees the change.
 
-Your sheet autosaves locally per room. Refresh restores it. **New** starts a fresh room without erasing older sheets.
+**Classic Collaborative** is the default workspace (Share, Chat, Split/Realtime). **Quiet Craft** (tabs, problem panel, mobile rails) is available as a toggleable alternative. Preference is stored in `localStorage` (`vimtex:uiVariant`).
 
-**Live share** (real-time collaboration and room chat) is a **Premium** feature — shown in the Sheet menu but not available on the free tier yet. Solo editing works fully offline in **Local** mode.
+No accounts required. Sheets can also autosave locally per room in Quiet Craft.
 
 ---
 
@@ -18,38 +18,53 @@ npm run build
 npm start
 ```
 
-Open **[http://localhost:3001](http://localhost:3001)**. You land on a blank sheet (`?room=…`). Type immediately.
+Open **[http://localhost:3001](http://localhost:3001)**. You’ll land in a room (`?room=…`). Hit **Share**, send the URL, and you’re co-editing.
 
-For local development:
+For local development (same custom server + Yjs WebSocket):
 
 ```bash
 npm run dev
 ```
 
-### Live share (Premium — coming soon)
+### Share outside localhost
 
-Real-time collaboration requires a WebSocket server (`server.mjs`). It is disabled in the app UI for now and surfaced as a Premium upgrade path. Solo **Local** mode does not need the WebSocket server for editing.
+```bash
+npm start
+npm run tunnel   # needs cloudflared
+```
+
+Open the printed `https://*.trycloudflare.com` link on two devices with the same room — carets, edits, and chat sync live.
 
 ---
 
-## How it works
+## What you get
 
 | | |
 |---|---|
-| **One surface** | Type prose and math in the same editor — rendered math stays on the line |
-| **Caret reveals source** | Move the cursor into math to edit the raw TeX; move away to see KaTeX |
-| **Inline by default** | `2^5`, `\frac{1}{2}`, and similar expressions render inline; use `\[...\]` for display math |
-| **Vim editor** | CodeMirror 6 + Replit Vim — motions, modes, Tab/Enter to hop `\frac{}{}` fields |
-| **Local autosave** | Each room restores after refresh; **New** opens a clean sheet in a new room |
-| **Optional tools** | **Preview** (rendered export view), **Live share** (Premium), **Chat** (Premium), `.tex` / `.md` export |
+| **Vim editor** | CodeMirror 6 + Replit Vim — motions, modes, the works |
+| **LaTeX as you type** | KaTeX preview / inline widgets; autocomplete for common commands; bare math like `2^5` |
+| **Realtime collab** | Yjs over WebSocket — shared doc, carets, peer count |
+| **Room chat** | Sidebar for humans; `@ai` / `@vimtex` for model edits |
+| **Two UI shells** | **Classic** (default) or **Quiet Craft** (tabs, problem panel, mobile bottom nav) |
+| **Classic layouts** | Split (source + preview) or Realtime (inline math) |
+| **Export** | `.tex` / `.md` download |
 
-Use `\(...\)` when you need explicit inline boundaries in prose. Use `\[...\]` when you want a displayed equation. No `$` delimiters.
+Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inline and `\[...\]` for display when you want them.
 
 ---
 
-## AI assistant
+## Room lifetime
 
-Use **`@ai`** in the composer when room chat is available (Premium). For now, live share is disabled — AI chat via the room panel is part of the Premium tier.
+- Reconnecting to the same `?room=` restores the shared in-memory Yjs doc while the Node process is up.
+- Empty rooms (zero WebSocket clients) are garbage-collected after `YROOM_IDLE_MS` (default **30 minutes**).
+- Server restart clears all in-memory rooms unless `YPERSISTENCE` is configured.
+- Quiet Craft also keeps a **browser localStorage** copy per room for solo refresh restore.
+
+---
+
+## AI in the room
+
+Toggle **Chat**, then mention **`@ai`** or **`@vimtex`**. Only the sender hits OpenRouter; everyone sees the reply and document patch via Yjs.
 
 Copy [`.env.example`](.env.example) to `.env` or `.env.local` (gitignored) and set your key:
 
@@ -67,28 +82,26 @@ Models (sidebar dropdown):
 
 ---
 
-## Deploying to Vercel
-
-Solo **Local** mode deploys as a standard Next.js app. Live Share (WebSocket collab) is **not** available on Vercel — it requires a separate long-lived host running [`server.mjs`](server.mjs).
-
-1. Import this repo in the [Vercel dashboard](https://vercel.com/new) (framework: **Next.js**, build: `npm run build`).
-2. Set environment variables in the project settings (Production and Preview):
-   - `OPENROUTER_API_KEY` — required for `/api/chat` to work
-   - `NEXT_PUBLIC_APP_URL` — optional; used for OpenRouter attribution (defaults to `https://<vercel-url>`)
-3. Node **22** is used via [`.nvmrc`](.nvmrc) (minimum Node 20.9.0 for Next.js 16).
-4. Vercel runs `next build` / the managed Next server — **not** `npm start` / `server.mjs`.
-5. Consider enabling **Vercel Deployment Protection** or Firewall rate limits on production as an extra layer on `/api/chat` (middleware rate limiting is best-effort per function instance).
-
-After deploy, smoke-test: open a sheet, type LaTeX, confirm KaTeX renders. Local autosave (localStorage) works client-side without any server setup.
-
----
-
 ## Stack
 
 Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter
 
 ---
 
+## Planning and roadmap
+
+Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex)** (fork; upstream: [boscochanam/VimTex](https://github.com/boscochanam/VimTex)).
+
+| Doc | Description |
+|-----|-------------|
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased milestones M0–M5 |
+| [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index and execution order |
+| [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) | Positioning and personas |
+| [docs/UI_VARIANTS.md](docs/UI_VARIANTS.md) | Classic vs Quiet Craft shells |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Fork/upstream workflow |
+
+---
+
 ## License
 
-Private / experimental — use at your own risk. Do not store secrets in the buffer.
+Private / experimental — use at your own risk. Ephemeral by design: don’t store secrets in the buffer.

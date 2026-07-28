@@ -10,6 +10,7 @@ import {
 export type BottomPanelTabsProps = {
   problemOpen: boolean;
   previewOpen: boolean;
+  chatOpen: boolean;
   disabled?: boolean;
   onToggleProblem: () => void;
   onTogglePreview: () => void;
@@ -19,6 +20,7 @@ export type BottomPanelTabsProps = {
 export function BottomPanelTabs({
   problemOpen,
   previewOpen,
+  chatOpen,
   disabled,
   onToggleProblem,
   onTogglePreview,
@@ -47,9 +49,8 @@ export function BottomPanelTabs({
       />
       <BottomTabButton
         label="Chat"
-        pressed={false}
+        pressed={chatOpen}
         disabled={disabled}
-        premium
         onClick={onToggleChat}
         icon={<ChatIcon />}
       />
@@ -61,7 +62,6 @@ type BottomTabButtonProps = {
   label: string;
   pressed: boolean;
   disabled?: boolean;
-  premium?: boolean;
   onClick: () => void;
   icon: ReactNode;
 };
@@ -70,22 +70,19 @@ function BottomTabButton({
   label,
   pressed,
   disabled,
-  premium,
   onClick,
   icon,
 }: BottomTabButtonProps) {
   const className = pressed
     ? "vt-bottom-tabs__btn vt-bottom-tabs__btn--active"
-    : premium
-      ? "vt-bottom-tabs__btn vt-bottom-tabs__btn--premium"
-      : "vt-bottom-tabs__btn";
+    : "vt-bottom-tabs__btn";
 
   return (
     <button
       type="button"
       aria-pressed={pressed}
       aria-label={label}
-      title={premium ? "Premium — live room chat" : label}
+      title={label}
       disabled={disabled}
       onClick={onClick}
       className={className}

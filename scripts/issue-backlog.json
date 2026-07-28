@@ -1,0 +1,230 @@
+[
+  {
+    "title": "Epic: M0 - Foundation and UI convergence",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:epic", "priority:P0", "area:platform", "size:L"],
+    "body": "## Problem\nLocal Classic UI and fork Quiet Craft redesign diverged; collaboration is disabled on fork; foundation work must land before feature growth.\n\n## Scope\nGovernance, room semantics, shared workspace layer, Classic default, selective redesign integration, CI/E2E.\n\n## Acceptance criteria\n- [ ] All M0 child issues linked below\n- [ ] Classic Collaborative is default on integration branch\n- [ ] Two-browser collab E2E passes in CI\n\n## Child issues\n_(Updated after creation)_\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "Configure fork remotes and contribution workflow",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:debt", "priority:P0", "area:platform", "area:docs", "size:XS"],
+    "body": "## Problem\nLocal origin may still point at boscochanam; ChrisDc777 fork should be the push/PR target.\n\n## Acceptance criteria\n- [ ] docs/CONTRIBUTING.md documents origin/upstream remotes\n- [ ] README links to planning docs\n- [ ] Team uses ChrisDc777/VimTex for issues and PRs\n\n**Estimate:** XS | **Priority:** P0"
+  },
+  {
+    "title": "Cross-platform dev scripts and lockfile policy",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:debt", "priority:P0", "area:platform", "size:S"],
+    "body": "## Problem\nnpm run dev uses Unix NODE_ENV= syntax (fails on Windows). Untracked bun.lock conflicts with npm.\n\n## Acceptance criteria\n- [ ] cross-env for dev/start scripts\n- [ ] npm run typecheck added\n- [ ] Single lockfile policy documented\n- [ ] Remove unused deps\n\n**Estimate:** S | **Priority:** P0"
+  },
+  {
+    "title": "Define truthful room lifetime and idle cleanup",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:feature", "priority:P0", "area:collaboration", "area:persistence", "size:S"],
+    "body": "## Problem\nREADME claims refresh clears slate; Yjs rooms persist in server memory indefinitely.\n\n## Acceptance criteria\n- [ ] Product copy matches behavior\n- [ ] Idle rooms GC after configurable TTL\n- [ ] Server restart behavior documented\n\n**Estimate:** S | **Priority:** P0"
+  },
+  {
+    "title": "Extract shared workspace controller and document buffer",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:refactor", "priority:P0", "area:ui", "area:editor", "size:L"],
+    "body": "## Problem\napp/page.tsx and VimEditor duplicate note state; shells cannot share logic.\n\n## Acceptance criteria\n- [ ] Single source of truth for document (Yjs ytext)\n- [ ] Shared hooks for room, chat, AI\n- [ ] VimEditor accepts collaborationEnabled and inlineMath props\n\n**Blocks:** Classic default, Quiet Craft toggle\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "Restore Classic Collaborative as default shell",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:feature", "priority:P0", "area:ui", "size:L"],
+    "body": "## Problem\nFork a9e090a disables live share and gates Chat behind premium UI.\n\n## Acceptance criteria\n- [ ] Default: Share, Chat, Split/Realtime, name picker\n- [ ] WebsocketProvider connect: true\n- [ ] Remove fake Premium gate on Share/Chat\n\n**Blocked by:** workspace controller\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "Add optional Quiet Craft UI variant toggle",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:feature", "priority:P1", "area:ui", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] uiVariant classic | quietCraft in localStorage\n- [ ] Quiet Craft uses shared workspace layer\n- [ ] Collaboration works in both variants\n\n**Blocked by:** workspace controller, Classic default\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Merge bare-math parser and render improvements",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:feature", "priority:P1", "area:editor", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Unified render-note.ts (delimiters + bare math + line display)\n- [ ] Parser tests in CI\n- [ ] Split preview and realtime widgets consistent\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Port CI, typecheck, and API rate limits from redesign",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:debt", "priority:P1", "area:platform", "area:security", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] .github/workflows/ci.yml\n- [ ] middleware.ts rate limits on /api/chat\n- [ ] .env.example\n\n**Estimate:** S | **Priority:** P1"
+  },
+  {
+    "title": "Add two-client collaboration E2E tests",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:feature", "priority:P1", "area:collaboration", "area:platform", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Playwright webServer starts server.mjs\n- [ ] Two contexts: edit syncs both ways\n- [ ] Chat visible to peer\n- [ ] Runs in CI\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "RFC: VimTex naming conflict with lervag/vimtex plugin",
+    "milestone": "M0 - Foundation and UI convergence",
+    "labels": ["type:research", "priority:P2", "area:product", "size:XS"],
+    "body": "## Problem\nCollides with VimTeX plugin (vimtex.org).\n\n## Acceptance criteria\n- [ ] Rename options discussed\n- [ ] No code rename until decision\n\n**Estimate:** XS | **Priority:** P2"
+  },
+  {
+    "title": "Epic: M1 - Core editing and activation",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:epic", "priority:P0", "area:product", "size:L"],
+    "body": "## Scope\nFormat spec, non-Vim mode, onboarding, templates, palette, share polish.\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "Define canonical Markdown+TeX document format",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:research", "priority:P0", "area:editor", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Spec in docs\n- [ ] Starter, renderer, export aligned\n\n**Estimate:** M | **Priority:** P0"
+  },
+  {
+    "title": "Add standard (non-Vim) editing mode",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:feature", "priority:P0", "area:editor", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Vim vs Standard toggle with persistence\n- [ ] Standard: no modal gate for invitees\n\n**Estimate:** M | **Priority:** P0"
+  },
+  {
+    "title": "First-run onboarding and Vim cheatsheet",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:feature", "priority:P0", "area:ui", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] 30s intro to edit, preview, share, @ai\n- [ ] Cheatsheet from status bar\n\n**Estimate:** S | **Priority:** P0"
+  },
+  {
+    "title": "Session templates and recent rooms",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:feature", "priority:P1", "area:persistence", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] Templates: Blank, Homework, Derivation\n- [ ] Recent rooms in localStorage\n\n**Estimate:** S | **Priority:** P1"
+  },
+  {
+    "title": "Command palette for workspace actions",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:feature", "priority:P1", "area:ui", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Cmd/Ctrl+K palette\n- [ ] share, export, @ai, new room actions\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Share and export UX polish",
+    "milestone": "M1 - Core editing and activation",
+    "labels": ["type:feature", "priority:P1", "area:ui", "area:import-export", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] Copy toast + URL fallback\n- [ ] Copy-as-TeX/Markdown\n\n**Estimate:** S | **Priority:** P1"
+  },
+  {
+    "title": "Epic: M2 - Collaboration and persistence",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:epic", "priority:P0", "area:collaboration", "size:L"],
+    "body": "## Scope\nRFC, reconnect, presence, permissions, TTL, snapshots.\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "RFC: Production collaboration and persistence architecture",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:research", "priority:P0", "area:platform", "area:collaboration", "size:M"],
+    "body": "## Evaluate\nHocuspocus, self-hosted Yjs+Postgres, Redis fan-out.\n\n**Estimate:** M | **Priority:** P0"
+  },
+  {
+    "title": "Reconnect UX and offline editing banner",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:feature", "priority:P0", "area:collaboration", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] Reconnect CTA when disconnected\n- [ ] Clear offline messaging\n\n**Estimate:** S | **Priority:** P0"
+  },
+  {
+    "title": "Enhanced presence: peer list, selections, typing indicator",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:feature", "priority:P1", "area:collaboration", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Named peer chips\n- [ ] Remote selections\n- [ ] Typing indicator\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Permission-aware share links (read-only)",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:feature", "priority:P1", "area:collaboration", "area:security", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] View-only vs edit links\n- [ ] Server enforces on WS join\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Room TTL, expiry, and optional password",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:feature", "priority:P1", "area:persistence", "area:security", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Configurable TTL\n- [ ] Optional room PIN\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Snapshots and version history",
+    "milestone": "M2 - Collaboration and persistence",
+    "labels": ["type:feature", "priority:P2", "area:persistence", "size:L"],
+    "body": "## Acceptance criteria\n- [ ] Manual checkpoint + restore UI\n\n**Estimate:** L | **Priority:** P2"
+  },
+  {
+    "title": "Epic: M3 - AI mathematical workflows",
+    "milestone": "M3 - AI mathematical workflows",
+    "labels": ["type:epic", "priority:P0", "area:ai", "size:L"],
+    "body": "## Scope\nDiff accept/reject, scoped AI, streaming.\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "AI diff preview with accept/reject workflow",
+    "milestone": "M3 - AI mathematical workflows",
+    "labels": ["type:feature", "priority:P0", "area:ai", "size:L"],
+    "body": "## Acceptance criteria\n- [ ] Diff before apply\n- [ ] Accept/Reject\n- [ ] @ai concurrency queue\n\n**Estimate:** L | **Priority:** P0"
+  },
+  {
+    "title": "Selection-aware and inline AI actions",
+    "milestone": "M3 - AI mathematical workflows",
+    "labels": ["type:feature", "priority:P1", "area:ai", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Explain, Simplify, Fix TeX on selection\n\n**Blocked by:** AI diff preview\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "AI streaming, cancel, and usage quotas",
+    "milestone": "M3 - AI mathematical workflows",
+    "labels": ["type:feature", "priority:P2", "area:ai", "area:security", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Stream to chat\n- [ ] Cancel + daily quota UX\n\n**Estimate:** M | **Priority:** P2"
+  },
+  {
+    "title": "Epic: M4 - Import, export, and polish",
+    "milestone": "M4 - Import, export, and polish",
+    "labels": ["type:epic", "priority:P1", "area:import-export", "size:M"],
+    "body": "## Scope\nImport/export formats, PDF, delight polish.\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Import LaTeX and Markdown files",
+    "milestone": "M4 - Import, export, and polish",
+    "labels": ["type:feature", "priority:P1", "area:import-export", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] File picker for .tex and .md\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "PDF export and equation image export",
+    "milestone": "M4 - Import, export, and polish",
+    "labels": ["type:feature", "priority:P2", "area:import-export", "size:L"],
+    "body": "## Acceptance criteria\n- [ ] PDF export path\n- [ ] Per-equation PNG/SVG copy\n\n**Estimate:** L | **Priority:** P2"
+  },
+  {
+    "title": "Delight polish: toasts, empty states, metadata",
+    "milestone": "M4 - Import, export, and polish",
+    "labels": ["type:feature", "priority:P1", "area:ui", "size:S"],
+    "body": "## Acceptance criteria\n- [ ] Toast system\n- [ ] Peer waiting empty states\n- [ ] OG metadata for shares\n\n**Estimate:** S | **Priority:** P1"
+  },
+  {
+    "title": "Epic: M5 - Production and SaaS readiness",
+    "milestone": "M5 - Production and SaaS readiness",
+    "labels": ["type:epic", "priority:P2", "area:business", "size:XL"],
+    "body": "## Gate\nStart after retention proof.\n\n**Estimate:** XL | **Priority:** P2"
+  },
+  {
+    "title": "Observability: structured logging and error tracking",
+    "milestone": "M5 - Production and SaaS readiness",
+    "labels": ["type:feature", "priority:P1", "area:platform", "size:M"],
+    "body": "## Acceptance criteria\n- [ ] Structured logs\n- [ ] Error tracking\n- [ ] Health endpoints\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "Privacy-respecting product analytics",
+    "milestone": "M5 - Production and SaaS readiness",
+    "labels": ["type:feature", "priority:P1", "area:product", "size:M"],
+    "body": "## Events\nroom_created, peer_joined, export, ai_accept, return_visit\n\n**Estimate:** M | **Priority:** P1"
+  },
+  {
+    "title": "RFC: Optional accounts and saved workspaces",
+    "milestone": "M5 - Production and SaaS readiness",
+    "labels": ["type:research", "priority:P3", "area:business", "size:L"],
+    "body": "## Gate\n7-day collaborative return rate.\n\n**Estimate:** L | **Priority:** P3"
+  },
+  {
+    "title": "RFC: Billing, entitlements, and subscription tiers",
+    "milestone": "M5 - Production and SaaS readiness",
+    "labels": ["type:research", "priority:P3", "area:business", "size:M"],
+    "body": "## Draft tiers\nFree / Pro / Team - discussion only.\n\n**Estimate:** M | **Priority:** P3"
+  }
+]

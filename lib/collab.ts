@@ -41,6 +41,7 @@ function hash(input: string): number {
   return h;
 }
 
+/** 12 hex chars = 48 bits of entropy (~2.8×10¹⁴ values). Not secret — share links are guessable at scale without auth. */
 export function createRoomId(): string {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
