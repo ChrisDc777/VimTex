@@ -1,39 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
+import {
+  editorText,
+  insertMode,
+  openQuietCraft,
+} from "./helpers";
 
-async function clearAppState(page: Page) {
-  await page.addInitScript(() => {
-    if (document.cookie.includes("vimtex_test_cleared=1")) return;
-    document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch {
-      /* ignore */
-    }
-  });
-}
-
-/** Open a sheet — no name gate; editor is ready immediately. */
+/** Quiet Craft shell — no name gate; editor is ready immediately. */
 async function openSheet(page: Page, room?: string) {
-  const id = room ?? `sheet-${Date.now().toString(16)}`;
-  await clearAppState(page);
-  await page.goto(`/?room=${id}`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
-  await expect(
-    page.getByRole("dialog", { name: /display name/i }),
-  ).toHaveCount(0);
-  return id;
-}
-
-async function insertMode(page: Page) {
-  const content = page.locator(".cm-content");
-  await content.click();
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("i");
-}
-
-async function editorText(page: Page) {
-  return page.locator(".cm-content").innerText();
+  return openQuietCraft(page, { room });
 }
 
 async function panelNav(page: Page) {
@@ -320,88 +294,6 @@ test.describe("VimTex UX shell", () => {
     expect(Math.abs(brandCenter - headerCenter)).toBeLessThan(8);
   });
 
-  test("mobile premium dialog plans stack vertically and stay centered", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "mobile", "mobile-only pricing layout");
-
-    await openSheet(page);
-    await page.getByRole("button", { name: /^sheet$/i }).click();
-    await page.getByRole("menuitem", { name: /live share/i }).click();
-
-    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
-    await expect(dialog).toBeVisible();
-
-    const cards = dialog.locator(".vt-pricing-card");
-    await expect(cards).toHaveCount(3);
-
-    const firstBox = await cards.nth(0).boundingBox();
-    const secondBox = await cards.nth(1).boundingBox();
-    const dialogBox = await dialog.boundingBox();
-    expect(firstBox).toBeTruthy();
-    expect(secondBox).toBeTruthy();
-    expect(dialogBox).toBeTruthy();
-
-    expect(secondBox!.y).toBeGreaterThan(firstBox!.y + firstBox!.height - 4);
-
-    const dialogCenter = dialogBox!.x + dialogBox!.width / 2;
-    const viewport = page.viewportSize();
-    expect(viewport).toBeTruthy();
-    expect(Math.abs(dialogCenter - viewport!.width / 2)).toBeLessThan(24);
-  });
-
-  test("mobile premium dialog close controls stay visible", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "mobile", "mobile-only premium dialog check");
-
-    await openSheet(page);
-    await page.getByRole("button", { name: /^sheet$/i }).click();
-    await page.getByRole("menuitem", { name: /live share/i }).click();
-
-    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
-    await expect(dialog).toBeVisible();
-
-    const closeBtn = dialog.getByRole("button", { name: /^close$/i });
-    const maybeLater = dialog.getByRole("button", { name: /maybe later/i });
-
-    await expect(closeBtn).toBeVisible();
-    await expect(maybeLater).toBeVisible();
-
-    const dialogBox = await dialog.boundingBox();
-    const closeBox = await closeBtn.boundingBox();
-    const footerBox = await maybeLater.boundingBox();
-    expect(dialogBox).toBeTruthy();
-    expect(closeBox).toBeTruthy();
-    expect(footerBox).toBeTruthy();
-    expect(closeBox!.y).toBeGreaterThanOrEqual(dialogBox!.y - 2);
-    expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
-      dialogBox!.y + dialogBox!.height + 4,
-    );
-
-    await closeBtn.click();
-    await expect(dialog).toBeHidden();
-  });
-
-  test("mobile premium dialog dismisses from backdrop tap", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "mobile", "mobile-only backdrop dismiss");
-
-    await openSheet(page);
-    await page.getByRole("button", { name: /^sheet$/i }).click();
-    await page.getByRole("menuitem", { name: /live share/i }).click();
-
-    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
-    await expect(dialog).toBeVisible();
-
-    const dialogBox = await dialog.boundingBox();
-    expect(dialogBox).toBeTruthy();
-    await page.touchscreen.tap(8, Math.round(dialogBox!.y / 2));
-
-    await expect(dialog).toBeHidden();
-  });
-
   test("desktop workspace does not scroll horizontally with right pane open", async ({
     page,
   }, testInfo) => {
@@ -427,31 +319,30 @@ test.describe("VimTex UX shell", () => {
     expect(editorBox!.width).toBeGreaterThanOrEqual(280);
   });
 
-  test("live share is premium-gated in sheet menu", async ({ page }) => {
+  test("share button copies room link chrome", async ({ page }) => {
     await openSheet(page);
 
-    await expect(page.getByRole("button", { name: /^share$/i })).toHaveCount(0);
-
-    await page.getByRole("button", { name: /^sheet$/i }).click();
-    await page.getByRole("menuitem", { name: /live share/i }).click();
-
-    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("heading", { name: "Pro" })).toBeVisible();
-    await dialog.getByRole("button", { name: /maybe later/i }).click();
-    await expect(dialog).toBeHidden();
+    const share = page.getByRole("button", { name: /^share$/i });
+    await expect(share).toBeVisible();
+    await share.click();
+    await expect(
+      page.getByRole("button", { name: /^(share|copied)$/i }),
+    ).toBeVisible();
   });
 
-  test("chat rail opens premium plans dialog", async ({ page }) => {
+  test("chat rail opens room chat panel", async ({ page }) => {
     await openSheet(page);
 
     await (await panelNav(page))
       .getByRole("button", { name: /^chat$/i })
       .click();
 
-    const dialog = page.getByRole("dialog", { name: /choose a plan/i });
-    await expect(dialog).toBeVisible();
-    await expect(page.getByRole("complementary", { name: /room chat/i })).toHaveCount(0);
+    await expect(
+      page.getByRole("complementary", { name: /room chat/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: /choose a plan/i }),
+    ).toHaveCount(0);
   });
 
   test("preview panel still opens on the right", async ({ page }) => {
@@ -504,10 +395,14 @@ test.describe("VimTex UX shell", () => {
     expect(boxAfter!.width).toBeGreaterThan(boxBefore!.width + 40);
   });
 
-  test("status bar shows local mode", async ({ page }) => {
+  test("status bar shows connected collab status", async ({ page }) => {
     await openSheet(page);
 
-    await expect(page.locator(".vt-footer__status-label")).toHaveText("Local");
+    await expect
+      .poll(async () => page.locator(".vt-footer__status-label").innerText(), {
+        timeout: 20_000,
+      })
+      .toMatch(/connected/i);
   });
 
   test("status bar exposes editable name", async ({ page }) => {

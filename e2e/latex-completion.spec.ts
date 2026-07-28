@@ -1,36 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-
-async function clearAppState(page: Page) {
-  await page.addInitScript(() => {
-    if (document.cookie.includes("vimtex_test_cleared=1")) return;
-    document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch {
-      /* ignore */
-    }
-  });
-}
+import { editorText, openQuietCraft, vimInsertAtEnd } from "./helpers";
 
 async function openSheet(page: Page, room?: string) {
-  const id = room ?? `tex-${Date.now().toString(16)}`;
-  await clearAppState(page);
-  await page.goto(`/?room=${id}`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
-  return id;
-}
-
-async function vimInsertAtEnd(page: Page) {
-  const content = page.locator(".cm-content");
-  await content.click();
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Shift+G");
-  await page.keyboard.press("o");
-}
-
-async function editorText(page: Page) {
-  return page.locator(".cm-content").innerText();
+  return openQuietCraft(page, { room });
 }
 
 test.describe("LaTeX tab completion", () => {
@@ -79,10 +51,10 @@ test.describe("LaTeX tab completion", () => {
 
     await page.keyboard.type("\\frac");
     await page.keyboard.press("Tab");
-    await page.keyboard.type("a");
+    await page.keyboard.type("1");
     await page.keyboard.press("Enter");
-    await page.keyboard.type("b");
+    await page.keyboard.type("2");
 
-    await expect.poll(async () => editorText(page)).toContain("\\frac{a}{b}");
+    await expect.poll(async () => editorText(page)).toContain("\\frac{1}{2}");
   });
 });

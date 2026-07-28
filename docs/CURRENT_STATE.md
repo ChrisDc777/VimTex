@@ -1,95 +1,50 @@
 # VimTex — Current state audit
 
-*Baseline: local `master` @ `edf2935` (2026-07-20). Fork/upstream `master` @ `a9e090a` (2026-07-26), +19 commits.*
+*Baseline: fork `master` @ Wave 1 merge (Classic default + Quiet Craft toggle). Upstream reference: boscochanam/VimTex.*
 
 ## Architecture
 
 ```
 Browser                    Node (server.mjs :3001)
 ┌─────────────────┐       ┌──────────────────────────────┐
-│ app/page.tsx    │ HTTP  │ Next.js (pages, /api/chat)   │
-│ VimEditor       │◄─────►│                              │
-│ RoomChatSidebar │ WS    │ y-websocket utils (in-memory)│
+│ ClassicShell or │ HTTP  │ Next.js (pages, /api/chat)   │
+│ QuietCraftShell │◄─────►│                              │
+│ VimEditor+Chat  │ WS    │ y-websocket utils (in-memory)│
 │ LatexPreview    │       │ Room = URL path segment        │
 └─────────────────┘       └──────────────────────────────┘
 ```
 
 - **Single route:** `/` + `POST /api/chat`
-- **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets
+- **UI default:** Classic Collaborative (`.ui-classic` + `app/classic-theme.css`)
+- **Optional:** Quiet Craft via `localStorage` `vimtex:uiVariant`
+- **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets — **enabled in both shells**
 - **Editor:** CodeMirror 6 + Replit Vim + y-codemirror.next + Y.UndoManager
-- **Math:** KaTeX via `lib/render-note.ts` (split preview + realtime widgets)
+- **Math:** KaTeX via `lib/render-note.ts` (bare math, split preview + realtime widgets)
 
-## Feature inventory (local `edf2935`)
+## Feature inventory
 
 | Area | Status | Key files |
 |------|--------|-----------|
-| Room URL + name picker | ✅ | `lib/collab.ts`, `NamePicker.tsx` |
+| Room URL + Classic name picker | ✅ | `lib/collab.ts`, `NamePicker.tsx`, `ClassicShell.tsx` |
 | Live Yjs collab + carets | ✅ | `VimEditor.tsx`, `server.mjs` |
-| Split / Realtime views | ✅ | `ViewToggle.tsx`, `cm-math-widgets.ts` |
-| Room chat + @ai | ✅ | `RoomChatSidebar.tsx`, `api/chat/route.ts` |
-| LaTeX completion | ✅ | `cm-latex-completion.ts` |
-| Export .tex / .md | ✅ | `export.ts`, `ExportMenu.tsx` |
-| View mode persistence | ❌ stub | `lib/storage.ts` no-ops |
-| Local note persistence | ❌ stub | `lib/storage.ts` |
-| Server persistence | ⚠️ optional | `YPERSISTENCE` + undeclared `y-leveldb` |
-| Idle room GC | ✅ | `YROOM_IDLE_MS` (default 30 min) in `scripts/y-ws/utils.js` |
+| Split / Realtime (Classic) | ✅ | `ViewToggle.tsx` |
+| Quiet Craft tabs + panels | ✅ | `QuietCraftShell.tsx`, `EditorTabBar.tsx` |
+| Room chat + @ai | ✅ | `ClassicRoomChat.tsx`, `RoomChatSidebar.tsx`, `api/chat/route.ts` |
+| Classic visual tokens | ✅ | `app/classic-theme.css` |
+| Share copy + fallback | ✅ | `ShareRoom.tsx` |
+| Idle room GC | ✅ | `YROOM_IDLE_MS` (default 30 min) |
+| CI / typecheck / API limits | ✅ | `.github/workflows/ci.yml`, `middleware.ts` |
+| Two-client collab E2E | 🔄 | `e2e/classic-collab.spec.ts` (#10) |
 | Auth / room ACL | ❌ | — |
-| CI / typecheck script | ❌ local | Present on fork `a9e090a` |
-| API rate limits | ❌ local | Present on fork via `middleware.ts` |
-
-## Fork redesign (`a9e090a`) — what changed
-
-**Added:** Quiet Craft UI, editor tabs (5 max), room-scoped localStorage autosave, problem-image panel (IndexedDB), resizable side panels, mobile bottom tabs, bare-math parser (`2^5`), CI, API payload caps, release workflow, OG/favicon, chat component split.
-
-**Intentionally disabled:** WebSocket `connect: false`, Share hidden, Chat/Live Share → fake Premium dialog.
+| Shared workspace hooks | ⚠️ partial | Shells extracted; deeper `#5` hooks still to land |
 
 ## Critical technical debt
 
-### 1. Room lifetime (documented + idle GC)
+1. **Document format ambiguity** — starter Markdown headers vs TeX-focused renderer (#13).
+2. **AI is destructive** — full-buffer replace; no diff accept/reject (#M3).
+3. **Monolithic editor** — `VimEditor.tsx` still owns Yjs + chat wiring (#5 deeper).
+4. **Security** — short room IDs; no room auth on public deploy.
 
-README and product copy distinguish **client** autosave (localStorage, per room) from **server** Yjs rooms: refresh reconnects to the same in-memory doc while the process is alive and the room has not been idle-GC'd; server restart clears; empty rooms are destroyed after `YROOM_IDLE_MS` (default 30 min, `scripts/y-ws/utils.js`). With `YPERSISTENCE`, rooms are written on last disconnect as before.
+## Convergence status
 
-### 2. Document format ambiguity
-
-Starter uses `# Markdown` headers; renderer only understands `\(...\)`, `\[...\]`, and TeX-command lines. Export is `.md` but content is not real Markdown.
-
-### 3. AI is destructive
-
-Full-buffer replace via `@@@DOCUMENT` markers; no diff, accept/reject, or concurrency guard (`VimEditor.applyAiEdit`).
-
-### 4. Security (public deploy)
-
-- 48-bit room IDs (~6 hex bytes)
-- No room auth, rate limits (local), or WS validation
-- OpenRouter cost exposure on `/api/chat`
-
-### 5. Monolithic editor
-
-`VimEditor.tsx` owns Yjs, chat, vim, widgets, seeding — hard to add shells or test in isolation.
-
-### 6. Platform hygiene
-
-- `NODE_ENV=development` in npm scripts breaks Windows without `cross-env`
-- Playwright has no `webServer` — assumes server running
-- `@codemirror/lang-markdown` and `concurrently` unused
-- Untracked `bun.lock` vs `package-lock.json`
-
-### 7. Test gaps
-
-E2E covers UX shell + LaTeX completion only. No two-browser collab, reconnect, AI mock, or renderer unit tests (fork has `render-note.test.mjs`).
-
-## Local vs fork — UI comparison
-
-| | Classic (`edf2935`) | Quiet Craft (`a9e090a`) |
-|--|---------------------|-------------------------|
-| Default view | Split | Inline-only |
-| Share / Chat | Enabled | Gated (premium UI) |
-| Collab WS | `connect: true` | `connect: false` |
-| Name gate | Required modal | Optional skip |
-| Tabs | No | Up to 5 |
-| Local autosave | No | Yes per room |
-| Problem panel | No | Yes (image paste) |
-
-## Recommended convergence
-
-Extract shared **workspace controller** + keep two **thin shells**. Default: Classic + `collaborationEnabled: true`. Optional: Quiet Craft with collaboration re-enabled.
+Classic is default with live collab. Quiet Craft is optional and also collaborates. Premium gating for Share/Chat was removed.
