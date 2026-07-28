@@ -27,12 +27,17 @@ git fetch origin
 - **Optional shell:** Quiet Craft (redesign `a9e090a` workspace) — tabs, rails, problem panel, mobile bottom nav.
 - **Separate concern:** `collaborationEnabled` — never tie Quiet Craft to local-only mode.
 
+## Dependencies and lockfiles
+
+- **npm** is the lockfile source of truth — use `npm install` and commit `package-lock.json` when dependencies change.
+- `bun.lock` is gitignored; do not commit it.
+
 ## Before opening a PR
 
 1. Link the GitHub issue.
-2. Run `npm run lint`, `npm run typecheck` (when present), `npm run build`, `npm run test:e2e`.
+2. Run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:e2e`.
 3. Note which UI variant(s) were tested.
-4. Do not commit secrets, `.env`, or unrelated lockfile churn (`bun.lock`).
+4. Do not commit secrets or `.env`.
 
 ## Syncing from upstream
 

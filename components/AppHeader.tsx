@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
+import { ShareRoom } from "@/components/ShareRoom";
 import { SheetMenu } from "@/components/SheetMenu";
 
 type AppHeaderProps = {
@@ -8,7 +10,10 @@ type AppHeaderProps = {
   note: string;
   canNewSheet?: boolean;
   onNewSheet: () => void;
-  onPremiumLiveShare: () => void;
+  roomId?: string | null;
+  headerExtra?: ReactNode;
+  uiVariant?: import("@/lib/ui-variant").UiVariant;
+  onUiVariantChange?: (variant: import("@/lib/ui-variant").UiVariant) => void;
 };
 
 export function AppHeader({
@@ -16,7 +21,10 @@ export function AppHeader({
   note,
   canNewSheet = true,
   onNewSheet,
-  onPremiumLiveShare,
+  roomId,
+  headerExtra,
+  uiVariant,
+  onUiVariantChange,
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
@@ -26,12 +34,15 @@ export function AppHeader({
 
       <div className="vt-header__nav">
         <div className="vt-header__actions" aria-label="File">
+          {roomId ? <ShareRoom roomId={roomId} /> : null}
+          {headerExtra}
           <SheetMenu
             note={note}
             disabled={!ready}
             canNewSheet={canNewSheet}
             onNewSheet={onNewSheet}
-            onPremiumLiveShare={onPremiumLiveShare}
+            uiVariant={uiVariant}
+            onUiVariantChange={onUiVariantChange}
           />
         </div>
       </div>

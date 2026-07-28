@@ -32,6 +32,7 @@ Browser                    Node (server.mjs :3001)
 | View mode persistence | ❌ stub | `lib/storage.ts` no-ops |
 | Local note persistence | ❌ stub | `lib/storage.ts` |
 | Server persistence | ⚠️ optional | `YPERSISTENCE` + undeclared `y-leveldb` |
+| Idle room GC | ✅ | `YROOM_IDLE_MS` (default 30 min) in `scripts/y-ws/utils.js` |
 | Auth / room ACL | ❌ | — |
 | CI / typecheck script | ❌ local | Present on fork `a9e090a` |
 | API rate limits | ❌ local | Present on fork via `middleware.ts` |
@@ -44,9 +45,9 @@ Browser                    Node (server.mjs :3001)
 
 ## Critical technical debt
 
-### 1. “Ephemeral” promise is inaccurate
+### 1. Room lifetime (documented + idle GC)
 
-README says refresh clears the slate. In practice, same `?room=` reconnects to in-memory Yjs doc. Rooms are not GC'd unless `YPERSISTENCE` is set (`scripts/y-ws/utils.js`).
+README and product copy distinguish **client** autosave (localStorage, per room) from **server** Yjs rooms: refresh reconnects to the same in-memory doc while the process is alive and the room has not been idle-GC'd; server restart clears; empty rooms are destroyed after `YROOM_IDLE_MS` (default 30 min, `scripts/y-ws/utils.js`). With `YPERSISTENCE`, rooms are written on last disconnect as before.
 
 ### 2. Document format ambiguity
 
