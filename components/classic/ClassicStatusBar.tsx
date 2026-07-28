@@ -8,6 +8,7 @@ type ClassicStatusBarProps = {
   peerCount: number;
   userName: string;
   onEditName?: () => void;
+  onOpenCheatsheet?: () => void;
 };
 
 function formatMode(mode: VimMode): string {
@@ -25,12 +26,24 @@ export function ClassicStatusBar({
   peerCount,
   userName,
   onEditName,
+  onOpenCheatsheet,
 }: ClassicStatusBarProps) {
+  const mode = formatMode(vimMode);
   return (
     <footer className="vt-classic-footer">
-      <span className="vt-caption hidden text-mute sm:inline">
-        {formatMode(vimMode)}
-      </span>
+      {onOpenCheatsheet ? (
+        <button
+          type="button"
+          onClick={onOpenCheatsheet}
+          className="vt-caption hidden text-mute underline-offset-2 hover:text-ink hover:underline sm:inline"
+          title="Vim cheatsheet"
+          aria-label="Open Vim cheatsheet"
+        >
+          {mode}
+        </button>
+      ) : (
+        <span className="vt-caption hidden text-mute sm:inline">{mode}</span>
+      )}
       <span className="vt-classic-footer__meta">
         {onEditName ? (
           <button
