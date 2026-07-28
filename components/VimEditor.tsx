@@ -48,6 +48,8 @@ type VimEditorProps = {
   user: CollabUser;
   /** When true, connect WebSocket and sync with peers. Default true. */
   collaborationEnabled?: boolean;
+  /** When false, plain CodeMirror keybindings (no Vim). Default true. */
+  vimEnabled?: boolean;
   /** Render KaTeX inline widgets in the editor. Default true. */
   inlineMath?: boolean;
   /** Local autosave seed when the buffer is empty (solo or pre-sync). */
@@ -132,6 +134,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       roomId,
       user,
       collaborationEnabled = true,
+      vimEnabled = true,
       inlineMath = true,
       localSeed,
       emptyRoomSeed = null,
@@ -372,7 +375,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       const state = EditorState.create({
         doc: ytext.toString(),
         extensions: [
-          vim(),
+          ...(vimEnabled ? [vim()] : []),
           lineNumbers(),
           highlightActiveLine(),
           drawSelection(),
@@ -399,12 +402,18 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           onVimModeChangeRef.current(e.mode);
         }
       };
-      const cm = getCM(view);
-      cm?.on("vim-mode-change", onMode);
+      const cm = vimEnabled ? getCM(view) : null;
+      if (vimEnabled) {
+        cm?.on("vim-mode-change", onMode);
+      } else {
+        onVimModeChangeRef.current("normal");
+      }
       requestAnimationFrame(() => view.focus());
 
       return () => {
-        cm?.off("vim-mode-change", onMode);
+        if (vimEnabled) {
+          cm?.off("vim-mode-change", onMode);
+        }
         CodeMirror.commands.undo = prevUndo;
         CodeMirror.commands.redo = prevRedo;
         if (collaborationEnabled) {
@@ -424,9 +433,9 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         ytextRef.current = null;
         ychatRef.current = null;
       };
-      // Remount when room or collaboration mode changes.
+      // Remount when room, collab, or Vim binding changes.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId, collaborationEnabled]);
+    }, [roomId, collaborationEnabled, vimEnabled]);
 
     useEffect(() => {
       const view = viewRef.current;

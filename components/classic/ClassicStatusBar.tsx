@@ -13,6 +13,7 @@ type ClassicStatusBarProps = {
 
 function formatMode(mode: VimMode): string {
   const m = mode.toLowerCase();
+  if (m === "standard") return "STANDARD";
   if (m.startsWith("vis")) return "VISUAL";
   if (m.startsWith("ins")) return "INSERT";
   if (m.startsWith("rep")) return "REPLACE";
