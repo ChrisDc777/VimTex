@@ -4,15 +4,14 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
+import { ClassicMenu } from "@/components/classic/ClassicMenu";
 import { ClassicStatusBar } from "@/components/classic/ClassicStatusBar";
-import { ExportMenu } from "@/components/ExportMenu";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ClassicRoomChat } from "@/components/classic/ClassicRoomChat";
-import { EditorModeToggle } from "@/components/EditorModeToggle";
-import { UiVariantToggle } from "@/components/UiVariantToggle";
+import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
   createCollabUser,
@@ -146,6 +145,18 @@ export function ClassicShell({
     setEditingName(true);
   }, []);
 
+  const handleNewRoom = useCallback(() => {
+    const room = createRoomId();
+    writeRoomToLocation(room);
+    setRoomId(room);
+    setNote("");
+    setChatOpen(false);
+    setCollabStatus("connecting");
+    setPeerCount(1);
+    setVimMode("normal");
+    requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
+
   const isSplit = viewMode === "split";
   const ready = hydrated && !!roomId && !!user && !needsName;
   const namePickerOpen = needsName || editingName;
@@ -167,22 +178,33 @@ export function ClassicShell({
           role="toolbar"
           aria-label="Workspace tools"
         >
-          <EditorModeToggle value={editorMode} onChange={handleEditorMode} />
           {roomId ? <ShareRoom roomId={roomId} variant="classic" /> : null}
           <button
             type="button"
             aria-pressed={chatOpen}
+            aria-label={chatOpen ? "Close chat" : "Open chat"}
+            title="Room chat"
             disabled={!ready}
             onClick={() => setChatOpen((v) => !v)}
             className={
-              chatOpen ? "vt-pill vt-pill--solid" : "vt-pill vt-pill--ghost"
+              chatOpen
+                ? "vt-pill vt-pill--solid gap-1.5"
+                : "vt-pill vt-pill--ghost gap-1.5"
             }
           >
-            Chat
+            <ChatIcon />
+            <span className="hidden sm:inline">Chat</span>
           </button>
           <ViewToggle value={viewMode} onChange={handleViewMode} />
-          <ExportMenu note={note} />
-          <UiVariantToggle value={uiVariant} onChange={onUiVariantChange} />
+          <ClassicMenu
+            note={note}
+            disabled={!ready}
+            editorMode={editorMode}
+            onEditorModeChange={handleEditorMode}
+            uiVariant={uiVariant}
+            onUiVariantChange={onUiVariantChange}
+            onNewRoom={handleNewRoom}
+          />
         </div>
       </header>
 
@@ -281,4 +303,24 @@ function vimModeLabel(mode: VimMode): string {
   if (m.startsWith("ins")) return "INSERT";
   if (m.startsWith("rep")) return "REPLACE";
   return "NORMAL";
+}
+
+function ChatIcon() {
+  return (
+    <SafeSvg
+      width={15}
+      height={15}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M3.5 3.5h9a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H7l-2.5 2v-2h-1a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
 }
