@@ -4,11 +4,11 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
-import { StatusBar } from "@/components/StatusBar";
+import { ClassicStatusBar } from "@/components/classic/ClassicStatusBar";
 import { ExportMenu } from "@/components/ExportMenu";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
-import { RoomChatSidebar } from "@/components/RoomChatSidebar";
+import { ClassicRoomChat } from "@/components/classic/ClassicRoomChat";
 import { UiVariantToggle } from "@/components/UiVariantToggle";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -126,7 +126,7 @@ export function ClassicShell({
           role="toolbar"
           aria-label="Workspace tools"
         >
-          {roomId ? <ShareRoom roomId={roomId} /> : null}
+          {roomId ? <ShareRoom roomId={roomId} variant="classic" /> : null}
           <button
             type="button"
             aria-pressed={chatOpen}
@@ -188,7 +188,7 @@ export function ClassicShell({
         </main>
 
         {user ? (
-          <RoomChatSidebar
+          <ClassicRoomChat
             open={chatOpen}
             onClose={() => setChatOpen(false)}
             peerCount={peerCount}
@@ -199,7 +199,7 @@ export function ClassicShell({
         ) : null}
       </div>
 
-      <StatusBar
+      <ClassicStatusBar
         vimMode={vimMode}
         collabStatus={collabStatus}
         peerCount={peerCount}
