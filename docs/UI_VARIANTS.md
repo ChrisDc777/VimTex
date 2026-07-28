@@ -51,9 +51,9 @@ interface WorkspacePreferences {
 
 ## CSS strategy
 
-- Scope Classic: `.ui-classic` on `app-shell` (default, no class = classic for backward compat)
-- Scope Quiet Craft: `.ui-quiet-craft` + load extended rules
-- Shared: design tokens where possible; avoid duplicating 50k lines wholesale
+- Scope Classic: `.ui-classic` on `app-shell` + `app/classic-theme.css` (near-black canvas, sunset/breeze atmosphere, outline pills, stream chat, classic footer)
+- Scope Quiet Craft: `:root` tokens in `globals.css` (mineral surfaces, bubble chat, three-zone footer)
+- Quiet Craft remains optional; Classic is the design starting point
 
 ## Toggle UX
 

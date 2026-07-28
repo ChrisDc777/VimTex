@@ -7,13 +7,7 @@
 | **origin** (target) | `https://github.com/ChrisDc777/VimTex` | Push, PRs, issues, releases |
 | **upstream** | `https://github.com/boscochanam/VimTex` | Read-only sync reference |
 
-Recommended local remotes:
-
-```bash
-git remote rename origin upstream   # if origin still points at boscochanam
-git remote add origin https://github.com/ChrisDc777/VimTex.git
-git fetch origin
-```
+Local remotes are already configured this way on the `classic-default` integration branch.
 
 ## Branch strategy
 

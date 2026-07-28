@@ -5,9 +5,11 @@ import { SafeSvg } from "@/components/SafeSvg";
 
 type ShareRoomProps = {
   roomId: string;
+  /** Classic uses outline pill chrome; Quiet Craft keeps header-btn styling. */
+  variant?: "classic" | "quietCraft";
 };
 
-export function ShareRoom({ roomId }: ShareRoomProps) {
+export function ShareRoom({ roomId, variant = "quietCraft" }: ShareRoomProps) {
   const [copied, setCopied] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
 
@@ -41,7 +43,13 @@ export function ShareRoom({ roomId }: ShareRoomProps) {
         type="button"
         onClick={() => void copyLink()}
         className={
-          copied ? "vt-header-btn vt-header-btn--success" : "vt-header-btn"
+          variant === "classic"
+            ? copied
+              ? "vt-pill vt-pill--ghost text-[color:var(--accent-breeze)]"
+              : "vt-pill vt-pill--ghost"
+            : copied
+              ? "vt-header-btn vt-header-btn--success"
+              : "vt-header-btn"
         }
         title={`Copy link for room ${roomId}`}
         aria-live="polite"
