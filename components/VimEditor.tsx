@@ -6,7 +6,7 @@ import {
   useImperativeHandle,
   useRef,
 } from "react";
-import { EditorState, Prec } from "@codemirror/state";
+import { Compartment, EditorState, Prec } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -46,8 +46,16 @@ export type VimEditorHandle = {
 type VimEditorProps = {
   roomId: string;
   user: CollabUser;
-  /** Local autosave seed when the Yjs room is empty after sync. */
+  /** When true, connect WebSocket and sync with peers. Default true. */
+  collaborationEnabled?: boolean;
+  /** Render KaTeX inline widgets in the editor. Default true. */
+  inlineMath?: boolean;
+  /** Local autosave seed when the buffer is empty (solo or pre-sync). */
   localSeed?: string | null;
+  /** Seed inserted after first collab sync if the room is empty. */
+  emptyRoomSeed?: string | null;
+  /** Show empty-editor placeholder. Default true. */
+  showPlaceholder?: boolean;
   onChange: (value: string) => void;
   onVimModeChange: (mode: VimMode) => void;
   onCollabStatus: (status: CollabStatus) => void;
@@ -123,7 +131,11 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     {
       roomId,
       user,
+      collaborationEnabled = true,
+      inlineMath = true,
       localSeed,
+      emptyRoomSeed = null,
+      showPlaceholder = true,
       onChange,
       onVimModeChange,
       onCollabStatus,
@@ -138,12 +150,14 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     const ydocRef = useRef<Y.Doc | null>(null);
     const ytextRef = useRef<Y.Text | null>(null);
     const ychatRef = useRef<Y.Array<RoomChatMessage> | null>(null);
+    const inlineMathRef = useRef(new Compartment());
     const onChangeRef = useRef(onChange);
     const onVimModeChangeRef = useRef(onVimModeChange);
     const onCollabStatusRef = useRef(onCollabStatus);
     const onPeerCountRef = useRef(onPeerCount);
     const userRef = useRef(user);
     const localSeedRef = useRef(localSeed);
+    const emptyRoomSeedRef = useRef(emptyRoomSeed);
 
     onChangeRef.current = onChange;
     onVimModeChangeRef.current = onVimModeChange;
@@ -151,6 +165,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     onPeerCountRef.current = onPeerCount;
     userRef.current = user;
     localSeedRef.current = localSeed;
+    emptyRoomSeedRef.current = emptyRoomSeed;
 
     useImperativeHandle(ref, () => {
       const replaceAll = (content: string) => {
@@ -211,14 +226,12 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       };
     });
 
-    // Keep awareness in sync when name/color changes without recreating the doc.
     useEffect(() => {
       const provider = providerRef.current;
       if (!provider) return;
       setAwarenessUser(provider, user);
     }, [user.name, user.color, user.colorLight, user]);
 
-    // Seed from local autosave when it arrives after the editor mounts.
     useEffect(() => {
       const ydoc = ydocRef.current;
       const ytext = ytextRef.current;
@@ -245,35 +258,73 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       ychatRef.current = ychat;
       const wsBase = getCollabWsBase();
       const provider = new WebsocketProvider(wsBase, roomId, ydoc, {
-        connect: false,
+        connect: collaborationEnabled,
       });
       providerRef.current = provider;
 
       setAwarenessUser(provider, userRef.current);
 
-      // yCollab registers its sync origin on this manager so local edits undo correctly.
       const um = new Y.UndoManager(ytext);
       undoManagerRef.current = um;
 
-      onCollabStatusRef.current("local");
-      onPeerCountRef.current(1);
+      const updatePeerCount = () => {
+        onPeerCountRef.current(provider.awareness.getStates().size);
+      };
+
+      const onStatus = (event: { status: string }) => {
+        if (
+          event.status === "connected" ||
+          event.status === "disconnected" ||
+          event.status === "connecting"
+        ) {
+          onCollabStatusRef.current(event.status);
+        }
+      };
 
       const emitText = () => {
         onChangeRef.current(ytext.toString());
       };
-
       ytext.observe(emitText);
 
-      if (ytext.length === 0) {
-        const seed = localSeedRef.current?.trim();
-        if (seed) {
-          ydoc.transact(() => {
-            ytext.insert(0, seed);
-          }, "local-seed");
-          um.clear();
+      if (collaborationEnabled) {
+        onCollabStatusRef.current("connecting");
+        provider.on("status", onStatus);
+        provider.awareness.on("change", updatePeerCount);
+        updatePeerCount();
+
+        let seeded = false;
+        const maybeSeed = (synced: boolean) => {
+          if (!synced || seeded) return;
+          seeded = true;
+          if (ytext.length === 0) {
+            const seed =
+              emptyRoomSeedRef.current?.trim() ||
+              localSeedRef.current?.trim() ||
+              "";
+            if (seed) {
+              ydoc.transact(() => {
+                ytext.insert(0, seed);
+              }, "seed");
+              um.clear();
+            }
+          }
+          emitText();
+        };
+        provider.on("sync", maybeSeed);
+      } else {
+        onCollabStatusRef.current("local");
+        onPeerCountRef.current(1);
+        if (ytext.length === 0) {
+          const seed = localSeedRef.current?.trim();
+          if (seed) {
+            ydoc.transact(() => {
+              ytext.insert(0, seed);
+            }, "local-seed");
+            um.clear();
+          }
         }
+        emitText();
       }
-      emitText();
 
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -281,7 +332,6 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         }
       });
 
-      // Wire Vim `u` / Ctrl-r / Ctrl-Shift-z to Y.UndoManager (no CM history).
       wireVimUndoRedo();
       activeUndoManager = um;
 
@@ -333,8 +383,8 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           EditorView.lineWrapping,
           updateListener,
           yCollab(ytext, provider.awareness, { undoManager: um }),
-          mathInlineWidgets,
-          ...editorPlaceholder(EDITOR_PLACEHOLDER),
+          inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
+          ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
         ],
       });
 
@@ -357,6 +407,10 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         cm?.off("vim-mode-change", onMode);
         CodeMirror.commands.undo = prevUndo;
         CodeMirror.commands.redo = prevRedo;
+        if (collaborationEnabled) {
+          provider.off("status", onStatus);
+          provider.awareness.off("change", updatePeerCount);
+        }
         ytext.unobserve(emitText);
         provider.destroy();
         um.destroy();
@@ -370,8 +424,19 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         ytextRef.current = null;
         ychatRef.current = null;
       };
-      // Only remount when the room changes — awareness updates via the effect above.
-    }, [roomId]);
+      // Remount when room or collaboration mode changes.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roomId, collaborationEnabled]);
+
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: inlineMathRef.current.reconfigure(
+          inlineMath ? [mathInlineWidgets] : [],
+        ),
+      });
+    }, [inlineMath]);
 
     return <div ref={hostRef} className="h-full min-h-0 w-full" />;
   },

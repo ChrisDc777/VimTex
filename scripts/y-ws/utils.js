@@ -22,6 +22,18 @@ const wsReadyStateClosed = 3 // eslint-disable-line
 // disable gc when using snapshots!
 const gcEnabled = process.env.GC !== 'false' && process.env.GC !== '0'
 const persistenceDir = process.env.YPERSISTENCE
+
+/** Default idle TTL before an empty in-memory room is destroyed (30 minutes). */
+const DEFAULT_YROOM_IDLE_MS = 30 * 60 * 1000
+const yroomIdleMs = (() => {
+  const raw = process.env.YROOM_IDLE_MS
+  if (raw === undefined || raw === '') return DEFAULT_YROOM_IDLE_MS
+  const parsed = parseInt(raw, 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_YROOM_IDLE_MS
+})()
+
+/** @type {Map<string, ReturnType<typeof setTimeout>>} */
+const idleGcTimers = new Map()
 /**
  * @type {{bindState: function(string,WSSharedDoc):void, writeState:function(string,WSSharedDoc):Promise<any>, provider: any}|null}
  */
@@ -142,6 +154,40 @@ class WSSharedDoc extends Y.Doc {
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {WSSharedDoc}
  */
+const cancelIdleGc = docname => {
+  const timer = idleGcTimers.get(docname)
+  if (timer !== undefined) {
+    clearTimeout(timer)
+    idleGcTimers.delete(docname)
+  }
+}
+
+const destroyDoc = doc => {
+  if (persistence !== null) {
+    persistence.writeState(doc.name, doc).then(() => {
+      doc.destroy()
+    })
+  } else {
+    doc.destroy()
+  }
+  docs.delete(doc.name)
+}
+
+const scheduleIdleGc = doc => {
+  cancelIdleGc(doc.name)
+  if (yroomIdleMs === 0) {
+    destroyDoc(doc)
+    return
+  }
+  const timer = setTimeout(() => {
+    idleGcTimers.delete(doc.name)
+    if (doc.conns.size === 0) {
+      destroyDoc(doc)
+    }
+  }, yroomIdleMs)
+  idleGcTimers.set(doc.name, timer)
+}
+
 const getYDoc = (docname, gc = true) => map.setIfUndefined(docs, docname, () => {
   const doc = new WSSharedDoc(docname)
   doc.gc = gc
@@ -200,12 +246,12 @@ const closeConn = (doc, conn) => {
     const controlledIds = doc.conns.get(conn)
     doc.conns.delete(conn)
     awarenessProtocol.removeAwarenessStates(doc.awareness, Array.from(controlledIds), null)
-    if (doc.conns.size === 0 && persistence !== null) {
-      // if persisted, we store state and destroy ydocument
-      persistence.writeState(doc.name, doc).then(() => {
-        doc.destroy()
-      })
-      docs.delete(doc.name)
+    if (doc.conns.size === 0) {
+      if (persistence !== null) {
+        destroyDoc(doc)
+      } else {
+        scheduleIdleGc(doc)
+      }
     }
   }
   conn.close()
@@ -238,6 +284,7 @@ exports.setupWSConnection = (conn, req, { docName = req.url.slice(1).split('?')[
   conn.binaryType = 'arraybuffer'
   // get doc, initialize if it does not exist yet
   const doc = getYDoc(docName, gc)
+  cancelIdleGc(docName)
   doc.conns.set(conn, new Set())
   // listen and reply to events
   conn.on('message', /** @param {ArrayBuffer} message */ message => messageListener(conn, doc, new Uint8Array(message)))

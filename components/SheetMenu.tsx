@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
+import { UiVariantToggle } from "@/components/UiVariantToggle";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import type { UiVariant } from "@/lib/ui-variant";
 
 type SheetMenuProps = {
   note: string;
   disabled?: boolean;
   canNewSheet?: boolean;
   onNewSheet: () => void;
-  onPremiumLiveShare: () => void;
+  uiVariant?: UiVariant;
+  onUiVariantChange?: (variant: UiVariant) => void;
 };
 
 type MenuPosition = {
@@ -41,7 +44,8 @@ export function SheetMenu({
   disabled,
   canNewSheet = true,
   onNewSheet,
-  onPremiumLiveShare,
+  uiVariant,
+  onUiVariantChange,
 }: SheetMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
@@ -142,16 +146,6 @@ export function SheetMenu({
         <button
           type="button"
           role="menuitem"
-          className="vt-header-menu__item vt-header-menu__item--premium"
-          onClick={() => run(onPremiumLiveShare)}
-        >
-          <span className="vt-header-menu__label">Live share</span>
-          <span className="vt-header-menu__hint">Premium</span>
-        </button>
-        <div className="vt-header-menu__divider" role="separator" />
-        <button
-          type="button"
-          role="menuitem"
           className="vt-header-menu__item"
           onClick={() => run(() => exportAsTex(note))}
         >
@@ -167,6 +161,21 @@ export function SheetMenu({
           <span className="vt-header-menu__label">Export as Markdown</span>
           <span className="vt-header-menu__hint">.md</span>
         </button>
+        {uiVariant != null && onUiVariantChange ? (
+          <>
+            <div className="vt-header-menu__divider" role="separator" />
+            <div className="px-2 py-2 sm:hidden">
+              <UiVariantToggle
+                value={uiVariant}
+                onChange={(variant) => {
+                  onUiVariantChange(variant);
+                  setOpen(false);
+                }}
+                className="flex w-full flex-col gap-1"
+              />
+            </div>
+          </>
+        ) : null}
       </div>
     ) : null;
 
