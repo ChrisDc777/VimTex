@@ -8,6 +8,8 @@ import { ClassicStatusBar } from "@/components/classic/ClassicStatusBar";
 import { ExportMenu } from "@/components/ExportMenu";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ClassicRoomChat } from "@/components/classic/ClassicRoomChat";
 import { UiVariantToggle } from "@/components/UiVariantToggle";
 import type { VimEditorHandle } from "@/components/VimEditor";
@@ -19,6 +21,7 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
+import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
 import { loadViewMode, saveViewMode } from "@/lib/storage";
 import { STARTER_NOTE } from "@/lib/starter-content";
 import type { UiVariant } from "@/lib/ui-variant";
@@ -57,6 +60,8 @@ export function ClassicShell({
   const [needsName, setNeedsName] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
@@ -90,6 +95,7 @@ export function ClassicShell({
   }, []);
 
   const handleNameSubmit = useCallback((name: string) => {
+    const firstJoin = needsName;
     saveDisplayName(name);
     setUser((prev) =>
       prev
@@ -98,6 +104,16 @@ export function ClassicShell({
     );
     setNeedsName(false);
     setEditingName(false);
+    if (firstJoin && !loadOnboardingSeen()) {
+      setOnboardingOpen(true);
+    } else {
+      requestAnimationFrame(() => editorRef.current?.focus());
+    }
+  }, [needsName]);
+
+  const closeOnboarding = useCallback(() => {
+    saveOnboardingSeen();
+    setOnboardingOpen(false);
     requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
@@ -205,6 +221,7 @@ export function ClassicShell({
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
       />
 
       <NamePicker
@@ -217,6 +234,12 @@ export function ClassicShell({
             ? () => setEditingName(false)
             : undefined
         }
+      />
+
+      <OnboardingDialog open={onboardingOpen} onClose={closeOnboarding} />
+      <VimCheatsheetDialog
+        open={cheatsheetOpen}
+        onClose={() => setCheatsheetOpen(false)}
       />
     </div>
   );

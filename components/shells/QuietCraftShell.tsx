@@ -8,6 +8,8 @@ import { EditorTabBar } from "@/components/EditorTabBar";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StatusBar } from "@/components/StatusBar";
 import { NamePicker } from "@/components/NamePicker";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
@@ -32,6 +34,7 @@ import {
   type RightPanelView,
 } from "@/lib/panel-storage";
 import { saveNote } from "@/lib/storage";
+import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
@@ -68,6 +71,8 @@ export function QuietCraftShell({
   const [urlRoomId, setUrlRoomId] = useState<string | null>(null);
   const [user, setUser] = useState<CollabUser | null>(null);
   const [editingName, setEditingName] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -148,6 +153,7 @@ export function QuietCraftShell({
       setUser(
         createCollabUser(storedName ? { name: storedName } : undefined),
       );
+      if (!loadOnboardingSeen()) setOnboardingOpen(true);
     } catch {
       setUser(createCollabUser());
     } finally {
@@ -192,6 +198,12 @@ export function QuietCraftShell({
 
   const openNameEdit = useCallback(() => {
     setEditingName(true);
+  }, []);
+
+  const closeOnboarding = useCallback(() => {
+    saveOnboardingSeen();
+    setOnboardingOpen(false);
+    requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
   const toggleProblem = useCallback(() => {
@@ -402,6 +414,7 @@ export function QuietCraftShell({
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
       />
 
       <NamePicker
@@ -410,6 +423,12 @@ export function QuietCraftShell({
         onSubmit={handleNameSubmit}
         allowSkip
         onCancel={() => setEditingName(false)}
+      />
+
+      <OnboardingDialog open={onboardingOpen} onClose={closeOnboarding} />
+      <VimCheatsheetDialog
+        open={cheatsheetOpen}
+        onClose={() => setCheatsheetOpen(false)}
       />
     </div>
   );

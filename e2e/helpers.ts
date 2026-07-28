@@ -22,6 +22,7 @@ export async function prepareApp(
         sessionStorage.clear();
         localStorage.setItem("vimtex:uiVariant", v);
         if (name) localStorage.setItem("vimtex:displayName", name);
+        localStorage.setItem("vimtex:onboardingSeen", "1");
       } catch {
         /* ignore */
       }

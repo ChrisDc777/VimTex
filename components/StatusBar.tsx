@@ -15,6 +15,7 @@ type StatusBarProps = {
   peerCount: number;
   userName: string;
   onEditName?: () => void;
+  onOpenCheatsheet?: () => void;
 };
 
 export function StatusBar({
@@ -23,20 +24,39 @@ export function StatusBar({
   peerCount,
   userName,
   onEditName,
+  onOpenCheatsheet,
 }: StatusBarProps) {
   const modeLabel = formatVimMode(vimMode);
   const modeShort = abbreviateVimMode(vimMode);
   const statusLabel = formatCollabStatus(collabStatus);
 
+  const modeChip = (
+    <>
+      <span className="vt-footer__mode-full">{modeLabel}</span>
+      <span className="vt-footer__mode-short" aria-hidden>
+        {modeShort}
+      </span>
+    </>
+  );
+
   return (
     <footer className="vt-footer">
       <div className="vt-footer__mode">
-        <span className="vt-mode-chip" title={modeLabel}>
-          <span className="vt-footer__mode-full">{modeLabel}</span>
-          <span className="vt-footer__mode-short" aria-hidden>
-            {modeShort}
+        {onOpenCheatsheet ? (
+          <button
+            type="button"
+            className="vt-mode-chip"
+            title="Vim cheatsheet"
+            aria-label="Open Vim cheatsheet"
+            onClick={onOpenCheatsheet}
+          >
+            {modeChip}
+          </button>
+        ) : (
+          <span className="vt-mode-chip" title={modeLabel}>
+            {modeChip}
           </span>
-        </span>
+        )}
       </div>
 
       <div className="vt-footer__identity">
