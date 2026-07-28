@@ -10,11 +10,12 @@ import {
 import { exportAsMd, exportAsTex } from "@/lib/export";
 import {
   saveUiVariant,
+  UI_VARIANTS,
   uiVariantLabel,
   type UiVariant,
 } from "@/lib/ui-variant";
 
-type ClassicMenuProps = {
+type StudioMenuProps = {
   note: string;
   disabled?: boolean;
   editorMode: EditorMode;
@@ -46,7 +47,7 @@ function measureMenuPosition(trigger: HTMLElement): MenuPosition {
   return { top: rect.bottom + MENU_GAP, left, width };
 }
 
-export function ClassicMenu({
+export function StudioMenu({
   note,
   disabled,
   editorMode,
@@ -54,7 +55,7 @@ export function ClassicMenu({
   uiVariant,
   onUiVariantChange,
   onNewRoom,
-}: ClassicMenuProps) {
+}: StudioMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -201,7 +202,7 @@ export function ClassicMenu({
           </span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
-        {(["classic", "quietCraft"] as const).map((variant) => (
+        {UI_VARIANTS.map((variant) => (
           <button
             key={variant}
             type="button"

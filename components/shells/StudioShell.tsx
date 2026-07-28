@@ -1,16 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { PaneResizeHandle } from "@/components/PaneResizeHandle";
+import { SidePanel } from "@/components/SidePanel";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
-import { ClassicMenu } from "@/components/classic/ClassicMenu";
-import { ClassicStatusBar } from "@/components/classic/ClassicStatusBar";
+import { StudioMenu } from "@/components/studio/StudioMenu";
+import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
-import { ClassicRoomChat } from "@/components/classic/ClassicRoomChat";
+import { StudioRoomChat } from "@/components/studio/StudioRoomChat";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -28,6 +30,8 @@ import {
 } from "@/lib/editor-mode";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
 import { loadViewMode, saveViewMode } from "@/lib/storage";
+import { useStudioSplitLayout } from "@/lib/use-studio-split-layout";
+import { usePaneLayout } from "@/lib/use-pane-layout";
 import { STARTER_NOTE } from "@/lib/starter-content";
 import type { UiVariant } from "@/lib/ui-variant";
 import type { CollabStatus, CollabUser, ViewMode, VimMode } from "@/lib/types";
@@ -44,15 +48,15 @@ const VimEditor = dynamic(
   },
 );
 
-type ClassicShellProps = {
+type StudioShellProps = {
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
 };
 
-export function ClassicShell({
+export function StudioShell({
   uiVariant,
   onUiVariantChange,
-}: ClassicShellProps) {
+}: StudioShellProps) {
   const [note, setNote] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [editorMode, setEditorMode] = useState<EditorMode>("vim");
@@ -161,8 +165,25 @@ export function ClassicShell({
   const ready = hydrated && !!roomId && !!user && !needsName;
   const namePickerOpen = needsName || editingName;
 
+  const { layout: paneLayout, resizePane, resizeMobileBottom, resetPane } =
+    usePaneLayout({
+      open: { left: false, right: chatOpen },
+    });
+  const {
+    layout: splitLayout,
+    resizePreviewWidth,
+    resizePreviewMobileHeight,
+    resetPreviewWidth,
+    resetPreviewMobileHeight,
+  } = useStudioSplitLayout(isSplit);
+
+  const previewPaneStyle = {
+    "--studio-preview-width": `${splitLayout.previewWidth}px`,
+    "--studio-preview-mobile-height": `${splitLayout.previewMobileHeight}px`,
+  } as CSSProperties;
+
   return (
-    <div className="app-shell ui-classic flex h-dvh flex-col text-ink">
+    <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
       <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
           <span className="vt-brand text-ink">VimTex</span>
@@ -178,7 +199,7 @@ export function ClassicShell({
           role="toolbar"
           aria-label="Workspace tools"
         >
-          {roomId ? <ShareRoom roomId={roomId} variant="classic" /> : null}
+          {roomId ? <ShareRoom roomId={roomId} variant="studio" /> : null}
           <button
             type="button"
             aria-pressed={chatOpen}
@@ -196,7 +217,7 @@ export function ClassicShell({
             <span className="hidden sm:inline">Chat</span>
           </button>
           <ViewToggle value={viewMode} onChange={handleViewMode} />
-          <ClassicMenu
+          <StudioMenu
             note={note}
             disabled={!ready}
             editorMode={editorMode}
@@ -219,7 +240,7 @@ export function ClassicShell({
           <section
             className={
               isSplit
-                ? "min-h-0 flex-[0.55] border-b border-hairline md:border-b-0 md:border-r"
+                ? "min-h-0 min-w-0 flex-1 border-b border-hairline md:border-b-0 md:border-r"
                 : "h-full min-h-0"
             }
           >
@@ -247,25 +268,57 @@ export function ClassicShell({
           </section>
 
           {isSplit ? (
-            <section className="min-h-0 flex-[0.45] bg-transparent">
-              <LatexPreview note={note} />
-            </section>
+            <>
+              <PaneResizeHandle
+                orientation="horizontal"
+                label="Resize preview panel height"
+                className="md:hidden"
+                onResize={(delta) => resizePreviewMobileHeight(-delta)}
+                onReset={resetPreviewMobileHeight}
+              />
+              <PaneResizeHandle
+                orientation="vertical"
+                label="Resize preview panel"
+                className="hidden md:flex"
+                onResize={(delta) => resizePreviewWidth(-delta)}
+                onReset={resetPreviewWidth}
+              />
+              <section
+                className="vt-studio-preview-pane min-h-0 bg-transparent"
+                style={previewPaneStyle}
+              >
+                <LatexPreview note={note} />
+              </section>
+            </>
           ) : null}
         </main>
 
         {user ? (
-          <ClassicRoomChat
+          <SidePanel
+            side="right"
             open={chatOpen}
-            onClose={() => setChatOpen(false)}
-            peerCount={peerCount}
-            user={user}
-            editorRef={editorRef}
-            chatReady={ready}
-          />
+            width={paneLayout.right}
+            mobileHeight={paneLayout.mobileBottomHeight}
+            ariaLabel="Room chat"
+            surfaceClassName="vt-chat-panel"
+            onResize={(delta) => resizePane("right", delta)}
+            onResizeMobile={(delta) => resizeMobileBottom(delta)}
+            onReset={() => resetPane("right")}
+            onResetMobile={() => resetPane("mobileBottomHeight")}
+          >
+            <StudioRoomChat
+              embedded
+              onClose={() => setChatOpen(false)}
+              peerCount={peerCount}
+              user={user}
+              editorRef={editorRef}
+              chatReady={ready}
+            />
+          </SidePanel>
         ) : null}
       </div>
 
-      <ClassicStatusBar
+      <StudioStatusBar
         vimMode={editorMode === "standard" ? "standard" : vimMode}
         collabStatus={collabStatus}
         peerCount={peerCount}

@@ -6,30 +6,36 @@ type ViewToggleProps = {
 };
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
+  const isLive = value === "realtime";
+
   return (
-    <div
-      className="flex items-center gap-1.5"
-      role="group"
-      aria-label="View mode"
-    >
+    <div className="vt-segment" role="group" aria-label="View mode">
       <button
         type="button"
-        aria-pressed={value === "realtime"}
+        aria-pressed={isLive}
         onClick={() => onChange("realtime")}
         className={
-          value === "realtime"
-            ? "vt-pill vt-pill--solid"
-            : "vt-pill vt-pill--ghost"
+          isLive
+            ? "vt-segment__btn vt-segment__btn--active"
+            : "vt-segment__btn"
         }
       >
-        Realtime
+        Live
       </button>
       <button
         type="button"
-        aria-pressed={value === "split"}
+        className="vt-segment__divider"
+        aria-label={isLive ? "Switch to split view" : "Switch to live view"}
+        onClick={() => onChange(isLive ? "split" : "realtime")}
+      />
+      <button
+        type="button"
+        aria-pressed={!isLive}
         onClick={() => onChange("split")}
         className={
-          value === "split" ? "vt-pill vt-pill--solid" : "vt-pill vt-pill--ghost"
+          !isLive
+            ? "vt-segment__btn vt-segment__btn--active"
+            : "vt-segment__btn"
         }
       >
         Split

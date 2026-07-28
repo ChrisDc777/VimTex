@@ -1,7 +1,10 @@
-/* Classic Collaborative — scoped under .ui-classic (default shell).
-   Quiet Craft keeps :root tokens in globals.css. */
+/* Studio — scoped under .ui-studio (default shell).
+   Forge keeps :root tokens in globals.css. */
 
-.ui-classic {
+.ui-studio {
+  --touch-min: 36px;
+  --border-pill: rgba(255, 255, 255, 0.18);
+
   /* Surfaces — near-black canvas with sparse atmosphere accents */
   --canvas: #0a0a0a;
   --canvas-soft: #1a1c20;
@@ -22,7 +25,6 @@
   --accent-sunset-soft: #ffc285;
   --accent-breeze: #a0c3ec;
   --accent-midnight: #0d1726;
-  --border-pill: rgba(255, 255, 255, 0.25);
 
   --focus: var(--accent-breeze);
   --focus-soft: color-mix(in srgb, var(--accent-breeze) 55%, transparent);
@@ -70,10 +72,10 @@
 }
 
 /* True outline pills — uppercase mono captions */
-.ui-classic .vt-pill {
+.ui-studio .vt-pill {
   min-height: var(--touch-min);
   min-width: var(--touch-min);
-  padding: 0 var(--space-md);
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-pill);
   background: transparent;
@@ -93,56 +95,101 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
-.ui-classic .vt-pill:hover:not(:disabled) {
+.ui-studio .vt-pill:hover:not(:disabled) {
   border-color: var(--body-mid);
   background: transparent;
 }
 
-.ui-classic .vt-pill--ghost:hover:not(:disabled) {
+.ui-studio .vt-pill--ghost:hover:not(:disabled) {
   background: transparent;
   border-color: var(--body-mid);
 }
 
-.ui-classic .vt-pill:active:not(:disabled) {
+.ui-studio .vt-pill:active:not(:disabled) {
   transform: scale(0.97);
   opacity: 1;
 }
 
-.ui-classic .vt-pill:focus-visible {
+.ui-studio .vt-pill:focus-visible {
   outline: 2px solid var(--accent-breeze);
   outline-offset: 2px;
 }
 
-.ui-classic .vt-pill--solid {
+.ui-studio .vt-pill--solid {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--on-primary);
 }
 
-.ui-classic .vt-pill--solid:hover:not(:disabled) {
+.ui-studio .vt-pill--solid:hover:not(:disabled) {
   background: var(--ink-hover);
   border-color: var(--ink-hover);
 }
 
-.ui-classic .vt-pill--ghost {
+.ui-studio .vt-pill--ghost {
   border-color: var(--hairline);
 }
 
-.ui-classic .vt-pill--label {
+.ui-studio .vt-pill--label {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 14px;
   letter-spacing: 0;
   text-transform: none;
 }
 
-.ui-classic .vt-pill--compact {
-  min-height: 36px;
-  min-width: 36px;
-  padding: 0 10px;
+.ui-studio .vt-pill--compact {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
   font-size: 11px;
 }
 
-.ui-classic .vt-caption {
+.ui-studio .vt-pill--icon {
+  width: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0;
+}
+
+/* Classic realtime math — clean inline KaTeX without Forge chrome */
+.ui-studio .cm-math-widget {
+  padding: 0 2px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ui-studio .cm-math-widget:not(.cm-math-display) {
+  font-size: 1em;
+}
+
+.ui-studio .cm-math-widget.cm-math-display {
+  text-align: center;
+  margin: 8px 0;
+  padding: 4px 0;
+  background: transparent;
+}
+
+.ui-studio .cm-math-widget .katex {
+  font-size: 1.05em;
+}
+
+.ui-studio .vt-studio-preview-pane {
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .ui-studio .vt-studio-preview-pane {
+    width: var(--studio-preview-width, 400px);
+  }
+}
+
+@media (max-width: 767px) {
+  .ui-studio .vt-studio-preview-pane {
+    height: min(var(--studio-preview-mobile-height, 280px), 55vh);
+  }
+}
+
+.ui-studio .vt-caption {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 12px;
   line-height: 16px;
@@ -150,7 +197,7 @@
   text-transform: uppercase;
 }
 
-.ui-classic .vt-brand {
+.ui-studio .vt-brand {
   display: inline;
   gap: 0;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
@@ -160,19 +207,85 @@
   line-height: 1;
 }
 
-.ui-classic .vt-brand::before {
+.ui-studio .vt-brand::before {
   content: none;
 }
 
-/* Share uses header-btn in Quiet Craft; Classic maps it to pill chrome */
-.ui-classic .vt-header-btn {
+/* Live | Split segmented control */
+.ui-studio .vt-segment {
+  display: inline-flex;
+  align-items: stretch;
+  min-height: var(--touch-min);
+  border: 1px solid var(--border-pill);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: transparent;
+}
+
+.ui-studio .vt-segment__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--mute);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.ui-studio .vt-segment__btn:hover:not(.vt-segment__btn--active) {
+  color: var(--ink);
+}
+
+.ui-studio .vt-segment__btn--active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.ui-studio .vt-segment__btn:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.ui-studio .vt-segment__divider {
+  width: 1px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: var(--border-pill);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.ui-studio .vt-segment__divider:hover {
+  background: var(--body-mid);
+}
+
+.ui-studio .vt-segment__divider:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: -2px;
+}
+
+/* Share uses header-btn in Forge; Classic maps it to pill chrome */
+.ui-studio .vt-header-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: var(--touch-min);
   min-width: var(--touch-min);
-  padding: 0 var(--space-md);
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-pill);
   background: transparent;
@@ -190,32 +303,56 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
-.ui-classic .vt-header-btn:hover:not(:disabled) {
+.ui-studio .vt-header-btn:hover:not(:disabled) {
   border-color: var(--body-mid);
   background: transparent;
 }
 
-.ui-classic .vt-header-btn:active:not(:disabled) {
+.ui-studio .vt-header-btn:active:not(:disabled) {
   transform: scale(0.97);
 }
 
-.ui-classic .vt-header-btn:focus-visible {
+.ui-studio .vt-header-btn:focus-visible {
   outline: 2px solid var(--accent-breeze);
   outline-offset: 2px;
 }
 
-.ui-classic .vt-header-btn--success {
+.ui-studio .vt-header-btn--success {
   border-color: var(--accent-breeze);
   color: var(--accent-breeze);
 }
 
 /* Classic stream chat — no bubble chrome; self right / others left */
-.ui-classic .vt-chat-panel {
+.ui-studio .vt-chat-panel {
   background: color-mix(in srgb, var(--canvas) 92%, transparent);
   backdrop-filter: blur(8px);
 }
 
-.ui-classic .vt-chat-msg {
+.ui-studio .vt-chat-panel__header {
+  display: flex;
+  min-height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 8px 0 10px;
+}
+
+.ui-studio .vt-chat-panel__title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.ui-studio .vt-chat-panel__title span {
+  color: var(--mute);
+  font-size: 11px;
+}
+
+.ui-studio .vt-chat-msg {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -225,39 +362,39 @@
   align-self: flex-start;
 }
 
-.ui-classic .vt-chat-msg + .vt-chat-msg {
-  margin-top: 10px;
+.ui-studio .vt-chat-msg + .vt-chat-msg {
+  margin-top: 8px;
 }
 
-.ui-classic .vt-chat-msg--continued {
+.ui-studio .vt-chat-msg--continued {
   margin-top: 2px;
 }
 
-.ui-classic .vt-chat-msg--self {
+.ui-studio .vt-chat-msg--self {
   align-self: flex-end;
   align-items: flex-end;
 }
 
-.ui-classic .vt-chat-msg--self .vt-chat-msg__meta {
+.ui-studio .vt-chat-msg--self .vt-chat-msg__meta {
   flex-direction: row-reverse;
 }
 
-.ui-classic .vt-chat-msg--self .vt-chat-msg__body {
+.ui-studio .vt-chat-msg--self .vt-chat-msg__body {
   text-align: right;
 }
 
-.ui-classic .vt-chat-msg__meta {
+.ui-studio .vt-chat-msg__meta {
   display: flex;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
 }
 
-.ui-classic .vt-chat-msg__author {
+.ui-studio .vt-chat-msg__author {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
   letter-spacing: 0;
   text-transform: none;
   overflow: hidden;
@@ -265,29 +402,29 @@
   white-space: nowrap;
 }
 
-.ui-classic .vt-chat-msg__time {
+.ui-studio .vt-chat-msg__time {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  line-height: 14px;
+  font-size: 9px;
+  line-height: 12px;
   letter-spacing: 0.02em;
   color: var(--mute);
   flex-shrink: 0;
 }
 
-.ui-classic .vt-chat-msg__body {
+.ui-studio .vt-chat-msg__body {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--ink);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.ui-classic .vt-chat-msg--ai .vt-chat-msg__body {
+.ui-studio .vt-chat-msg--ai .vt-chat-msg__body {
   color: var(--body);
 }
 
-.ui-classic .vt-chat-msg__hint {
+.ui-studio .vt-chat-msg__hint {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 11px;
   line-height: 14px;
@@ -295,7 +432,7 @@
   margin-top: 2px;
 }
 
-.ui-classic .vt-chat-msg__bubble {
+.ui-studio .vt-chat-msg__bubble {
   display: contents;
   padding: 0;
   border: none;
@@ -303,75 +440,91 @@
   border-radius: 0;
 }
 
-.ui-classic .vt-chat-composer {
+.ui-studio .vt-chat-composer {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  gap: 6px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--hairline);
   background: color-mix(in srgb, var(--canvas) 92%, transparent);
 }
 
-.ui-classic .vt-chat-composer__field {
+.ui-studio .vt-chat-composer__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 10px 6px;
+}
+
+.ui-studio .vt-chat-composer__field {
   flex: 1;
   min-width: 0;
-  min-height: 40px;
-  max-height: 96px;
+  min-height: 32px;
+  max-height: 88px;
   resize: none;
   border: 1px solid var(--hairline);
-  border-radius: 20px;
+  border-radius: 14px;
   background: var(--canvas-soft);
   color: var(--ink);
-  padding: 10px 14px;
+  padding: 7px 11px;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.35;
   outline: none;
 }
 
 @media (min-width: 640px) {
-  .ui-classic .vt-chat-composer__field {
-    font-size: 14px;
+  .ui-studio .vt-chat-composer__field {
+    font-size: 13px;
   }
 }
 
-.ui-classic .vt-chat-composer__field::placeholder {
+.ui-studio .vt-chat-composer__field::placeholder {
   color: var(--mute);
 }
 
-.ui-classic .vt-chat-composer__field:disabled {
+.ui-studio .vt-chat-composer__field:disabled {
   opacity: 0.5;
 }
 
-.ui-classic .vt-chat-composer__field:focus-visible {
+.ui-studio .vt-chat-composer__field:focus-visible {
   border-color: color-mix(in srgb, var(--accent-breeze) 55%, var(--hairline));
 }
 
-.ui-classic .vt-chat-model {
+.ui-studio .vt-chat-model {
   appearance: none;
   border: none;
   background: transparent;
   color: var(--mute);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  letter-spacing: 0.03em;
   line-height: 1;
-  padding: 4px 2px;
-  max-width: 7.5rem;
+  padding: 2px 0;
+  max-width: 6.5rem;
   cursor: pointer;
   outline: none;
 }
 
-.ui-classic .vt-chat-model:focus-visible {
+.ui-studio .vt-chat-mention-menu {
+  font-size: 12px;
+}
+
+.ui-studio .vt-chat-mention-menu__item {
+  padding: 8px 10px;
+}
+
+.ui-studio .vt-chat-model:focus-visible {
   color: var(--ink);
 }
 
-.ui-classic .vt-chat-icon-btn {
+.ui-studio .vt-chat-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--touch-min);
-  min-width: var(--touch-min);
+  min-height: 32px;
+  min-width: 32px;
   border: none;
   background: transparent;
   color: var(--mute);
@@ -382,30 +535,68 @@
   line-height: 1;
 }
 
-.ui-classic .vt-chat-icon-btn:hover:not(:disabled) {
+.ui-studio .vt-chat-icon-btn:hover:not(:disabled) {
   color: var(--ink);
 }
 
-.ui-classic .vt-chat-icon-btn:disabled {
+.ui-studio .vt-chat-icon-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.ui-classic .vt-chat-icon-btn:focus-visible {
+.ui-studio .vt-chat-icon-btn:focus-visible {
   outline: 2px solid var(--accent-breeze);
   outline-offset: 2px;
 }
 
-.ui-classic .vt-chat-send {
+.ui-studio .vt-chat-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-.ui-classic .text-accent-breeze {
+.ui-studio .vt-chat-send--active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.ui-studio .vt-chat-send--active:hover:not(:disabled) {
+  border-color: var(--ink-hover);
+  background: var(--ink-hover);
+}
+
+.ui-studio .vt-chat-send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ui-studio .vt-chat-send:focus-visible {
+  outline: 2px solid var(--accent-breeze);
+  outline-offset: 2px;
+}
+
+.ui-studio .text-accent-breeze {
   color: var(--accent-breeze);
 }
 
 /* Classic footer — caption + name · status · N online · live room */
-.ui-classic .vt-classic-footer {
+.ui-studio .vt-studio-footer {
   display: flex;
   min-height: var(--footer-h);
   flex-shrink: 0;
@@ -418,14 +609,14 @@
 }
 
 @media (min-width: 640px) {
-  .ui-classic .vt-classic-footer {
+  .ui-studio .vt-studio-footer {
     gap: 16px;
     padding-left: 16px;
     padding-right: 16px;
   }
 }
 
-.ui-classic .vt-classic-footer__meta {
+.ui-studio .vt-studio-footer__meta {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -440,7 +631,7 @@
 }
 
 @media (min-width: 640px) {
-  .ui-classic .vt-classic-footer__meta {
+  .ui-studio .vt-studio-footer__meta {
     flex: none;
     justify-content: flex-start;
     font-size: 12px;
@@ -448,18 +639,18 @@
   }
 }
 
-.ui-classic .cm-ySelectionInfo {
+.ui-studio .cm-ySelectionInfo {
   color: #0a0a0a;
 }
 
-.ui-classic .cm-completionMatchedText {
+.ui-studio .cm-completionMatchedText {
   color: var(--accent-breeze);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-classic .vt-pill,
-  .ui-classic .vt-header-btn,
-  .ui-classic .vt-chat-panel {
+  .ui-studio .vt-pill,
+  .ui-studio .vt-header-btn,
+  .ui-studio .vt-chat-panel {
     animation: none !important;
     transition: none !important;
   }

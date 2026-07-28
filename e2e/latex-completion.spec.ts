@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { editorText, openQuietCraft, vimInsertAtEnd } from "./helpers";
+import { editorText, openForge, vimInsertAtEnd } from "./helpers";
 
 async function openSheet(page: Page, room?: string) {
-  return openQuietCraft(page, { room });
+  return openForge(page, { room });
 }
 
 test.describe("LaTeX tab completion", () => {

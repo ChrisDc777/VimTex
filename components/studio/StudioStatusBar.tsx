@@ -2,7 +2,7 @@
 
 import type { CollabStatus, VimMode } from "@/lib/types";
 
-type ClassicStatusBarProps = {
+type StudioStatusBarProps = {
   vimMode: VimMode;
   collabStatus: CollabStatus;
   peerCount: number;
@@ -21,17 +21,17 @@ function formatMode(mode: VimMode): string {
   return mode.toUpperCase();
 }
 
-export function ClassicStatusBar({
+export function StudioStatusBar({
   vimMode,
   collabStatus,
   peerCount,
   userName,
   onEditName,
   onOpenCheatsheet,
-}: ClassicStatusBarProps) {
+}: StudioStatusBarProps) {
   const mode = formatMode(vimMode);
   return (
-    <footer className="vt-classic-footer">
+    <footer className="vt-studio-footer">
       {onOpenCheatsheet ? (
         <button
           type="button"
@@ -45,7 +45,7 @@ export function ClassicStatusBar({
       ) : (
         <span className="vt-caption hidden text-mute sm:inline">{mode}</span>
       )}
-      <span className="vt-classic-footer__meta">
+      <span className="vt-studio-footer__meta">
         {onEditName ? (
           <button
             type="button"

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ClassicShell } from "@/components/shells/ClassicShell";
-import { QuietCraftShell } from "@/components/shells/QuietCraftShell";
+import { StudioShell } from "@/components/shells/StudioShell";
+import { ForgeShell } from "@/components/shells/ForgeShell";
 import {
   DEFAULT_UI_VARIANT,
   loadUiVariant,
@@ -32,9 +32,9 @@ export default function HomePage() {
     );
   }
 
-  if (uiVariant === "quietCraft") {
+  if (uiVariant === "forge") {
     return (
-      <QuietCraftShell
+      <ForgeShell
         uiVariant={uiVariant}
         onUiVariantChange={handleVariantChange}
       />
@@ -42,7 +42,7 @@ export default function HomePage() {
   }
 
   return (
-    <ClassicShell
+    <StudioShell
       uiVariant={uiVariant}
       onUiVariantChange={handleVariantChange}
     />

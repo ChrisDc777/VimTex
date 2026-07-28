@@ -14,4 +14,4 @@ export type CollabUser = {
   colorLight: string;
 };
 
-export type UiVariant = "classic" | "quietCraft";
+export type UiVariant = "studio" | "forge";

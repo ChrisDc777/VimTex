@@ -2,7 +2,7 @@
 export const EDITOR_PLACEHOLDER =
   "Type math directly — 2^5, \\frac{1}{2}, or display \\[...\\]";
 
-/** Seeded into empty Classic collaborative rooms after first Yjs sync. */
+/** Seeded into empty Studio collaborative rooms after first Yjs sync. */
 export const STARTER_NOTE = `# VimTex
 
 An ephemeral Vim + LaTeX scratchpad. Type TeX commands directly — no $ needed.

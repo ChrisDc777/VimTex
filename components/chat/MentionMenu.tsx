@@ -35,9 +35,7 @@ export function MentionMenu({
             }
           >
             <span className="font-medium">@{tag}</span>
-            <span className="text-xs opacity-60">
-              {tag === "ai" ? "Ask the model" : "Same as @ai"}
-            </span>
+            <span className="text-xs opacity-60">Ask the model</span>
           </button>
         </li>
       ))}

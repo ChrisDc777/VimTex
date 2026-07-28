@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
 import {
   editorDocText,
-  joinClassicRoom,
+  joinStudioRoom,
   replaceDocWithMarker,
   waitConnected,
 } from "./helpers";
 
-test.describe("Classic collaboration (#10)", () => {
+test.describe("Studio collaboration (#10)", () => {
   test("name picker is required before the editor mounts", async ({ page }) => {
-    await joinClassicRoom(page, { name: "Gate" });
+    await joinStudioRoom(page, { name: "Gate" });
     await expect(page.getByText("VimTex").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /share/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /copy room link/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /chat/i })).toBeVisible();
   });
 
@@ -24,8 +24,8 @@ test.describe("Classic collaboration (#10)", () => {
     const pageB = await ctxB.newPage();
 
     try {
-      await joinClassicRoom(pageA, { room, name: "Alice" });
-      await joinClassicRoom(pageB, { room, name: "Bob" });
+      await joinStudioRoom(pageA, { room, name: "Alice" });
+      await joinStudioRoom(pageB, { room, name: "Bob" });
 
       await waitConnected(pageA);
       await waitConnected(pageB);
@@ -61,8 +61,8 @@ test.describe("Classic collaboration (#10)", () => {
     const pageB = await ctxB.newPage();
 
     try {
-      await joinClassicRoom(pageA, { room, name: "ChatA" });
-      await joinClassicRoom(pageB, { room, name: "ChatB" });
+      await joinStudioRoom(pageA, { room, name: "ChatA" });
+      await joinStudioRoom(pageB, { room, name: "ChatB" });
       await waitConnected(pageA);
       await waitConnected(pageB);
 

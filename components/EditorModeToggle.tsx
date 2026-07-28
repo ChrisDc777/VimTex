@@ -26,7 +26,7 @@ export function EditorModeToggle({ value, onChange }: EditorModeToggleProps) {
           aria-pressed={value === opt.id}
           title={
             opt.id === "vim"
-              ? "Vim keys (Esc, i, hjkl…). Name gate on Classic first visit."
+              ? "Vim keys (Esc, i, hjkl…). Name gate on Studio first visit."
               : "Normal typing — no Vim modes. Invitees skip the name gate."
           }
           onClick={() => {

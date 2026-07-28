@@ -3,6 +3,7 @@
 import {
   loadUiVariant,
   saveUiVariant,
+  UI_VARIANTS,
   uiVariantLabel,
   type UiVariant,
 } from "@/lib/ui-variant";
@@ -24,15 +25,15 @@ export function UiVariantToggle({
       role="group"
       aria-label="Workspace style"
     >
-      {(["classic", "quietCraft"] as const).map((variant) => (
+      {UI_VARIANTS.map((variant) => (
         <button
           key={variant}
           type="button"
           aria-pressed={value === variant}
           title={
-            variant === "classic"
-              ? "Classic collaborative shell"
-              : "Quiet Craft workspace shell"
+            variant === "studio"
+              ? "Studio — primary collaborative shell"
+              : "Forge — multi-tab workspace shell"
           }
           onClick={() => {
             saveUiVariant(variant);

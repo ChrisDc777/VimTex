@@ -1,17 +1,35 @@
-export type UiVariant = "classic" | "quietCraft";
+export type UiVariant = "studio" | "forge";
+
+/** @deprecated Legacy localStorage values — migrated on load */
+const LEGACY_UI_VARIANTS = {
+  classic: "studio",
+  quietCraft: "forge",
+} as const satisfies Record<string, UiVariant>;
 
 export const UI_VARIANT_KEY = "vimtex:uiVariant";
-export const DEFAULT_UI_VARIANT: UiVariant = "classic";
+export const DEFAULT_UI_VARIANT: UiVariant = "studio";
+
+export function normalizeUiVariant(value: unknown): UiVariant | null {
+  if (value === "studio" || value === "forge") return value;
+  if (typeof value === "string" && value in LEGACY_UI_VARIANTS) {
+    return LEGACY_UI_VARIANTS[value as keyof typeof LEGACY_UI_VARIANTS];
+  }
+  return null;
+}
 
 export function isUiVariant(value: unknown): value is UiVariant {
-  return value === "classic" || value === "quietCraft";
+  return normalizeUiVariant(value) != null;
 }
 
 export function loadUiVariant(): UiVariant {
   if (typeof window === "undefined") return DEFAULT_UI_VARIANT;
   try {
     const raw = localStorage.getItem(UI_VARIANT_KEY);
-    if (isUiVariant(raw)) return raw;
+    const normalized = normalizeUiVariant(raw);
+    if (normalized) {
+      if (raw !== normalized) saveUiVariant(normalized);
+      return normalized;
+    }
   } catch {
     // ignore
   }
@@ -28,5 +46,7 @@ export function saveUiVariant(variant: UiVariant): void {
 }
 
 export function uiVariantLabel(variant: UiVariant): string {
-  return variant === "classic" ? "Classic" : "Quiet Craft";
+  return variant === "studio" ? "Studio" : "Forge";
 }
+
+export const UI_VARIANTS: readonly UiVariant[] = ["studio", "forge"];

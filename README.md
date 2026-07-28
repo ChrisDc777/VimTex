@@ -4,9 +4,9 @@
 
 A collaborative math scratchpad — open a room, type TeX like Vim, and watch KaTeX render as you go. Share the link; everyone edits the same buffer in realtime. Ask `@ai` to rewrite an equation and the whole room sees the change.
 
-**Classic Collaborative** is the default workspace (Share, Chat, Split/Realtime). **Quiet Craft** (tabs, problem panel, mobile rails) is available as a toggleable alternative. Preference is stored in `localStorage` (`vimtex:uiVariant`).
+**Studio** is the default workspace (Share, Chat, Live/Split). **Forge** (tabs, problem panel, mobile rails) is available as a toggleable alternative. Preference is stored in `localStorage` (`vimtex:uiVariant`).
 
-No accounts required. Sheets can also autosave locally per room in Quiet Craft.
+No accounts required. Sheets can also autosave locally per room in Forge.
 
 ---
 
@@ -44,9 +44,9 @@ Open the printed `https://*.trycloudflare.com` link on two devices with the same
 | **Vim editor** | CodeMirror 6 + Replit Vim — motions, modes, the works |
 | **LaTeX as you type** | KaTeX preview / inline widgets; autocomplete for common commands; bare math like `2^5` |
 | **Realtime collab** | Yjs over WebSocket — shared doc, carets, peer count |
-| **Room chat** | Sidebar for humans; `@ai` / `@vimtex` for model edits |
-| **Two UI shells** | **Classic** (default) or **Quiet Craft** (tabs, problem panel, mobile bottom nav) |
-| **Classic layouts** | Split (source + preview) or Realtime (inline math) |
+| **Room chat** | Sidebar for humans; `@vimothy` for model edits |
+| **Two UI shells** | **Studio** (default) or **Forge** (tabs, problem panel, mobile bottom nav) |
+| **Studio layouts** | Split (source + preview) or Live (inline math) |
 | **Export** | `.tex` / `.md` download |
 
 Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inline and `\[...\]` for display when you want them.
@@ -58,13 +58,13 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 - Reconnecting to the same `?room=` restores the shared in-memory Yjs doc while the Node process is up.
 - Empty rooms (zero WebSocket clients) are garbage-collected after `YROOM_IDLE_MS` (default **30 minutes**).
 - Server restart clears all in-memory rooms unless `YPERSISTENCE` is configured.
-- Quiet Craft also keeps a **browser localStorage** copy per room for solo refresh restore.
+- Forge also keeps a **browser localStorage** copy per room for solo refresh restore.
 
 ---
 
 ## AI in the room
 
-Toggle **Chat**, then mention **`@ai`** or **`@vimtex`**. Only the sender hits OpenRouter; everyone sees the reply and document patch via Yjs.
+Toggle **Chat**, then mention **`@vimothy`**. Only the sender hits OpenRouter; everyone sees the reply and document patch via Yjs.
 
 Copy [`.env.example`](.env.example) to `.env` or `.env.local` (gitignored) and set your key:
 

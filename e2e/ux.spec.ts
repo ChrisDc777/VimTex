@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   editorText,
   insertMode,
-  openQuietCraft,
+  openForge,
 } from "./helpers";
 
-/** Quiet Craft shell — no name gate; editor is ready immediately. */
+/** Forge shell — no name gate; editor is ready immediately. */
 async function openSheet(page: Page, room?: string) {
-  return openQuietCraft(page, { room });
+  return openForge(page, { room });
 }
 
 async function panelNav(page: Page) {

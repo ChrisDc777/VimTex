@@ -9,9 +9,9 @@ type OnboardingDialogProps = {
 
 const STEPS = [
   { title: "Edit", body: "Type in the editor. Esc then i for Insert mode." },
-  { title: "Preview", body: "Split shows live KaTeX; Realtime renders inline." },
+  { title: "Preview", body: "Split shows live KaTeX; Live renders inline." },
   { title: "Share", body: "Copy the room link so peers join the same buffer." },
-  { title: "@ai", body: "Open Chat and mention @ai to edit the note." },
+  { title: "@vimothy", body: "Open Chat and mention @vimothy to edit the note." },
 ];
 
 export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
