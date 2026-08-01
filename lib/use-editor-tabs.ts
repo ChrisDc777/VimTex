@@ -29,6 +29,7 @@ type UseEditorTabsResult = {
   selectTab: (roomId: string, currentNote: string) => void;
   closeTab: (roomId: string, currentNote: string) => void;
   newTab: (currentNote: string) => boolean;
+  openRoom: (roomId: string, currentNote: string) => boolean;
   renameTab: (roomId: string, title: string) => void;
   updateDerivedTitle: (roomId: string, note: string) => void;
 };
@@ -187,6 +188,28 @@ export function useEditorTabs({
     [applySession, session],
   );
 
+  const openRoom = useCallback(
+    (roomId: string, currentNote: string): boolean => {
+      if (!session) return false;
+      const fromRoomId = session.activeRoomId;
+      if (fromRoomId === roomId) return true;
+      if (session.tabs.some((tab) => tab.roomId === roomId)) {
+        selectTab(roomId, currentNote);
+        return true;
+      }
+      if (session.tabs.length >= MAX_TABS) return false;
+      applySession(
+        (prev) => ({
+          tabs: [...prev.tabs, { roomId }],
+          activeRoomId: roomId,
+        }),
+        { fromRoomId, currentNote },
+      );
+      return true;
+    },
+    [applySession, selectTab, session],
+  );
+
   const renameTab = useCallback(
     (roomId: string, title: string) => {
       const trimmed = title.trim();
@@ -232,6 +255,7 @@ export function useEditorTabs({
     selectTab,
     closeTab,
     newTab,
+    openRoom,
     renameTab,
     updateDerivedTitle,
   };

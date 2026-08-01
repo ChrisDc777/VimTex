@@ -36,7 +36,12 @@ import { useStudioSplitLayout } from "@/lib/use-studio-split-layout";
 import { usePaneLayout } from "@/lib/use-pane-layout";
 import { STARTER_NOTE } from "@/lib/starter-content";
 import { getTemplateContent } from "@/lib/templates";
-import { loadRecentRooms, recordRecentRoom, type RecentRoom } from "@/lib/recent-rooms";
+import {
+  clearRecentRooms,
+  loadRecentRooms,
+  recordRecentRoom,
+  type RecentRoom,
+} from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
 import type {
   CollabStatus,
@@ -271,6 +276,10 @@ export function StudioShell({
             onUiVariantChange={onUiVariantChange}
             onNewRoom={handleNewRoom}
             recentRooms={recentRooms}
+            onClearRecentRooms={() => {
+              clearRecentRooms();
+              setRecentRooms([]);
+            }}
             relativeLineNumbers={relativeLineNumbers}
             onRelativeLineNumbersChange={setRelativeLineNumbers}
           />

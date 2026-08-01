@@ -229,6 +229,7 @@
   min-width: 52px;
   padding: 0 12px;
   border: none;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--mute);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
@@ -248,6 +249,11 @@
 }
 
 .ui-studio .vt-segment__btn--active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.ui-studio .vt-segment__btn--active:hover:not(:disabled) {
   background: var(--primary);
   color: var(--on-primary);
 }

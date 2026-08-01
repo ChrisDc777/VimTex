@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
-import { UiVariantToggle } from "@/components/UiVariantToggle";
+import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import type { EditorMode } from "@/lib/editor-mode";
+import type { RecentRoom } from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
 
 type SheetMenuProps = {
@@ -16,6 +18,11 @@ type SheetMenuProps = {
   onUiVariantChange?: (variant: UiVariant) => void;
   relativeLineNumbers?: boolean;
   onRelativeLineNumbersChange?: (enabled: boolean) => void;
+  editorMode?: EditorMode;
+  onEditorModeChange?: (mode: EditorMode) => void;
+  recentRooms?: RecentRoom[];
+  onClearRecentRooms?: () => void;
+  onOpenRoom?: (roomId: string) => void;
 };
 
 type MenuPosition = {
@@ -50,14 +57,27 @@ export function SheetMenu({
   onUiVariantChange,
   relativeLineNumbers,
   onRelativeLineNumbersChange,
+  editorMode,
+  onEditorModeChange,
+  recentRooms = [],
+  onClearRecentRooms,
+  onOpenRoom,
 }: SheetMenuProps) {
   const [open, setOpen] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const justOpenedRef = useRef(false);
   const menuId = useId();
+
+  const showRecents = onClearRecentRooms != null && onOpenRoom != null;
+  const showPreferences =
+    editorMode != null &&
+    onEditorModeChange != null &&
+    uiVariant != null &&
+    onUiVariantChange != null;
 
   useEffect(() => {
     setMounted(true);
@@ -133,6 +153,7 @@ export function SheetMenu({
           width: menuPosition.width,
         }}
       >
+        <div className="vt-caption px-2 py-1 text-mute">New</div>
         <button
           type="button"
           role="menuitem"
@@ -147,6 +168,7 @@ export function SheetMenu({
           </span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
+        <div className="vt-caption px-2 py-1 text-mute">Export</div>
         <button
           type="button"
           role="menuitem"
@@ -165,41 +187,68 @@ export function SheetMenu({
           <span className="vt-header-menu__label">Export as Markdown</span>
           <span className="vt-header-menu__hint">.md</span>
         </button>
-        {typeof relativeLineNumbers === "boolean" &&
-        onRelativeLineNumbersChange ? (
+        {showRecents ? (
+          <>
+            <div className="vt-header-menu__divider" role="separator" />
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="vt-caption text-mute">Recent</span>
+              {recentRooms.length > 0 ? (
+                <button
+                  type="button"
+                  className="vt-header-menu__clear"
+                  onClick={() => run(onClearRecentRooms!)}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+            {recentRooms.length > 0 ? (
+              <div
+                className="vt-header-menu__recent"
+                role="group"
+                aria-label="Recent rooms"
+              >
+                {recentRooms.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    role="menuitem"
+                    className="vt-header-menu__item"
+                    title={`Last visited ${new Date(r.at).toLocaleString()}`}
+                    onClick={() => run(() => onOpenRoom?.(r.id))}
+                  >
+                    <span className="vt-header-menu__label font-mono">
+                      {r.id}
+                    </span>
+                    <span className="vt-header-menu__hint">Open</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="vt-header-menu__item vt-caption text-mute"
+                role="presentation"
+              >
+                No recent rooms
+              </div>
+            )}
+          </>
+        ) : null}
+        {showPreferences ? (
           <>
             <div className="vt-header-menu__divider" role="separator" />
             <button
               type="button"
-              role="menuitemcheckbox"
+              role="menuitem"
               className="vt-header-menu__item"
-              aria-checked={relativeLineNumbers}
-              onClick={() =>
-                run(() => onRelativeLineNumbersChange(!relativeLineNumbers))
-              }
+              onClick={() => {
+                setOpen(false);
+                setPrefsOpen(true);
+              }}
             >
-              <span className="vt-header-menu__label">
-                Relative line numbers
-              </span>
-              <span className="vt-header-menu__hint">
-                {relativeLineNumbers ? "On" : "Off"}
-              </span>
+              <span className="vt-header-menu__label">Preferences…</span>
+              <span className="vt-header-menu__hint">Editor, workspace</span>
             </button>
-          </>
-        ) : null}
-        {uiVariant != null && onUiVariantChange ? (
-          <>
-            <div className="vt-header-menu__divider" role="separator" />
-            <div className="px-2 py-2 sm:hidden">
-              <UiVariantToggle
-                value={uiVariant}
-                onChange={(variant) => {
-                  onUiVariantChange(variant);
-                  setOpen(false);
-                }}
-                className="flex w-full flex-col gap-1"
-              />
-            </div>
           </>
         ) : null}
       </div>
@@ -224,6 +273,20 @@ export function SheetMenu({
       </button>
 
       {menu && mounted ? createPortal(menu, document.body) : null}
+      {showPreferences ? (
+        <PreferencesDialog
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          editorMode={editorMode!}
+          onEditorModeChange={onEditorModeChange!}
+          relativeLineNumbers={relativeLineNumbers ?? true}
+          onRelativeLineNumbersChange={
+            onRelativeLineNumbersChange ?? (() => {})
+          }
+          uiVariant={uiVariant!}
+          onUiVariantChange={onUiVariantChange!}
+        />
+      ) : null}
     </div>
   );
 }
