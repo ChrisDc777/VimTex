@@ -97,7 +97,7 @@ Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/Vi
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phased milestones M0–M5 |
 | [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index and execution order |
 | [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) | Positioning and personas |
-| [docs/UI_VARIANTS.md](docs/UI_VARIANTS.md) | Classic vs Quiet Craft shells |
+| [docs/UI_VARIANTS.md](docs/UI_VARIANTS.md) | Studio vs Forge shells |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Fork/upstream workflow |
 
 ---

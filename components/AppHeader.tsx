@@ -23,6 +23,7 @@ type AppHeaderProps = {
   recentRooms?: RecentRoom[];
   onClearRecentRooms?: () => void;
   onOpenRoom?: (roomId: string) => void;
+  openRoomIds?: ReadonlySet<string>;
   /** When true the editor buffer is empty — brand animation stays active. */
   canvasBlank?: boolean;
 };
@@ -43,6 +44,7 @@ export function AppHeader({
   recentRooms,
   onClearRecentRooms,
   onOpenRoom,
+  openRoomIds,
   canvasBlank = true,
 }: AppHeaderProps) {
   return (
@@ -69,6 +71,7 @@ export function AppHeader({
             recentRooms={recentRooms}
             onClearRecentRooms={onClearRecentRooms}
             onOpenRoom={onOpenRoom}
+            openRoomIds={openRoomIds}
           />
         </div>
       </div>

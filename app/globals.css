@@ -1423,6 +1423,16 @@ body[data-pane-resizing] * {
   background: var(--canvas-mid);
 }
 
+.vt-header-menu__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.vt-header-menu__item:disabled:hover,
+.vt-header-menu__item:disabled:focus-visible {
+  background: transparent;
+}
+
 .vt-header-menu__item--premium {
   opacity: 0.55;
   color: var(--mute);

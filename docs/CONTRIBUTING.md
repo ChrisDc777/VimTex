@@ -5,21 +5,19 @@
 | Remote | URL | Role |
 |--------|-----|------|
 | **origin** (target) | `https://github.com/ChrisDc777/VimTex` | Push, PRs, issues, releases |
-| **upstream** | `https://github.com/boscochanam/VimTex` | Read-only sync reference |
-
-Local remotes are already configured this way on the `classic-default` integration branch.
+| **upstream** | `https://github.com/boscochanam/VimTex` | Read-only reference |
 
 ## Branch strategy
 
-- `master` — integration branch on the fork (currently at redesign commit `a9e090a`).
-- `classic-default` — future branch restoring Classic Collaborative shell as default while cherry-picking reusable modules from redesign.
-- Feature branches: `feat/<issue-number>-short-name` from `master` or `classic-default` as directed by the issue.
+- `master` — integration branch on the fork; tracks `origin/master`.
+- Feature branches: `feat/<issue-number>-short-name`, `fix/...`, `chore/...` from `master`.
+- Merge via PR against the fork's own `master` (do not target upstream).
 
 ## UI direction
 
-- **Default shell:** Classic Collaborative (local `edf2935` aesthetic) — live share, split/realtime, header toolbar.
-- **Optional shell:** Quiet Craft (redesign `a9e090a` workspace) — tabs, rails, problem panel, mobile bottom nav.
-- **Separate concern:** `collaborationEnabled` — never tie Quiet Craft to local-only mode.
+- **Default shell:** Studio (`.ui-studio` + `app/studio-theme.css`) — live share, split/live preview, command palette, pill controls.
+- **Optional shell:** Forge (base `:root` tokens) — tabs, rails, unified Problem/Preview/Chat panel, mobile bottom nav.
+- **Separate concern:** both shells collaborate; never tie a shell to local-only mode.
 
 ## Dependencies and lockfiles
 
@@ -35,8 +33,17 @@ Local remotes are already configured this way on the `classic-default` integrati
 
 ## Syncing from upstream
 
+The fork and upstream have **no shared commit history** (rewritten on either side), so treat upstream as a read-only reference, not a merge source.
+
 ```bash
 git fetch upstream
-git log --oneline HEAD..upstream/master   # see what's new
-# Cherry-pick or merge selectively — do not blind-merge if it regresses Classic default.
+git log --oneline upstream/master -10   # review for useful ideas/features
 ```
+
+To adopt an upstream feature:
+
+1. Study the upstream commit/diff.
+2. Port it into the Studio/Forge architecture manually on a fork feature branch.
+3. Open a PR against the fork's `master`.
+
+Do **not** `git merge upstream/master` or blind cherry-pick — the file layouts diverged (Studio/Forge vs upstream's shells) and will conflict heavily.
