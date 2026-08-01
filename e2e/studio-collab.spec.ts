@@ -11,7 +11,7 @@ test.describe("Studio collaboration (#10)", () => {
     await joinStudioRoom(page, { name: "Gate" });
     await expect(page.getByText("VimTex").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /copy room link/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /chat/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^(open|close) chat$/i })).toBeVisible();
   });
 
   test("two clients sync note edits both ways", async ({ browser }) => {
@@ -66,8 +66,8 @@ test.describe("Studio collaboration (#10)", () => {
       await waitConnected(pageA);
       await waitConnected(pageB);
 
-      await pageA.getByRole("button", { name: /chat/i }).click();
-      await pageB.getByRole("button", { name: /chat/i }).click();
+      await pageA.getByRole("button", { name: /^(open|close) chat$/i }).click();
+      await pageB.getByRole("button", { name: /^(open|close) chat$/i }).click();
 
       const chatA = pageA.getByRole("complementary", { name: /room chat/i });
       const chatB = pageB.getByRole("complementary", { name: /room chat/i });
