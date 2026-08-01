@@ -26,7 +26,7 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (req.method !== "POST") {
     return NextResponse.next();
   }
