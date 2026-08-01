@@ -7,6 +7,7 @@ import { SidePanel } from "@/components/SidePanel";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StudioMenu } from "@/components/studio/StudioMenu";
+import { StudioCommandPalette } from "@/components/studio/StudioCommandPalette";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { NamePicker } from "@/components/NamePicker";
@@ -30,11 +31,20 @@ import {
 } from "@/lib/editor-mode";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
 import { loadViewMode, saveViewMode } from "@/lib/storage";
+import { loadRelativeLineNumbers, saveRelativeLineNumbers } from "@/lib/editor-settings";
 import { useStudioSplitLayout } from "@/lib/use-studio-split-layout";
 import { usePaneLayout } from "@/lib/use-pane-layout";
 import { STARTER_NOTE } from "@/lib/starter-content";
+import { getTemplateContent } from "@/lib/templates";
+import { loadRecentRooms, recordRecentRoom, type RecentRoom } from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
-import type { CollabStatus, CollabUser, ViewMode, VimMode } from "@/lib/types";
+import type {
+  CollabStatus,
+  CollabUser,
+  NewRoomOptions,
+  ViewMode,
+  VimMode,
+} from "@/lib/types";
 
 const VimEditor = dynamic(
   () => import("@/components/VimEditor").then((m) => m.VimEditor),
@@ -72,6 +82,10 @@ export function StudioShell({
   const [chatOpen, setChatOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
+  const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
+  const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
@@ -99,8 +113,14 @@ export function StudioShell({
       setUser(createCollabUser());
       setNeedsName(true);
     }
+    setRelativeLineNumbers(loadRelativeLineNumbers());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveRelativeLineNumbers(relativeLineNumbers);
+  }, [relativeLineNumbers, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -149,16 +169,41 @@ export function StudioShell({
     setEditingName(true);
   }, []);
 
-  const handleNewRoom = useCallback(() => {
-    const room = createRoomId();
+  const handleNewRoom = useCallback((opts?: NewRoomOptions) => {
+    const room = opts?.roomId ?? createRoomId();
     writeRoomToLocation(room);
     setRoomId(room);
     setNote("");
+    setSeed(
+      opts?.templateId
+        ? getTemplateContent(opts.templateId)
+        : STARTER_NOTE,
+    );
     setChatOpen(false);
     setCollabStatus("connecting");
     setPeerCount(1);
     setVimMode("normal");
     requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
+
+  // Keep the recent-rooms list fresh (records the current room on entry and
+  // on every room switch, including template/blank new sheets).
+  useEffect(() => {
+    if (!roomId) return;
+    recordRecentRoom(roomId);
+    setRecentRooms(loadRecentRooms());
+  }, [roomId]);
+
+  // Ctrl/Cmd+K opens the command palette.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   const isSplit = viewMode === "split";
@@ -225,6 +270,9 @@ export function StudioShell({
             uiVariant={uiVariant}
             onUiVariantChange={onUiVariantChange}
             onNewRoom={handleNewRoom}
+            recentRooms={recentRooms}
+            relativeLineNumbers={relativeLineNumbers}
+            onRelativeLineNumbersChange={setRelativeLineNumbers}
           />
         </div>
       </header>
@@ -253,7 +301,8 @@ export function StudioShell({
                 collaborationEnabled
                 vimEnabled={editorMode === "vim"}
                 inlineMath={viewMode === "realtime"}
-                emptyRoomSeed={STARTER_NOTE}
+                relativeLineNumbers={relativeLineNumbers}
+                emptyRoomSeed={seed}
                 showPlaceholder={false}
                 onChange={setNote}
                 onVimModeChange={setVimMode}
@@ -345,6 +394,23 @@ export function StudioShell({
       <VimCheatsheetDialog
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
+      />
+      <StudioCommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        roomId={roomId}
+        note={note}
+        viewMode={viewMode}
+        editorMode={editorMode}
+        uiVariant={uiVariant}
+        chatOpen={chatOpen}
+        cheatsheetAvailable={editorMode === "vim"}
+        onNewRoom={handleNewRoom}
+        onViewModeChange={handleViewMode}
+        onEditorModeChange={handleEditorMode}
+        onUiVariantChange={onUiVariantChange}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
       />
     </div>
   );

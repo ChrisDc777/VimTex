@@ -2692,3 +2692,56 @@ body[data-pane-resizing] * {
     transition: none !important;
   }
 }
+
+/* LaTeX syntax highlighting (ported from upstream Forge editor) */
+.cm-latexCommand {
+  color: var(--focus-soft);
+}
+.cm-latexStructure {
+  color: var(--focus);
+}
+.cm-latexEnvironment {
+  color: var(--warning);
+}
+.cm-latexEnvName {
+  color: color-mix(in srgb, var(--warning) 75%, var(--ink));
+}
+.cm-latexComment {
+  color: var(--mute);
+  font-style: italic;
+}
+.cm-latexMathDelim {
+  color: var(--focus);
+}
+.cm-latexBracket {
+  color: var(--body-mid);
+}
+.cm-latexNumber {
+  color: color-mix(in srgb, var(--body) 85%, var(--mute));
+}
+.cm-latexOperator {
+  color: var(--success);
+}
+.cm-latexAlign {
+  color: var(--warning);
+}
+.cm-latexEscape {
+  color: var(--body-mid);
+}
+.cm-latexString {
+  color: color-mix(in srgb, var(--ink) 80%, var(--body));
+}
+.cm-latexSpecialChar {
+  color: var(--error);
+}
+
+/* Relative line numbers: emphasize the current line label */
+.cm-lineNumbers .cm-gutterElement {
+  opacity: 0.75;
+}
+.cm-lineNumbers .cm-activeLineGutter {
+  opacity: 1;
+  font-weight: 600;
+  color: var(--ink);
+}
+

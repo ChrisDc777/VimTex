@@ -14,6 +14,10 @@ type AppHeaderProps = {
   headerExtra?: ReactNode;
   uiVariant?: import("@/lib/ui-variant").UiVariant;
   onUiVariantChange?: (variant: import("@/lib/ui-variant").UiVariant) => void;
+  relativeLineNumbers?: boolean;
+  onRelativeLineNumbersChange?: (enabled: boolean) => void;
+  /** When true the editor buffer is empty — brand animation stays active. */
+  canvasBlank?: boolean;
 };
 
 export function AppHeader({
@@ -25,11 +29,14 @@ export function AppHeader({
   headerExtra,
   uiVariant,
   onUiVariantChange,
+  relativeLineNumbers,
+  onRelativeLineNumbersChange,
+  canvasBlank = true,
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
       <div className="vt-header__brand">
-        <AnimatedBrandLogo />
+        <AnimatedBrandLogo canvasBlank={canvasBlank} />
       </div>
 
       <div className="vt-header__nav">
@@ -43,6 +50,8 @@ export function AppHeader({
             onNewSheet={onNewSheet}
             uiVariant={uiVariant}
             onUiVariantChange={onUiVariantChange}
+            relativeLineNumbers={relativeLineNumbers}
+            onRelativeLineNumbersChange={onRelativeLineNumbersChange}
           />
         </div>
       </div>

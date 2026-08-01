@@ -14,6 +14,9 @@ import {
   uiVariantLabel,
   type UiVariant,
 } from "@/lib/ui-variant";
+import { SESSION_TEMPLATES } from "@/lib/templates";
+import type { RecentRoom } from "@/lib/recent-rooms";
+import type { NewRoomOptions } from "@/lib/types";
 
 type StudioMenuProps = {
   note: string;
@@ -22,7 +25,10 @@ type StudioMenuProps = {
   onEditorModeChange: (mode: EditorMode) => void;
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
-  onNewRoom: () => void;
+  onNewRoom: (opts?: NewRoomOptions) => void;
+  recentRooms: RecentRoom[];
+  relativeLineNumbers: boolean;
+  onRelativeLineNumbersChange: (enabled: boolean) => void;
 };
 
 type MenuPosition = {
@@ -55,6 +61,9 @@ export function StudioMenu({
   uiVariant,
   onUiVariantChange,
   onNewRoom,
+  recentRooms,
+  relativeLineNumbers,
+  onRelativeLineNumbersChange,
 }: StudioMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
@@ -142,11 +151,23 @@ export function StudioMenu({
           type="button"
           role="menuitem"
           className="vt-header-menu__item"
-          onClick={() => run(onNewRoom)}
+          onClick={() => run(() => onNewRoom())}
         >
           <span className="vt-header-menu__label">New room</span>
-          <span className="vt-header-menu__hint">Fresh link</span>
+          <span className="vt-header-menu__hint">Starter</span>
         </button>
+        {SESSION_TEMPLATES.filter((t) => t.id !== "blank").map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="menuitem"
+            className="vt-header-menu__item"
+            onClick={() => run(() => onNewRoom({ templateId: t.id }))}
+          >
+            <span className="vt-header-menu__label">{t.label}</span>
+            <span className="vt-header-menu__hint">{t.hint}</span>
+          </button>
+        ))}
         <div className="vt-header-menu__divider" role="separator" />
         <button
           type="button"
@@ -201,6 +222,42 @@ export function StudioMenu({
             {editorMode === "standard" ? "On" : "Off"}
           </span>
         </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          aria-checked={relativeLineNumbers}
+          onClick={() => run(() => onRelativeLineNumbersChange(!relativeLineNumbers))}
+        >
+          <span className="vt-header-menu__label">Relative line numbers</span>
+          <span className="vt-header-menu__hint">
+            {relativeLineNumbers ? "On" : "Off"}
+          </span>
+        </button>
+        <div className="vt-header-menu__divider" role="separator" />
+        <div className="vt-caption px-2 py-1 text-mute">Recent</div>
+        {recentRooms.length > 0 ? (
+          recentRooms.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              title={`Last visited ${new Date(r.at).toLocaleString()}`}
+              onClick={() => run(() => onNewRoom({ roomId: r.id }))}
+            >
+              <span className="vt-header-menu__label font-mono">{r.id}</span>
+              <span className="vt-header-menu__hint">Open</span>
+            </button>
+          ))
+        ) : (
+          <div
+            className="vt-header-menu__item vt-caption text-mute"
+            role="presentation"
+          >
+            No recent rooms
+          </div>
+        )}
         <div className="vt-header-menu__divider" role="separator" />
         {UI_VARIANTS.map((variant) => (
           <button

@@ -14,6 +14,8 @@ type SheetMenuProps = {
   onNewSheet: () => void;
   uiVariant?: UiVariant;
   onUiVariantChange?: (variant: UiVariant) => void;
+  relativeLineNumbers?: boolean;
+  onRelativeLineNumbersChange?: (enabled: boolean) => void;
 };
 
 type MenuPosition = {
@@ -46,6 +48,8 @@ export function SheetMenu({
   onNewSheet,
   uiVariant,
   onUiVariantChange,
+  relativeLineNumbers,
+  onRelativeLineNumbersChange,
 }: SheetMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
@@ -161,6 +165,28 @@ export function SheetMenu({
           <span className="vt-header-menu__label">Export as Markdown</span>
           <span className="vt-header-menu__hint">.md</span>
         </button>
+        {typeof relativeLineNumbers === "boolean" &&
+        onRelativeLineNumbersChange ? (
+          <>
+            <div className="vt-header-menu__divider" role="separator" />
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              aria-checked={relativeLineNumbers}
+              onClick={() =>
+                run(() => onRelativeLineNumbersChange(!relativeLineNumbers))
+              }
+            >
+              <span className="vt-header-menu__label">
+                Relative line numbers
+              </span>
+              <span className="vt-header-menu__hint">
+                {relativeLineNumbers ? "On" : "Off"}
+              </span>
+            </button>
+          </>
+        ) : null}
         {uiVariant != null && onUiVariantChange ? (
           <>
             <div className="vt-header-menu__divider" role="separator" />

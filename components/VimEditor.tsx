@@ -10,7 +10,6 @@ import { Compartment, EditorState, Prec } from "@codemirror/state";
 import {
   EditorView,
   keymap,
-  lineNumbers,
   highlightActiveLine,
   drawSelection,
 } from "@codemirror/view";
@@ -22,6 +21,11 @@ import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 import { mathInlineWidgets } from "@/lib/cm-math-widgets";
 import { editorPlaceholder } from "@/lib/cm-placeholder";
 import { latexCompletionExtension } from "@/lib/cm-latex-completion";
+import { latexHighlightExtension } from "@/lib/cm-latex-highlight";
+import {
+  createLineNumberCompartment,
+  lineNumberExtensions,
+} from "@/lib/cm-line-numbers";
 import { getCollabWsBase } from "@/lib/collab";
 import type { RoomChatMessage } from "@/lib/room-chat";
 import { EDITOR_PLACEHOLDER } from "@/lib/starter-content";
@@ -52,6 +56,8 @@ type VimEditorProps = {
   vimEnabled?: boolean;
   /** Render KaTeX inline widgets in the editor. Default true. */
   inlineMath?: boolean;
+  /** Show relative line numbers in the gutter (default true). */
+  relativeLineNumbers?: boolean;
   /** Local autosave seed when the buffer is empty (solo or pre-sync). */
   localSeed?: string | null;
   /** Seed inserted after first collab sync if the room is empty. */
@@ -136,6 +142,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       collaborationEnabled = true,
       vimEnabled = true,
       inlineMath = true,
+      relativeLineNumbers = true,
       localSeed,
       emptyRoomSeed = null,
       showPlaceholder = true,
@@ -154,6 +161,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     const ytextRef = useRef<Y.Text | null>(null);
     const ychatRef = useRef<Y.Array<RoomChatMessage> | null>(null);
     const inlineMathRef = useRef(new Compartment());
+    const lineNumberCompartmentRef = useRef(createLineNumberCompartment());
     const onChangeRef = useRef(onChange);
     const onVimModeChangeRef = useRef(onVimModeChange);
     const onCollabStatusRef = useRef(onCollabStatus);
@@ -161,6 +169,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     const userRef = useRef(user);
     const localSeedRef = useRef(localSeed);
     const emptyRoomSeedRef = useRef(emptyRoomSeed);
+    const relativeLineNumbersRef = useRef(relativeLineNumbers);
 
     onChangeRef.current = onChange;
     onVimModeChangeRef.current = onVimModeChange;
@@ -169,6 +178,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     userRef.current = user;
     localSeedRef.current = localSeed;
     emptyRoomSeedRef.current = emptyRoomSeed;
+    relativeLineNumbersRef.current = relativeLineNumbers;
 
     useImperativeHandle(ref, () => {
       const replaceAll = (content: string) => {
@@ -376,11 +386,14 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         doc: ytext.toString(),
         extensions: [
           ...(vimEnabled ? [vim()] : []),
-          lineNumbers(),
+          lineNumberCompartmentRef.current.of(
+            lineNumberExtensions(relativeLineNumbersRef.current),
+          ),
           highlightActiveLine(),
           drawSelection(),
           yUndoKeys,
           ...latexCompletionExtension,
+          ...latexHighlightExtension,
           keymap.of(defaultKeymap),
           vimTexTheme,
           EditorView.lineWrapping,
@@ -446,6 +459,17 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         ),
       });
     }, [inlineMath]);
+
+    useEffect(() => {
+      const view = viewRef.current;
+      const compartment = lineNumberCompartmentRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: compartment.reconfigure(
+          lineNumberExtensions(relativeLineNumbers),
+        ),
+      });
+    }, [relativeLineNumbers]);
 
     return <div ref={hostRef} className="h-full min-h-0 w-full" />;
   },
