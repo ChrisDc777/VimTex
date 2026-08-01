@@ -2337,7 +2337,7 @@ body[data-pane-resizing] * {
   background: transparent;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 14px;
-  --math-inline-scale: 1.5;
+  --math-inline-scale: 1;
 }
 
 .cm-editor.cm-focused {
@@ -2529,14 +2529,14 @@ body[data-pane-resizing] * {
 
 /* Inline KaTeX widgets inside the editor */
 .cm-math-widget {
-  display: inline-block;
-  vertical-align: middle;
-  color: var(--ink);
-  padding: 0 3px;
-  line-height: 1;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--focus-soft) 18%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-soft) 25%, transparent);
+  display: inline;
+  vertical-align: baseline;
+  color: var(--body);
+  padding: 0 1px;
+  line-height: inherit;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .cm-math-widget:not(.cm-math-display) {
@@ -2546,15 +2546,24 @@ body[data-pane-resizing] * {
 .cm-math-widget.cm-math-display {
   display: block;
   text-align: left;
-  margin: 0.5em 0;
-  padding: 6px 8px;
-  font-size: 1.15em;
-  background: color-mix(in srgb, var(--focus-soft) 10%, transparent);
+  margin: 0.35em 0;
+  padding: 0;
+  font-size: 1em;
+  background: transparent;
 }
 
 .cm-math-widget .katex {
-  font-size: 1.21em;
-  color: var(--ink);
+  font-size: 1em;
+  color: var(--body);
+}
+
+.cm-math-widget .katex .mord,
+.cm-math-widget .katex .mbin,
+.cm-math-widget .katex .mrel,
+.cm-math-widget .katex .mopen,
+.cm-math-widget .katex .mclose,
+.cm-math-widget .katex .mpunct {
+  color: var(--body);
 }
 
 .cm-math-widget .katex-display {
@@ -2614,9 +2623,9 @@ body[data-pane-resizing] * {
 /* Full-document preview */
 .latex-preview {
   color: var(--body);
-  font-size: 16px;
-  line-height: 1.7;
-  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
