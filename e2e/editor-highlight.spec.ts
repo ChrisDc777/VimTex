@@ -43,16 +43,18 @@ test.describe("Editor LaTeX highlighting", () => {
     page,
   }) => {
     await openSheet(page);
-    // The starter note has multiple lines; ensure we're in normal mode at top.
+    // Move to the first line in normal mode.
     const content = page.locator(".cm-content");
     await content.click();
     await page.keyboard.press("Escape");
     await page.keyboard.press("g");
     await page.keyboard.press("g");
 
-    // The active line gutter should show the absolute number (1).
-    await expect(
-      page.locator(".cm-lineNumbers .cm-activeLineGutter").first(),
-    ).toContainText("1");
+    // In relative mode the active line (1) and the adjacent line (distance 1)
+    // both render "1"; absolute numbering would render "1" then "2".
+    const ones = page
+      .locator(".cm-lineNumbers")
+      .getByText("1", { exact: true });
+    await expect(ones).toHaveCount(2);
   });
 });

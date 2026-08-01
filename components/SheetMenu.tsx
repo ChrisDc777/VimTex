@@ -171,7 +171,7 @@ export function SheetMenu({
             <div className="vt-header-menu__divider" role="separator" />
             <button
               type="button"
-              role="menuitem"
+              role="menuitemcheckbox"
               className="vt-header-menu__item"
               aria-checked={relativeLineNumbers}
               onClick={() =>

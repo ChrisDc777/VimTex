@@ -52,7 +52,13 @@ export function ShareRoom({ roomId, variant = "forge" }: ShareRoomProps) {
               : "vt-header-btn"
         }
         title={copied ? "Link copied" : `Copy link for room ${roomId}`}
-        aria-label={copied ? "Link copied" : "Copy room link"}
+        aria-label={
+          variant === "studio"
+            ? copied
+              ? "Link copied"
+              : "Copy room link"
+            : undefined
+        }
         aria-live="polite"
       >
         {copied ? <CheckIcon /> : <LinkIcon />}

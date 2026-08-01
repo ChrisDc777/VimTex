@@ -7,7 +7,6 @@ import {
   type Extension,
 } from "@codemirror/state";
 import {
-  EditorView,
   GutterMarker,
   gutter,
   gutters,
