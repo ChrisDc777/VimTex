@@ -190,7 +190,7 @@ export function StudioMenu({
         <div className="vt-header-menu__divider" role="separator" />
         <button
           type="button"
-          role="menuitem"
+          role="menuitemcheckbox"
           className="vt-header-menu__item"
           aria-checked={editorMode === "vim"}
           onClick={() =>
@@ -207,7 +207,7 @@ export function StudioMenu({
         </button>
         <button
           type="button"
-          role="menuitem"
+          role="menuitemcheckbox"
           className="vt-header-menu__item"
           aria-checked={editorMode === "standard"}
           onClick={() =>
@@ -224,7 +224,7 @@ export function StudioMenu({
         </button>
         <button
           type="button"
-          role="menuitem"
+          role="menuitemcheckbox"
           className="vt-header-menu__item"
           aria-checked={relativeLineNumbers}
           onClick={() => run(() => onRelativeLineNumbersChange(!relativeLineNumbers))}
@@ -263,7 +263,7 @@ export function StudioMenu({
           <button
             key={variant}
             type="button"
-            role="menuitem"
+            role="menuitemcheckbox"
             className="vt-header-menu__item"
             aria-checked={uiVariant === variant}
             onClick={() =>

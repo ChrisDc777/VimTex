@@ -30,7 +30,6 @@ export function BottomPanelTabs({
     <nav
       className="vt-bottom-tabs md:hidden"
       aria-label="Right panels"
-      aria-disabled={disabled || undefined}
       data-disabled={disabled ? "true" : undefined}
     >
       <BottomTabButton

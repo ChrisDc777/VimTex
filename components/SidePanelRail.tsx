@@ -22,7 +22,6 @@ export function SidePanelRail({
     <nav
       className={`vt-panel-rail vt-panel-rail--${side}${className ? ` ${className}` : ""}`}
       aria-label={label}
-      aria-disabled={disabled || undefined}
       data-disabled={disabled ? "true" : undefined}
     >
       {children}
