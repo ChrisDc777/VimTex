@@ -15,3 +15,11 @@ export type CollabUser = {
 };
 
 export type UiVariant = "studio" | "forge";
+
+/** What to open when starting a new sheet / joining a room. */
+export type NewRoomOptions = {
+  /** Seed a fresh room with this template id (see lib/templates). */
+  templateId?: string;
+  /** Join this existing room id instead of generating a new one. */
+  roomId?: string;
+};

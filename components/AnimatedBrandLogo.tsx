@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrandLogoMark } from "@/components/BrandLogoMark";
 import {
   BRAND_ANIM_SEQUENCES,
@@ -84,36 +84,67 @@ function StaticBrandText() {
   );
 }
 
-export function AnimatedBrandLogo() {
+type AnimatedBrandLogoProps = {
+  /** When false, finish the current sequence then stay on static VimTex. */
+  canvasBlank?: boolean;
+};
+
+export function AnimatedBrandLogo({ canvasBlank = true }: AnimatedBrandLogoProps) {
   const reducedMotion = usePrefersReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [seqIndex, setSeqIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+  const [staticLogo, setStaticLogo] = useState(() => !canvasBlank);
+  const finishAfterSequenceRef = useRef(!canvasBlank);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!canvasBlank) {
+      finishAfterSequenceRef.current = true;
+      return;
+    }
+
+    finishAfterSequenceRef.current = false;
+    setStaticLogo(false);
+    setSeqIndex(0);
+    setStepIndex(0);
+  }, [canvasBlank]);
+
   const sequence = BRAND_ANIM_SEQUENCES[seqIndex] ?? BRAND_ANIM_SEQUENCES[0];
   const step = sequence.steps[stepIndex] ?? sequence.steps[0];
 
   useEffect(() => {
-    if (!mounted || reducedMotion) return;
+    if (!mounted || reducedMotion || staticLogo) return;
 
     const timer = window.setTimeout(() => {
       const nextStep = stepIndex + 1;
       if (nextStep >= sequence.steps.length) {
-        setSeqIndex((i) => (i + 1) % BRAND_ANIM_SEQUENCES.length);
-        setStepIndex(0);
+        if (finishAfterSequenceRef.current) {
+          setStaticLogo(true);
+        } else {
+          setSeqIndex((i) => (i + 1) % BRAND_ANIM_SEQUENCES.length);
+          setStepIndex(0);
+        }
       } else {
         setStepIndex(nextStep);
       }
     }, step.delayMs);
 
     return () => window.clearTimeout(timer);
-  }, [mounted, reducedMotion, seqIndex, stepIndex, sequence.steps.length, step.delayMs]);
+  }, [
+    mounted,
+    reducedMotion,
+    staticLogo,
+    seqIndex,
+    stepIndex,
+    sequence.steps.length,
+    step.delayMs,
+  ]);
 
-  if (!mounted || reducedMotion) {
+  if (!mounted || reducedMotion || staticLogo) {
     return (
       <div className="vt-brand vt-brand--animated" aria-label={BRAND_FINAL_TEXT}>
         <BrandLogoMark />

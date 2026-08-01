@@ -41,6 +41,10 @@ import {
   saveEditorMode,
   type EditorMode,
 } from "@/lib/editor-mode";
+import {
+  loadRelativeLineNumbers,
+  saveRelativeLineNumbers,
+} from "@/lib/editor-settings";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
@@ -80,6 +84,7 @@ export function ForgeShell({
   const [editingName, setEditingName] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -157,6 +162,7 @@ export function ForgeShell({
       setUrlRoomId(readRoomFromLocation());
       setRightPanelView(loadRightPanelView());
       setEditorMode(loadEditorMode());
+      setRelativeLineNumbers(loadRelativeLineNumbers());
       const storedName = loadDisplayName();
       setUser(
         createCollabUser(storedName ? { name: storedName } : undefined),
@@ -179,6 +185,11 @@ export function ForgeShell({
     if (!hydrated) return;
     saveRightPanelView(rightPanelView);
   }, [rightPanelView, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveRelativeLineNumbers(relativeLineNumbers);
+  }, [relativeLineNumbers, hydrated]);
 
   useEffect(() => {
     if (!hydrated || !roomId) return;
@@ -285,6 +296,9 @@ export function ForgeShell({
         roomId={roomId}
         uiVariant={uiVariant}
         onUiVariantChange={onUiVariantChange}
+        relativeLineNumbers={relativeLineNumbers}
+        onRelativeLineNumbersChange={setRelativeLineNumbers}
+        canvasBlank={note.trim().length === 0}
         headerExtra={
           <div className="hidden items-center gap-1.5 sm:flex">
             <EditorModeToggle value={editorMode} onChange={handleEditorMode} />
@@ -322,6 +336,7 @@ export function ForgeShell({
                       collaborationEnabled
                       vimEnabled={editorMode === "vim"}
                       inlineMath
+                      relativeLineNumbers={relativeLineNumbers}
                       localSeed={localSeed}
                       onChange={handleNoteChange}
                       onVimModeChange={setVimMode}
