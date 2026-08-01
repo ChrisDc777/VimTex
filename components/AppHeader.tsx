@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import { ShareRoom } from "@/components/ShareRoom";
 import { SheetMenu } from "@/components/SheetMenu";
+import type { EditorMode } from "@/lib/editor-mode";
+import type { RecentRoom } from "@/lib/recent-rooms";
 
 type AppHeaderProps = {
   ready: boolean;
@@ -16,6 +18,11 @@ type AppHeaderProps = {
   onUiVariantChange?: (variant: import("@/lib/ui-variant").UiVariant) => void;
   relativeLineNumbers?: boolean;
   onRelativeLineNumbersChange?: (enabled: boolean) => void;
+  editorMode?: EditorMode;
+  onEditorModeChange?: (mode: EditorMode) => void;
+  recentRooms?: RecentRoom[];
+  onClearRecentRooms?: () => void;
+  onOpenRoom?: (roomId: string) => void;
   /** When true the editor buffer is empty — brand animation stays active. */
   canvasBlank?: boolean;
 };
@@ -31,6 +38,11 @@ export function AppHeader({
   onUiVariantChange,
   relativeLineNumbers,
   onRelativeLineNumbersChange,
+  editorMode,
+  onEditorModeChange,
+  recentRooms,
+  onClearRecentRooms,
+  onOpenRoom,
   canvasBlank = true,
 }: AppHeaderProps) {
   return (
@@ -52,6 +64,11 @@ export function AppHeader({
             onUiVariantChange={onUiVariantChange}
             relativeLineNumbers={relativeLineNumbers}
             onRelativeLineNumbersChange={onRelativeLineNumbersChange}
+            editorMode={editorMode}
+            onEditorModeChange={onEditorModeChange}
+            recentRooms={recentRooms}
+            onClearRecentRooms={onClearRecentRooms}
+            onOpenRoom={onOpenRoom}
           />
         </div>
       </div>

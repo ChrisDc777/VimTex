@@ -10,11 +10,9 @@ import { StatusBar } from "@/components/StatusBar";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
-import { EditorModeToggle } from "@/components/EditorModeToggle";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
-import { UiVariantToggle } from "@/components/UiVariantToggle";
 import {
   ChatIcon,
   PreviewIcon,
@@ -45,6 +43,12 @@ import {
   loadRelativeLineNumbers,
   saveRelativeLineNumbers,
 } from "@/lib/editor-settings";
+import {
+  clearRecentRooms,
+  loadRecentRooms,
+  recordRecentRoom,
+  type RecentRoom,
+} from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
@@ -87,6 +91,7 @@ export function ForgeShell({
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -142,6 +147,7 @@ export function ForgeShell({
     selectTab,
     closeTab,
     newTab,
+    openRoom,
     renameTab,
     updateDerivedTitle,
   } = useEditorTabs({
@@ -156,6 +162,14 @@ export function ForgeShell({
   }, [updateDerivedTitle]);
 
   const roomId = activeRoomId;
+
+  // Keep the recent-rooms list fresh (records the current room on entry and
+  // on every tab/room switch).
+  useEffect(() => {
+    if (!roomId) return;
+    recordRecentRoom(roomId);
+    setRecentRooms(loadRecentRooms());
+  }, [roomId]);
 
   useEffect(() => {
     try {
@@ -277,6 +291,13 @@ export function ForgeShell({
     [selectTab, note],
   );
 
+  const handleOpenRoom = useCallback(
+    (targetRoomId: string) => {
+      openRoom(targetRoomId, note);
+    },
+    [openRoom, note],
+  );
+
   const handleCloseTab = useCallback(
     (targetRoomId: string) => {
       closeTab(targetRoomId, note);
@@ -298,13 +319,15 @@ export function ForgeShell({
         onUiVariantChange={onUiVariantChange}
         relativeLineNumbers={relativeLineNumbers}
         onRelativeLineNumbersChange={setRelativeLineNumbers}
+        editorMode={editorMode}
+        onEditorModeChange={handleEditorMode}
+        recentRooms={recentRooms}
+        onClearRecentRooms={() => {
+          clearRecentRooms();
+          setRecentRooms([]);
+        }}
+        onOpenRoom={handleOpenRoom}
         canvasBlank={note.trim().length === 0}
-        headerExtra={
-          <div className="hidden items-center gap-1.5 sm:flex">
-            <EditorModeToggle value={editorMode} onChange={handleEditorMode} />
-            <UiVariantToggle value={uiVariant} onChange={onUiVariantChange} />
-          </div>
-        }
       />
 
       <div className="vt-workspace flex min-h-0 min-w-0 flex-1">
