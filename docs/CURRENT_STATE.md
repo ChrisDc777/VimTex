@@ -33,7 +33,7 @@ Browser                    Node (server.mjs :3001)
 | Classic visual tokens | ✅ | `app/classic-theme.css` |
 | Share copy + fallback | ✅ | `ShareRoom.tsx` |
 | Idle room GC | ✅ | `YROOM_IDLE_MS` (default 30 min) |
-| CI / typecheck / API limits | ✅ | `.github/workflows/ci.yml`, `middleware.ts` |
+| CI / typecheck / API limits | ✅ | `.github/workflows/ci.yml`, `proxy.ts` |
 | Two-client collab E2E | 🔄 | `e2e/classic-collab.spec.ts` (#10) |
 | Auth / room ACL | ❌ | — |
 | Shared workspace hooks | ⚠️ partial | Shells extracted; deeper `#5` hooks still to land |

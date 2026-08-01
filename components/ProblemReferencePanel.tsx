@@ -240,6 +240,7 @@ export function ProblemReferencePanel({
 
       <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
         {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob: URL from user upload; not optimizable by next/image
           <img
             src={imageUrl}
             alt="Problem reference"
