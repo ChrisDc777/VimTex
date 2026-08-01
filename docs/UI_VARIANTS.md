@@ -1,89 +1,86 @@
-# UI variants — Classic Collaborative vs Quiet Craft
+# UI variants — Studio vs Forge
 
 ## Goals
 
-1. **Default:** Classic Collaborative shell (local `edf2935` look and live-collab UX).
-2. **Optional:** Quiet Craft shell (redesign workspace) via user preference.
+1. **Default:** Studio shell (near-black canvas, atmosphere accents, live-collab UX).
+2. **Optional:** Forge shell (tabs, unified right panel) via user preference.
 3. **Never:** Couple shell choice to collaboration availability.
 
 ## Configuration model
 
 ```ts
-type UiVariant = "classic" | "quietCraft";
+type UiVariant = "studio" | "forge";
 
 interface WorkspacePreferences {
-  uiVariant: UiVariant;           // persisted localStorage
-  collaborationEnabled: boolean;  // default true for Classic; independent for Quiet Craft
-  editorMode: "vim" | "standard"; // future M1
-  viewMode?: "split" | "realtime"; // Classic only
+  uiVariant: UiVariant;           // persisted localStorage "vimtex:uiVariant"
+  editorMode: "vim" | "standard"; // persisted "vimtex:editorMode"
+  relativeLineNumbers: boolean;   // persisted "vimtex:relativeLineNumbers"
 }
 ```
 
+Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-variant.ts`).
+
 ## Shell responsibilities
 
-### Classic Collaborative (`classic`)
+### Studio (`studio`)
 
-- Header: brand, Share, Chat, Split/Realtime, Export
-- Optional chat sidebar (not unified right panel)
-- Name picker on first visit
+- Header: brand, Share, Room menu, Live/Split toggle, Chat
+- Side rail + mobile bottom tabs; command palette (Ctrl/Cmd+K)
+- Split Live / Split preview (`ViewToggle`)
+- Name picker on first visit; Preferences dialog
 - Status bar: vim mode, collab status, peers, editable name
-- xAI-inspired tokens (`globals.css` classic scope)
+- Tokens scoped under `.ui-studio` (`app/studio-theme.css`): near-black canvas, sunset/breeze atmosphere, outline pill controls
 
-### Quiet Craft (`quietCraft`)
+### Forge (`forge`)
 
 - `AppHeader` + sheet menu, editor tab bar
 - Right activity rail / mobile bottom tabs
 - Unified right panel: Problem | Preview | Chat
 - Resizable panes, persisted widths
-- Quiet Craft tokens (`globals.css` under `.ui-quiet-craft` or separate import)
+- Preferences dialog (Editor keys, relative line numbers, Workspace style)
+- Base `:root` tokens in `app/globals.css`: mineral surfaces, stepped dark neutrals
 
-## Shared layer (extract from both)
+## Shared layer
 
 | Module | Responsibility |
 |--------|----------------|
-| `useWorkspaceRoom` | room id, URL sync, collab status |
-| `useDocumentBuffer` | single source of truth: Yjs ytext ↔ React note |
-| `useRoomChat` | subscribe/append chat |
-| `useAiInvoke` | fetch /api/chat, parse reply |
-| `VimEditor` | props: `roomId`, `user`, `localSeed?`, `inlineMath`, `collaborationEnabled` |
-| `lib/render-note` | shared parser (fork bare-math + classic line heuristics merged) |
-| `lib/storage` | room-scoped autosave, tab session, panel prefs |
+| `lib/collab.ts` | room id, URL sync, collab status, display name |
+| `VimEditor` | CodeMirror + Vim/Standard modes, Yjs binding, carets |
+| `RoomChatSidebar` | subscribe/append chat |
+| `lib/room-chat.ts`, `api/chat/route.ts` | @ai invoke, reply parsing |
+| `lib/use-editor-tabs.ts` | Forge tab session (open/close/rename/reopen recent room) |
+| `lib/render-note.ts` | shared parser (bare math + line heuristics) |
+| `lib/storage.ts` | room-scoped autosave, view mode |
+| `lib/recent-rooms.ts` | recently visited rooms (localStorage) |
+| `components/PreferencesDialog.tsx` | editor/workspace settings in both shells |
 
 ## CSS strategy
 
-- Scope Classic: `.ui-classic` on `app-shell` + `app/classic-theme.css` (near-black canvas, sunset/breeze atmosphere, outline pills, stream chat, classic footer)
-- Scope Quiet Craft: `:root` tokens in `globals.css` (mineral surfaces, bubble chat, three-zone footer)
-- Quiet Craft remains optional; Classic is the design starting point
+- Scope Studio: `.ui-studio` on `app-shell` + `app/studio-theme.css` (near-black canvas, outline pills, atmosphere gradients)
+- Scope Forge: `:root` tokens in `app/globals.css` (mineral surfaces, rounded rectangles)
+- Studio is the design starting point; Forge remains optional
 
 ## Toggle UX
 
-- **Settings / Sheet menu:** “Workspace style: Classic | Quiet Craft”
-- First visit: stay on Classic; offer “Try new workspace” non-blocking
+- **Preferences dialog:** “Workspace style: Studio | Forge” (both shells)
+- First visit: stay on Studio; switch is non-blocking
 - Persist `vimtex:uiVariant`
 
 ## Test matrix
 
-| Scenario | Classic | Quiet Craft |
-|----------|---------|-------------|
+| Scenario | Studio | Forge |
+|----------|--------|-------|
 | Two-peer edit sync | required | required |
 | Share copy URL | required | required |
 | @ai edit propagates | required | required |
-| Split preview | required | N/A (preview panel) |
+| Split preview | required | preview panel |
 | Tab switch + autosave | N/A | required |
 | Mobile toolbar | required | required |
 | Reconnect after disconnect | required | required |
-
-## Migration path (M0)
-
-1. Land shared hooks on fork `master` without changing default page.
-2. Port Classic `page.tsx` to consume shared hooks.
-3. Wire Quiet Craft page as alternate route or conditional render.
-4. Re-enable `connect: true` in both variants.
-5. Remove `PremiumPlansDialog` gating for collab/chat (keep component stub for future billing if desired).
 
 ## Anti-patterns
 
 - Two copies of `VimEditor` or `RoomChatSidebar`
 - CSS-only toggle without shared state layer
-- Quiet Craft as default before Classic parity verified
+- Forge as default before Studio parity verified
 - Premium gate blocking Share on free tier

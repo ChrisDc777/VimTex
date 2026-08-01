@@ -81,7 +81,7 @@ spacing:
   2xl: 32px
 ---
 
-# VimTex — Quiet Craft
+# VimTex — Forge (formerly "Quiet Craft")
 
 ## Overview
 

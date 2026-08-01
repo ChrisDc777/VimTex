@@ -23,6 +23,7 @@ type SheetMenuProps = {
   recentRooms?: RecentRoom[];
   onClearRecentRooms?: () => void;
   onOpenRoom?: (roomId: string) => void;
+  openRoomIds?: ReadonlySet<string>;
 };
 
 type MenuPosition = {
@@ -62,6 +63,7 @@ export function SheetMenu({
   recentRooms = [],
   onClearRecentRooms,
   onOpenRoom,
+  openRoomIds,
 }: SheetMenuProps) {
   const [open, setOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -208,21 +210,32 @@ export function SheetMenu({
                 role="group"
                 aria-label="Recent rooms"
               >
-                {recentRooms.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    role="menuitem"
-                    className="vt-header-menu__item"
-                    title={`Last visited ${new Date(r.at).toLocaleString()}`}
-                    onClick={() => run(() => onOpenRoom?.(r.id))}
-                  >
-                    <span className="vt-header-menu__label font-mono">
-                      {r.id}
-                    </span>
-                    <span className="vt-header-menu__hint">Open</span>
-                  </button>
-                ))}
+                {recentRooms.map((r) => {
+                  const roomNotOpenable =
+                    !canNewSheet && !(openRoomIds?.has(r.id) ?? false);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      role="menuitem"
+                      className="vt-header-menu__item"
+                      disabled={roomNotOpenable}
+                      title={
+                        roomNotOpenable
+                          ? "Maximum 5 tabs"
+                          : `Last visited ${new Date(r.at).toLocaleString()}`
+                      }
+                      onClick={() => run(() => onOpenRoom?.(r.id))}
+                    >
+                      <span className="vt-header-menu__label font-mono">
+                        {r.id}
+                      </span>
+                      <span className="vt-header-menu__hint">
+                        {roomNotOpenable ? "Max 5 tabs" : "Open"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div

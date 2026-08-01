@@ -2,7 +2,9 @@
 
 **Repository:** [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex)  
 **Milestones:** M0–M5 (6) | **Issues:** 38 (6 epics + 32 implementation/RFC)  
-**Last synced:** 2026-07-27
+**Last synced:** 2026-08-02
+
+> **Note:** Issue titles below were written under the original naming — "Classic Collaborative" is now **Studio** and "Quiet Craft" is now **Forge** (`lib/ui-variant.ts`). The issues themselves are unchanged on GitHub.
 
 ## Label conventions
 

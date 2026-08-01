@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomPanelTabs } from "@/components/BottomPanelTabs";
 import { EditorTabBar } from "@/components/EditorTabBar";
@@ -307,6 +307,11 @@ export function ForgeShell({
 
   const ready = hydrated && !!roomId && !!user;
 
+  const openRoomIds = useMemo(
+    () => new Set(tabs.map((tab) => tab.roomId)),
+    [tabs],
+  );
+
   return (
     <div className="app-shell ui-forge flex h-dvh flex-col text-ink">
       <AppHeader
@@ -327,6 +332,7 @@ export function ForgeShell({
           setRecentRooms([]);
         }}
         onOpenRoom={handleOpenRoom}
+        openRoomIds={openRoomIds}
         canvasBlank={note.trim().length === 0}
       />
 
