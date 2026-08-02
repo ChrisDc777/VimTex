@@ -75,10 +75,12 @@ cp .env.example .env
 
 Restart after changing env. The key stays on the server (`POST /api/chat`) — never in the browser.
 
-Models (sidebar dropdown):
+Models (sidebar dropdown) are grouped by provider:
 
-- `tencent/hy3:free` (default)
-- `nvidia/nemotron-3-ultra-550b-a55b:free`
+- **OpenRouter (shared)** — free-tier models keyed by the server's `OPENROUTER_API_KEY`:
+  - `tencent/hy3:free` (default)
+  - `nvidia/nemotron-3-ultra-550b-a55b:free`
+- **OpenRouter (your key)** — heavier models billed to your own OpenRouter key. Add the key in the dropdown; it is stored only in your browser's `localStorage` and sent per-request, never persisted or logged. See [`docs/AI_PROVIDERS.md`](docs/AI_PROVIDERS.md).
 
 ---
 

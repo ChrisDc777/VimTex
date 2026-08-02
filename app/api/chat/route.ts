@@ -1,5 +1,11 @@
+import { generateText } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "@/lib/ai-chat";
-import { DEFAULT_AI_MODEL, isAiModelId } from "@/lib/ai-models";
+import {
+  CUSTOM_MODEL_PATTERN,
+  DEFAULT_AI_MODEL,
+  isFreeModel,
+} from "@/lib/ai-providers";
 
 export const runtime = "nodejs";
 
@@ -8,18 +14,13 @@ const MAX_INSTRUCTION_CHARS = 4_000;
 const MAX_DOCUMENT_CHARS = 100_000;
 
 type ChatRequestBody = {
-  /** Preferred: single @ai instruction (no chat history). */
   instruction?: string;
   document?: string;
   model?: string;
+  apiKey?: string;
 };
 
-type OpenRouterMessage = {
-  role: string;
-  content: string | null;
-};
-
-function appReferer(): string {
+function appUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
@@ -30,17 +31,6 @@ function appReferer(): string {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      {
-        error:
-          "OPENROUTER_API_KEY is not set. Add it to .env or .env.local and restart the server.",
-      },
-      { status: 500 },
-    );
-  }
-
   const contentLength = req.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return Response.json({ error: "Request body too large." }, { status: 413 });
@@ -65,78 +55,65 @@ export async function POST(req: Request) {
     return Response.json({ error: "instruction too long." }, { status: 400 });
   }
 
-  const model =
-    typeof body.model === "string" && isAiModelId(body.model)
-      ? body.model
-      : DEFAULT_AI_MODEL;
-
   const document = typeof body.document === "string" ? body.document : "";
   if (document.length > MAX_DOCUMENT_CHARS) {
     return Response.json({ error: "document too long." }, { status: 400 });
   }
 
-  const openRouterMessages: OpenRouterMessage[] = [
-    { role: "system", content: buildSystemPrompt(document) },
-    { role: "user", content: instruction },
-  ];
+  const model =
+    typeof body.model === "string" && CUSTOM_MODEL_PATTERN.test(body.model)
+      ? body.model
+      : DEFAULT_AI_MODEL;
 
-  let upstream: Response;
-  try {
-    upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": appReferer(),
-        "X-Title": "VimTex",
-      },
-      body: JSON.stringify({
-        model,
-        messages: openRouterMessages,
-        temperature: 0.4,
-      }),
-    });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : "Network error";
-    return Response.json(
-      { error: `Failed to reach OpenRouter: ${detail}` },
-      { status: 502 },
-    );
-  }
+  const userKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
 
-  const rawText = await upstream.text();
-  let data: {
-    choices?: { message?: { content?: string | null } }[];
-    error?: { message?: string };
-  };
-  try {
-    data = JSON.parse(rawText) as typeof data;
-  } catch {
+  if (!isFreeModel(model) && !userKey) {
     return Response.json(
       {
-        error: `OpenRouter returned non-JSON (${upstream.status}).`,
+        error:
+          "This model requires your own OpenRouter API key. Add one in the model picker.",
       },
-      { status: 502 },
+      { status: 400 },
     );
   }
 
-  if (!upstream.ok) {
-    const msg =
-      data.error?.message ||
-      `OpenRouter error ${upstream.status}`;
-    return Response.json({ error: msg }, { status: 502 });
-  }
-
-  const content = data.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim()) {
+  const serverKey = process.env.OPENROUTER_API_KEY?.trim() ?? "";
+  const apiKey = userKey || serverKey;
+  if (!apiKey) {
     return Response.json(
-      { error: "Model returned an empty reply." },
-      { status: 502 },
+      {
+        error:
+          "No AI API key configured. Set OPENROUTER_API_KEY or add your own key in the model picker.",
+      },
+      { status: 500 },
     );
   }
 
-  return Response.json({
-    message: content,
-    model,
+  const provider = createOpenRouter({
+    apiKey,
+    appName: "VimTex",
+    appUrl: appUrl(),
   });
+
+  try {
+    const { text } = await generateText({
+      model: provider.chat(model),
+      system: buildSystemPrompt(document),
+      prompt: instruction,
+      temperature: 0.4,
+    });
+
+    if (!text || !text.trim()) {
+      return Response.json({ error: "Model returned an empty reply." }, { status: 502 });
+    }
+
+    return Response.json({
+      message: text,
+      model,
+      provider: isFreeModel(model) ? "openrouter" : "byok-openrouter",
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "AI request failed";
+    return Response.json({ error: detail }, { status: 502 });
+  }
 }
