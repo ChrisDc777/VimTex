@@ -28,6 +28,11 @@ import {
 } from "@/lib/cm-line-numbers";
 import { getCollabWsBase } from "@/lib/collab";
 import type { RoomChatMessage } from "@/lib/room-chat";
+import {
+  SNIPPET_CURSOR,
+  SNIPPET_SEL_CLOSE,
+  SNIPPET_SEL_OPEN,
+} from "@/lib/snippets";
 import { EDITOR_PLACEHOLDER } from "@/lib/starter-content";
 import type { CollabStatus, CollabUser, VimMode } from "@/lib/types";
 
@@ -38,6 +43,11 @@ export type VimEditorHandle = {
   replaceAll: (content: string) => void;
   /** Alias for replaceAll — used by room @ai edits. */
   applyAiEdit: (content: string) => void;
+  /**
+   * Insert a snippet template at the cursor, honoring SNIPPET_CURSOR /
+   * SNIPPET_SEL_* markers from lib/snippets.
+   */
+  insertSnippet: (template: string) => void;
   /** Local Yjs client id, or null before the doc is ready. */
   getClientId: () => number | null;
   /** Subscribe to the shared room chat array; returns unsubscribe. */
@@ -215,6 +225,39 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         replaceAll,
         applyAiEdit: replaceAll,
         getClientId: () => ydocRef.current?.clientID ?? null,
+        insertSnippet: (template) => {
+          const view = viewRef.current;
+          if (!view) return;
+          const markerPattern = /[\uE000\uE001\uE002]/g;
+          const sel = view.state.selection.main;
+          const stripped = template.replace(markerPattern, "");
+          const idxBefore = (n: number) =>
+            template.slice(0, n).replace(markerPattern, "").length;
+
+          const cursorIdx = template.indexOf(SNIPPET_CURSOR);
+          const selOpenIdx = template.indexOf(SNIPPET_SEL_OPEN);
+          const selCloseIdx = template.indexOf(SNIPPET_SEL_CLOSE);
+
+          let anchor = sel.from + stripped.length;
+          let head: number | undefined;
+          if (cursorIdx >= 0) {
+            anchor = sel.from + idxBefore(cursorIdx);
+          } else if (selOpenIdx >= 0 && selCloseIdx > selOpenIdx) {
+            anchor = sel.from + idxBefore(selCloseIdx);
+            head = sel.from + idxBefore(selOpenIdx);
+          }
+
+          view.dispatch({
+            changes: {
+              from: sel.from,
+              to: sel.to,
+              insert: stripped,
+            },
+            selection: { anchor, head },
+            scrollIntoView: true,
+          });
+          view.focus();
+        },
         subscribeChat: (cb) => {
           const arr = ychatRef.current;
           if (!arr) {

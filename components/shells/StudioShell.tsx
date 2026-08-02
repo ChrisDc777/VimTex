@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
+import { ReconnectBanner } from "@/components/ReconnectBanner";
+import { SnippetMenu } from "@/components/SnippetMenu";
 import { SidePanel } from "@/components/SidePanel";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
@@ -267,6 +269,14 @@ export function StudioShell({
             <span className="hidden sm:inline">Chat</span>
           </button>
           <ViewToggle value={viewMode} onChange={handleViewMode} />
+          <SnippetMenu
+            disabled={!ready}
+            triggerClassName="vt-pill vt-pill--ghost gap-1.5"
+            labelClassName="hidden sm:inline"
+            onInsert={(snippet) =>
+              editorRef.current?.insertSnippet(snippet.snippet)
+            }
+          />
           <StudioMenu
             note={note}
             disabled={!ready}
@@ -285,6 +295,8 @@ export function StudioShell({
           />
         </div>
       </header>
+
+      <ReconnectBanner status={collabStatus} />
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <main

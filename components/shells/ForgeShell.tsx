@@ -11,6 +11,8 @@ import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
+import { ReconnectBanner } from "@/components/ReconnectBanner";
+import { SnippetMenu } from "@/components/SnippetMenu";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
 import {
@@ -334,7 +336,19 @@ export function ForgeShell({
         onOpenRoom={handleOpenRoom}
         openRoomIds={openRoomIds}
         canvasBlank={note.trim().length === 0}
+        headerExtra={
+          <SnippetMenu
+            disabled={!ready}
+            triggerClassName="vt-header-btn"
+            labelClassName="hidden sm:inline"
+            onInsert={(snippet) =>
+              editorRef.current?.insertSnippet(snippet.snippet)
+            }
+          />
+        }
       />
+
+      <ReconnectBanner status={collabStatus} />
 
       <div className="vt-workspace flex min-h-0 min-w-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
@@ -405,7 +419,11 @@ export function ForgeShell({
             onResetMobile={() => resetPane("mobileBottomHeight")}
           >
             {roomId && problemOpen ? (
-              <ProblemReferencePanel open={problemOpen} roomId={roomId} />
+              <ProblemReferencePanel
+                open={problemOpen}
+                roomId={roomId}
+                note={note}
+              />
             ) : null}
             {previewOpen ? <LatexPreview note={note} /> : null}
             {user ? (
