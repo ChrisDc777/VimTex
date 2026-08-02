@@ -516,11 +516,14 @@ export function renderNoteToHtml(text: string): string {
       continue;
     }
     const { html } = renderMathToHtml(seg.content, seg.display);
+    const texAttr = ` data-tex="${escapeHtml(seg.content.trim())}"`;
     if (seg.display) {
       flushInline();
-      blocks.push(`<div class="katex-display-wrap">${html}</div>`);
+      blocks.push(
+        `<div class="katex-display-wrap vt-tex-src"${texAttr}>${html}</div>`,
+      );
     } else {
-      inline += html;
+      inline += `<span class="vt-tex-src"${texAttr}>${html}</span>`;
     }
   }
   flushInline();
@@ -539,4 +542,35 @@ export function findMathAtCursor(
     }
   }
   return null;
+}
+
+export type MathDiagnostic = {
+  message: string;
+  line: number;
+  column: number;
+};
+
+function offsetToLineCol(text: string, offset: number): { line: number; column: number } {
+  let line = 1;
+  let lastNewline = -1;
+  for (let i = 0; i < offset && i < text.length; i += 1) {
+    if (text[i] === "\n") {
+      line += 1;
+      lastNewline = i;
+    }
+  }
+  return { line, column: offset - lastNewline };
+}
+
+/** KaTeX parse errors for every math span, with 1-based line/column. */
+export function renderNoteDiagnostics(text: string): MathDiagnostic[] {
+  const diagnostics: MathDiagnostic[] = [];
+  for (const seg of parseNote(text)) {
+    if (seg.type !== "math") continue;
+    const { error } = renderMathToHtml(seg.content, seg.display);
+    if (!error) continue;
+    const { line, column } = offsetToLineCol(text, seg.bodyFrom);
+    diagnostics.push({ message: error, line, column });
+  }
+  return diagnostics;
 }

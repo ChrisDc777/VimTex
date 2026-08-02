@@ -2792,3 +2792,158 @@ body[data-pane-resizing] * {
   color: var(--ink);
 }
 
+/* Reconnect / offline banner (both shells) */
+.vt-reconnect-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, var(--canvas));
+  color: var(--body);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.vt-reconnect-banner__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 9999px;
+  background: var(--warning);
+}
+
+/* LaTeX diagnostics (Forge problem rail) */
+.vt-diagnostics {
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--error) 8%, transparent);
+  padding: 0.625rem 0.75rem;
+}
+
+.vt-diagnostics__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--error);
+}
+
+.vt-diagnostics__list {
+  margin-top: 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.vt-diagnostics__item {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--body);
+}
+
+.vt-diagnostics__loc {
+  flex: none;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--mute);
+  padding-top: 0.125rem;
+}
+
+/* Copy-equation affordance (preview hover) */
+.vt-tex-src:hover {
+  border-radius: 4px;
+  outline: 1px solid color-mix(in srgb, var(--focus) 45%, transparent);
+}
+
+.vt-copy-equation {
+  position: fixed;
+  z-index: 100;
+  display: none;
+  padding: 0.3rem 0.625rem;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 9999px;
+  background: var(--canvas-elevated);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.vt-copy-equation:hover {
+  border-color: var(--focus-soft);
+}
+
+/* Math snippet picker (both shells) */
+.vt-snippet-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  width: min(20rem, calc(100vw - 2rem));
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline-strong);
+  background: var(--canvas-soft);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.vt-snippet-pop__search {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.vt-snippet-pop__list {
+  max-height: min(18rem, 45vh);
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.vt-snippet-pop__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 0.5rem 0.625rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.vt-snippet-pop__item:hover,
+.vt-snippet-pop__item:focus-visible {
+  outline: none;
+  background: var(--canvas-mid);
+}
+
+.vt-snippet-pop__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vt-snippet-pop__preview {
+  flex: none;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--mute);
+}
+

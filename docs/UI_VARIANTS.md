@@ -40,6 +40,37 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 - Preferences dialog (Editor keys, relative line numbers, Workspace style)
 - Base `:root` tokens in `app/globals.css`: mineral surfaces, stepped dark neutrals
 
+## Differentiation policy
+
+Studio and Forge are deliberate product shells, not just themes. Workspace
+features must stay distinct; only shared plumbing converges.
+
+**Philosophy**
+
+- **Studio is session-first:** one room = one shareable URL. Collaboration is
+  the point. Tabs are inherently per-client/local and conflict with "the URL is
+  the session", so Forge-style room tabs should NOT be added to Studio.
+- **Forge is a workbench:** many rooms as tabs, keyboard-first, quiet chrome,
+  with a single-user focus and collaboration available (not primary).
+
+**Rules**
+
+1. Multi-room / workspace features (tabs, panel rails, per-room autosave,
+   problem reference) belong to **Forge** first.
+2. Single-session / sharing features (share, live preview, templates,
+   onboarding) belong to **Studio** first.
+3. Shared plumbing (editor, collab, chat, preferences, export, recent rooms) is
+   built once in the shared layer and surfaced in both shells.
+
+| Capability | Studio | Forge |
+|------------|--------|-------|
+| Rooms | One at a time (URL = session) | Many via tabs |
+| Preview | Split / live view toggle | Right preview panel |
+| Problem image reference | — | Problem rail |
+| Editor tabs | — | ✓ |
+| Command palette | ✓ (Ctrl/Cmd+K) | Parity (deliberate) |
+| Standard editing mode | ✓ (skips name gate) | ✓ |
+
 ## Shared layer
 
 | Module | Responsibility |
@@ -84,3 +115,6 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 - CSS-only toggle without shared state layer
 - Forge as default before Studio parity verified
 - Premium gate blocking Share on free tier
+- Room tabs in Studio (dilutes "URL = session"; see Differentiation policy)
+- Forge without tabs (dilutes workbench identity)
+- Palette in only one shell without a deliberate decision (see Differentiation policy)

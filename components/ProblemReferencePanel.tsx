@@ -3,12 +3,14 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type ClipboardEvent,
 } from "react";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
+import { renderNoteDiagnostics } from "@/lib/render-note";
 import {
   clearReferenceImage,
   loadReferenceImage,
@@ -18,6 +20,7 @@ import {
 export type ProblemReferencePanelProps = {
   open: boolean;
   roomId: string;
+  note: string;
 };
 
 function imageFromClipboardEvent(event: ClipboardEvent): Blob | null {
@@ -48,6 +51,7 @@ async function imageFromSystemClipboard(): Promise<Blob | null> {
 export function ProblemReferencePanel({
   open,
   roomId,
+  note,
 }: ProblemReferencePanelProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +60,8 @@ export function ProblemReferencePanel({
   const imageUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const diagnostics = useMemo(() => renderNoteDiagnostics(note), [note]);
 
   const revokeImageUrl = useCallback((url: string | null) => {
     if (url) URL.revokeObjectURL(url);
@@ -239,6 +245,24 @@ export function ProblemReferencePanel({
       />
 
       <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+        {diagnostics.length > 0 ? (
+          <div className="vt-diagnostics" role="alert">
+            <p className="vt-diagnostics__title">
+              {diagnostics.length} math error{diagnostics.length === 1 ? "" : "s"}
+            </p>
+            <ul className="vt-diagnostics__list">
+              {diagnostics.map((diag, index) => (
+                <li key={index} className="vt-diagnostics__item">
+                  <span className="vt-diagnostics__loc">
+                    L{diag.line}:{diag.column}
+                  </span>
+                  <span className="vt-diagnostics__msg">{diag.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob: URL from user upload; not optimizable by next/image
           <img

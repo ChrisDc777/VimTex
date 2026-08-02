@@ -49,6 +49,10 @@ VimTex is **not** Overleaf, HackMD, Google Docs, or Obsidian. It is an **instant
 5. **AI as copilot** — suggest and patch; human accepts; never silent overwrite.
 6. **Shell ≠ collaboration** — UI variant and live share are independent toggles.
 
+> **Shell differentiation:** Studio (session-first) and Forge (multi-room
+> workbench) are deliberate products, not themes — see
+> [UI_VARIANTS.md](./UI_VARIANTS.md#differentiation-policy) for the ownership rules.
+
 ## Success metrics
 
 **North-star:** Weekly collaborative math sessions with ≥2 active editors.
