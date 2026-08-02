@@ -15,6 +15,7 @@ import { ReconnectBanner } from "@/components/ReconnectBanner";
 import { SnippetMenu } from "@/components/SnippetMenu";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
+import { openPreferences } from "@/lib/ui-events";
 import {
   ChatIcon,
   PreviewIcon,
@@ -114,6 +115,35 @@ export function ForgeShell({
 
   const focusEditor = useCallback(() => {
     requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
+
+  // Global app shortcuts: ? toggles shortcuts & tips; Ctrl/Cmd+, opens preferences.
+  useEffect(() => {
+    const isEditable = (target: EventTarget | null): boolean => {
+      const el = target as HTMLElement | null;
+      if (!el || el === document.body) return false;
+      return (
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.isContentEditable
+      );
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === ",") {
+          event.preventDefault();
+          openPreferences();
+        }
+        return;
+      }
+      if (event.key === "?") {
+        if (isEditable(event.target)) return;
+        event.preventDefault();
+        setCheatsheetOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   const flushSave = useCallback((roomId: string, content: string) => {
@@ -492,9 +522,7 @@ export function ForgeShell({
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
-        onOpenCheatsheet={
-          editorMode === "vim" ? () => setCheatsheetOpen(true) : undefined
-        }
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
       />
 
       <NamePicker

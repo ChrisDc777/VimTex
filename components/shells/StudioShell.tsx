@@ -36,6 +36,7 @@ import { loadViewMode, saveViewMode } from "@/lib/storage";
 import { loadRelativeLineNumbers, saveRelativeLineNumbers } from "@/lib/editor-settings";
 import { useStudioSplitLayout } from "@/lib/use-studio-split-layout";
 import { usePaneLayout } from "@/lib/use-pane-layout";
+import { openPreferences } from "@/lib/ui-events";
 import { STARTER_NOTE } from "@/lib/starter-content";
 import { getTemplateContent } from "@/lib/templates";
 import {
@@ -207,6 +208,35 @@ export function StudioShell({
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPaletteOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ? toggles shortcuts & tips; Ctrl/Cmd+, opens preferences.
+  useEffect(() => {
+    const isEditable = (target: EventTarget | null): boolean => {
+      const el = target as HTMLElement | null;
+      if (!el || el === document.body) return false;
+      return (
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.isContentEditable
+      );
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === ",") {
+          event.preventDefault();
+          openPreferences();
+        }
+        return;
+      }
+      if (event.key === "?") {
+        if (isEditable(event.target)) return;
+        event.preventDefault();
+        setCheatsheetOpen((v) => !v);
       }
     };
     document.addEventListener("keydown", onKey);
@@ -394,9 +424,7 @@ export function StudioShell({
         peerCount={peerCount}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
-        onOpenCheatsheet={
-          editorMode === "vim" ? () => setCheatsheetOpen(true) : undefined
-        }
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
       />
 
       <NamePicker
@@ -425,13 +453,13 @@ export function StudioShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
-        cheatsheetAvailable={editorMode === "vim"}
         onNewRoom={handleNewRoom}
         onViewModeChange={handleViewMode}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}
         onToggleChat={() => setChatOpen((v) => !v)}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
+        onOpenPreferences={() => openPreferences()}
       />
     </div>
   );

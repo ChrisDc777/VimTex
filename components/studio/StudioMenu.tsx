@@ -10,6 +10,7 @@ import { SESSION_TEMPLATES } from "@/lib/templates";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { NewRoomOptions } from "@/lib/types";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
+import { subscribeOpenPreferences } from "@/lib/ui-events";
 
 type StudioMenuProps = {
   note: string;
@@ -72,6 +73,8 @@ export function StudioMenu({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => subscribeOpenPreferences(() => setPrefsOpen(true)), []);
 
   const updateMenuPosition = useCallback(() => {
     if (!buttonRef.current) return;

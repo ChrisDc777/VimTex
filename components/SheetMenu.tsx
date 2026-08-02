@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
+import { subscribeOpenPreferences } from "@/lib/ui-events";
 import { exportAsMd, exportAsTex } from "@/lib/export";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { RecentRoom } from "@/lib/recent-rooms";
@@ -84,6 +85,8 @@ export function SheetMenu({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => subscribeOpenPreferences(() => setPrefsOpen(true)), []);
 
   const updateMenuPosition = useCallback(() => {
     if (!buttonRef.current) return;
