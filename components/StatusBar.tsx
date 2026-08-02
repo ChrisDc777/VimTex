@@ -7,6 +7,7 @@ import {
   formatVimMode,
   statusDotClass,
 } from "@/lib/status-labels";
+import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
 import type { CollabStatus, VimMode } from "@/lib/types";
 
 type StatusBarProps = {
@@ -46,8 +47,8 @@ export function StatusBar({
           <button
             type="button"
             className="vt-mode-chip"
-            title="Vim cheatsheet"
-            aria-label="Open Vim cheatsheet"
+            title="Shortcuts & tips"
+            aria-label="Open shortcuts & tips"
             onClick={onOpenCheatsheet}
           >
             {modeChip}
@@ -76,6 +77,13 @@ export function StatusBar({
           </span>
         )}
       </div>
+
+      <ShortcutHint
+        shortcuts={[
+          { keys: `${MOD_LABEL} ,`, label: "preferences" },
+          { keys: "?", label: "tips" },
+        ]}
+      />
 
       <div className="vt-footer__status" role="status" aria-live="polite">
         <span className={statusDotClass(collabStatus)} aria-hidden />

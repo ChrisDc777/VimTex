@@ -25,13 +25,13 @@ type StudioCommandPaletteProps = {
   editorMode: EditorMode;
   uiVariant: UiVariant;
   chatOpen: boolean;
-  cheatsheetAvailable: boolean;
   onNewRoom: (opts?: NewRoomOptions) => void;
   onViewModeChange: (mode: ViewMode) => void;
   onEditorModeChange: (mode: EditorMode) => void;
   onUiVariantChange: (variant: UiVariant) => void;
   onToggleChat: () => void;
   onOpenCheatsheet: () => void;
+  onOpenPreferences: () => void;
 };
 
 type Command = {
@@ -72,13 +72,13 @@ export function StudioCommandPalette({
   editorMode,
   uiVariant,
   chatOpen,
-  cheatsheetAvailable,
   onNewRoom,
   onViewModeChange,
   onEditorModeChange,
   onUiVariantChange,
   onToggleChat,
   onOpenCheatsheet,
+  onOpenPreferences,
 }: StudioCommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -157,15 +157,20 @@ export function StudioCommandPalette({
       hint: "Chat",
       run: () => onToggleChat(),
     });
-    if (cheatsheetAvailable) {
-      list.push({
-        id: "cheatsheet",
-        label: "Open Vim cheatsheet",
-        keywords: "help vim keys reference",
-        hint: "Help",
-        run: () => onOpenCheatsheet(),
-      });
-    }
+    list.push({
+      id: "cheatsheet",
+      label: "Open shortcuts & tips",
+      keywords: "help shortcuts tips vim keys reference",
+      hint: "Help",
+      run: () => onOpenCheatsheet(),
+    });
+    list.push({
+      id: "preferences",
+      label: "Open preferences",
+      keywords: "settings preferences editor keys workspace style",
+      hint: "Editor",
+      run: () => onOpenPreferences(),
+    });
     const otherVariant = uiVariant === "studio" ? "forge" : "studio";
     list.push({
       id: "switch-shell",
@@ -182,12 +187,12 @@ export function StudioCommandPalette({
     editorMode,
     uiVariant,
     chatOpen,
-    cheatsheetAvailable,
     onNewRoom,
     onViewModeChange,
     onEditorModeChange,
     onToggleChat,
     onOpenCheatsheet,
+    onOpenPreferences,
     onUiVariantChange,
   ]);
 

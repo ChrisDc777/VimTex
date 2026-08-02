@@ -6,7 +6,7 @@ import {
   type RefObject,
 } from "react";
 import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
-import type { AiModelId } from "@/lib/ai-models";
+import type { AiModelId } from "@/lib/ai-providers";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
 import { SendIcon } from "@/components/chat/icons";

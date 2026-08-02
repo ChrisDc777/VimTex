@@ -7,7 +7,13 @@ type VimCheatsheetDialogProps = {
   onClose: () => void;
 };
 
-const ROWS: Array<{ keys: string; action: string }> = [
+const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
+  { keys: "Ctrl/Cmd+K", action: "Open command palette (Studio)" },
+  { keys: "Ctrl/Cmd+,", action: "Open preferences" },
+  { keys: "?", action: "Open this shortcuts & tips panel" },
+];
+
+const VIM_ROWS: Array<{ keys: string; action: string }> = [
   { keys: "Esc", action: "Normal mode" },
   { keys: "i / a / o", action: "Insert (before / after / new line)" },
   { keys: "hjkl", action: "Move left / down / up / right" },
@@ -17,6 +23,22 @@ const ROWS: Array<{ keys: string; action: string }> = [
   { keys: "v", action: "Visual select" },
   { keys: ":w mental model", action: "Autosave / share — no file write needed" },
 ];
+
+function RowList({ rows }: { rows: Array<{ keys: string; action: string }> }) {
+  return (
+    <dl className="mt-3 space-y-2">
+      {rows.map((row) => (
+        <div
+          key={row.keys}
+          className="flex items-baseline justify-between gap-3 text-sm"
+        >
+          <dt className="shrink-0 font-mono text-ink">{row.keys}</dt>
+          <dd className="min-w-0 text-right text-body">{row.action}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export function VimCheatsheetDialog({
   open,
@@ -53,22 +75,18 @@ export function VimCheatsheetDialog({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <p id={titleId} className="vt-caption text-ink">
-          Vim keys
+          Shortcuts & tips
         </p>
         <p className="mt-2 text-sm leading-5 text-body">
-          Click the mode label in the status bar anytime to reopen this.
+          Press <span className="font-mono">?</span> anytime (or click the mode
+          label in the status bar) to reopen this.
         </p>
-        <dl className="mt-4 space-y-2">
-          {ROWS.map((row) => (
-            <div
-              key={row.keys}
-              className="flex items-baseline justify-between gap-3 text-sm"
-            >
-              <dt className="shrink-0 font-mono text-ink">{row.keys}</dt>
-              <dd className="min-w-0 text-right text-body">{row.action}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-4">
+          <p className="vt-caption text-mute">General</p>
+          <RowList rows={GENERAL_ROWS} />
+          <p className="vt-caption mt-4 text-mute">Vim keys</p>
+          <RowList rows={VIM_ROWS} />
+        </div>
         <div className="mt-5">
           <button
             type="button"

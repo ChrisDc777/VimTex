@@ -5,19 +5,17 @@ import {
   useEffect,
   useRef,
   useState,
-  type KeyboardEvent,
   type ReactNode,
   type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
+import { postAiChat } from "@/lib/ai-client";
 import {
-  AI_MODELS,
   DEFAULT_AI_MODEL,
   type AiModelId,
-} from "@/lib/ai-models";
+} from "@/lib/ai-providers";
 import {
   AI_MENTION_SUGGESTIONS,
-  AI_MENTION_TAG,
   mentionsAi,
   stripAiMention,
 } from "@/lib/chat-mentions";
@@ -28,7 +26,7 @@ import {
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
 import type { VimEditorHandle } from "@/components/VimEditor";
-import { SendIcon } from "@/components/chat/icons";
+import { ChatComposer } from "@/components/chat/ChatComposer";
 
 export type StudioRoomChatProps = {
   /** When false, render nothing (legacy standalone aside). */
@@ -198,24 +196,11 @@ export function StudioRoomChat({
       setErrorForId(null);
 
       try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instruction,
-            document: editor.getContent(),
-            model,
-          }),
+        const data = await postAiChat({
+          instruction,
+          document: editor.getContent(),
+          model,
         });
-
-        const data = (await res.json()) as {
-          message?: string;
-          error?: string;
-        };
-
-        if (!res.ok || data.error) {
-          throw new Error(data.error || `Request failed (${res.status})`);
-        }
 
         const parsed = parseAssistantReply(data.message ?? "");
         const clientId = editor.getClientId() ?? userMsg.clientId;
@@ -289,42 +274,7 @@ export function StudioRoomChat({
     [busy, invokeAi],
   );
 
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (mentionOpen && filteredMentions.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setMentionIndex((i) => (i + 1) % filteredMentions.length);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setMentionIndex(
-          (i) => (i - 1 + filteredMentions.length) % filteredMentions.length,
-        );
-        return;
-      }
-      if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        insertMention(filteredMentions[mentionIndex] ?? AI_MENTION_TAG);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setMentionOpen(false);
-        return;
-      }
-    }
-
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void send();
-    }
-  };
-
   if (!open) return null;
-
-  const modelLabel =
-    AI_MODELS.find((m) => m.id === model)?.label ?? model;
 
   const panel = (
     <>
@@ -418,101 +368,24 @@ export function StudioRoomChat({
         ) : null}
       </div>
 
-      <div className="relative shrink-0">
-        {mentionOpen && filteredMentions.length > 0 ? (
-          <ul
-            className="absolute bottom-full left-2 right-2 mb-1 overflow-hidden rounded-lg border border-hairline bg-canvas-card text-sm"
-            role="listbox"
-          >
-            {filteredMentions.map((tag, i) => (
-              <li key={tag}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={i === mentionIndex}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    insertMention(tag);
-                  }}
-                  className={
-                    i === mentionIndex
-                      ? "flex w-full items-center gap-2 bg-ink px-2.5 py-2 text-left text-xs text-on-primary"
-                      : "flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-ink hover:bg-canvas-soft"
-                  }
-                >
-                  <span className="font-medium">@{tag}</span>
-                  <span className="text-[10px] opacity-60">Ask the model</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        <div className="vt-chat-composer">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => {
-              const value = e.target.value;
-              setInput(value);
-              updateMentionState(
-                value,
-                e.target.selectionStart ?? value.length,
-              );
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 88)}px`;
-            }}
-            onKeyUp={(e) => {
-              const el = e.currentTarget;
-              updateMentionState(el.value, el.selectionStart ?? el.value.length);
-            }}
-            onClick={(e) => {
-              const el = e.currentTarget;
-              updateMentionState(el.value, el.selectionStart ?? el.value.length);
-            }}
-            onKeyDown={onKeyDown}
-            rows={1}
-            placeholder="Message…"
-            disabled={busy}
-            className="vt-chat-composer__field"
-          />
-          <button
-            type="button"
-            onClick={() => void send()}
-            disabled={busy || !input.trim()}
-            className={
-              !busy && input.trim()
-                ? "vt-chat-send vt-chat-send--active"
-                : "vt-chat-send"
-            }
-            aria-label="Send message"
-          >
-            <SendIcon />
-          </button>
-        </div>
-        {mentionsAi(input) ? (
-          <div className="vt-chat-composer__meta">
-            <label className="sr-only" htmlFor="room-chat-model">
-              Model
-            </label>
-            <select
-              id="room-chat-model"
-              value={model}
-              onChange={(e) => setModel(e.target.value as AiModelId)}
-              className="vt-chat-model"
-              title={`Model: ${modelLabel}`}
-              aria-label="AI model"
-            >
-              {AI_MODELS.map((m) => (
-                <option key={m.id} value={m.id} className="bg-canvas text-ink">
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-      </div>
+      <ChatComposer
+        input={input}
+        busy={busy}
+        model={model}
+        inputRef={inputRef}
+        mentionOpen={mentionOpen}
+        filteredMentions={filteredMentions}
+        mentionIndex={mentionIndex}
+        onInputChange={(value, caret) => {
+          setInput(value);
+          updateMentionState(value, caret);
+        }}
+        onModelChange={setModel}
+        onSend={() => void send()}
+        onMentionSelect={insertMention}
+        onMentionIndexChange={setMentionIndex}
+        onMentionClose={() => setMentionOpen(false)}
+      />
     </>
   );
 

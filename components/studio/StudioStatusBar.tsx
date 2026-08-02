@@ -1,5 +1,6 @@
 "use client";
 
+import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
 import type { CollabStatus, VimMode } from "@/lib/types";
 
 type StudioStatusBarProps = {
@@ -37,14 +38,21 @@ export function StudioStatusBar({
           type="button"
           onClick={onOpenCheatsheet}
           className="vt-caption hidden text-mute underline-offset-2 hover:text-ink hover:underline sm:inline"
-          title="Vim cheatsheet"
-          aria-label="Open Vim cheatsheet"
+          title="Shortcuts & tips"
+          aria-label="Open shortcuts & tips"
         >
           {mode}
         </button>
       ) : (
         <span className="vt-caption hidden text-mute sm:inline">{mode}</span>
       )}
+      <ShortcutHint
+        className="hidden sm:inline-flex"
+        shortcuts={[
+          { keys: `${MOD_LABEL} K`, label: "palette" },
+          { keys: "?", label: "tips" },
+        ]}
+      />
       <span className="vt-studio-footer__meta">
         {onEditName ? (
           <button

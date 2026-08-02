@@ -8,7 +8,8 @@ import {
   type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
-import { DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models";
+import { postAiChat } from "@/lib/ai-client";
+import { DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-providers";
 import {
   AI_MENTION_SUGGESTIONS,
   mentionsAi,
@@ -195,24 +196,11 @@ export function RoomChatSidebar({
       setErrorForId(null);
 
       try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instruction,
-            document: editor.getContent(),
-            model,
-          }),
+        const data = await postAiChat({
+          instruction,
+          document: editor.getContent(),
+          model,
         });
-
-        const data = (await res.json()) as {
-          message?: string;
-          error?: string;
-        };
-
-        if (!res.ok || data.error) {
-          throw new Error(data.error || `Request failed (${res.status})`);
-        }
 
         const parsed = parseAssistantReply(data.message ?? "");
         const clientId = editor.getClientId() ?? userMsg.clientId;
