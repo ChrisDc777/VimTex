@@ -6,8 +6,8 @@ async function openSheetPicker(page: import("@playwright/test").Page) {
   await page.keyboard.press("Control+K");
   const palette = page.getByRole("dialog", { name: /command palette/i });
   await expect(palette).toBeVisible({ timeout: 5_000 });
-  await palette.getByLabel("Command palette").fill("new sheet");
-  await palette.getByRole("option", { name: /new sheet/i }).click();
+  await palette.getByLabel("Command palette").fill("templates");
+  await palette.getByRole("option", { name: /templates/i }).click();
   const picker = page.getByRole("dialog", { name: /new sheet/i });
   await expect(picker).toBeVisible({ timeout: 5_000 });
   return { palette, picker };

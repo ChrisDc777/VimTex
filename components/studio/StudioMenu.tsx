@@ -152,10 +152,19 @@ export function StudioMenu({
           type="button"
           role="menuitem"
           className="vt-header-menu__item"
+          onClick={() => run(() => onNewRoom())}
+        >
+          <span className="vt-header-menu__label">New sheet</span>
+          <span className="vt-header-menu__hint">Blank</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
           onClick={() => run(() => onOpenSheetPicker())}
         >
-          <span className="vt-header-menu__label">New sheet…</span>
-          <span className="vt-header-menu__hint">Templates</span>
+          <span className="vt-header-menu__label">Templates…</span>
+          <span className="vt-header-menu__hint">Choose a template</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
         <div className="vt-caption px-2 py-1 text-mute">Export</div>

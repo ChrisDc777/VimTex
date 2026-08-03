@@ -255,12 +255,6 @@ test.describe("VimTex UX shell", () => {
 
     await menu.getByRole("menuitem", { name: /new sheet/i }).click();
     await expect(menu).toHaveCount(0);
-
-    const picker = page.getByRole("dialog", { name: /new sheet/i });
-    await expect(picker).toBeVisible({ timeout: 5_000 });
-    await picker.getByRole("button", { name: /^blank sheet/i }).click();
-    await expect(picker).toHaveCount(0);
-
     await expect(tablist.getByRole("tab")).toHaveCount(2);
   });
 
@@ -574,10 +568,6 @@ test.describe("Inline scratchpad contract", () => {
     const urlBefore = page.url();
     await page.getByRole("button", { name: /^sheet$/i }).click();
     await page.getByRole("menuitem", { name: /new sheet/i }).click();
-    const picker = page.getByRole("dialog", { name: /new sheet/i });
-    await expect(picker).toBeVisible({ timeout: 5_000 });
-    await picker.getByRole("button", { name: /^blank sheet/i }).click();
-    await expect(picker).toHaveCount(0);
     await expect.poll(() => page.url()).not.toBe(urlBefore);
     await expect.poll(async () => editorText(page)).not.toMatch(/to be cleared/);
 

@@ -13,7 +13,7 @@ import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
-import type { ViewMode } from "@/lib/types";
+import type { NewRoomOptions, ViewMode } from "@/lib/types";
 
 type CommandPaletteProps = {
   open: boolean;
@@ -23,6 +23,7 @@ type CommandPaletteProps = {
   editorMode: EditorMode;
   uiVariant: UiVariant;
   chatOpen: boolean;
+  onNewRoom: (opts?: NewRoomOptions) => void;
   onOpenSheetPicker: () => void;
   onEditorModeChange: (mode: EditorMode) => void;
   onUiVariantChange: (variant: UiVariant) => void;
@@ -76,6 +77,7 @@ export function CommandPalette({
   editorMode,
   uiVariant,
   chatOpen,
+  onNewRoom,
   onOpenSheetPicker,
   onViewModeChange,
   onEditorModeChange,
@@ -115,8 +117,15 @@ export function CommandPalette({
     }
     list.push({
       id: "new-sheet",
-      label: "New sheet…",
-      keywords: "new room sheet template blank blank sheet template picker",
+      label: "New sheet",
+      keywords: "new room sheet blank fresh empty",
+      hint: "Blank",
+      run: () => onNewRoom(),
+    });
+    list.push({
+      id: "new-sheet-template",
+      label: "Templates…",
+      keywords: "new sheet template picker custom sheet types",
       hint: "Template",
       run: () => onOpenSheetPicker(),
     });
@@ -218,6 +227,7 @@ export function CommandPalette({
     editorMode,
     uiVariant,
     chatOpen,
+    onNewRoom,
     onOpenSheetPicker,
     onViewModeChange,
     onEditorModeChange,

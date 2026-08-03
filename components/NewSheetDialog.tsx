@@ -74,21 +74,21 @@ export function NewSheetDialog({
         <div
           ref={listRef}
           aria-label="Templates"
-          className="mt-4 max-h-[min(60vh,20rem)] overflow-y-auto rounded-[var(--radius-sm)] border border-hairline bg-canvas"
+          className="mt-4 max-h-[min(60vh,20rem)] overflow-y-auto"
         >
-          {templates.map((t) => {
+          {templates.map((t, index) => {
             const custom = t.id.startsWith("custom-");
             return (
               <div
                 key={t.id}
-                className="border-t border-hairline first:border-t-0"
+                className={index > 0 ? "border-t border-hairline" : ""}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2 transition-colors hover:bg-canvas-mid">
                   <button
                     type="button"
                     data-sheet-card="true"
                     onClick={() => onSelect(t.id)}
-                    className="min-w-0 flex-1 px-3 py-2.5 text-left outline-none transition-colors hover:bg-canvas-mid focus-visible:bg-canvas-mid"
+                    className="min-w-0 flex-1 rounded-[var(--radius-sm)] px-1 py-2.5 text-left outline-none focus-visible:bg-canvas-mid"
                   >
                     <span className="block truncate text-sm text-ink">
                       {t.label}
@@ -102,7 +102,7 @@ export function NewSheetDialog({
                       type="button"
                       aria-label={`Delete ${t.label}`}
                       onClick={() => handleDelete(t.id)}
-                      className="mr-2 shrink-0 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-mute transition-colors hover:bg-canvas-mid hover:text-ink focus-visible:bg-canvas-mid focus-visible:text-ink focus:outline-none"
+                      className="shrink-0 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-mute transition-colors hover:bg-canvas-soft hover:text-ink focus-visible:bg-canvas-soft focus-visible:text-ink focus:outline-none"
                     >
                       Delete
                     </button>

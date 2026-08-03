@@ -62,6 +62,12 @@ function maxLineNumber(lines: number): number {
   return last;
 }
 
+/** Spacer label: widest number for the doc's digit range, but never narrower
+ *  than two digits so the gutter doesn't re-flow when short docs cross 10. */
+function lineNumberSpacerLabel(lines: number): string {
+  return String(Math.max(maxLineNumber(lines), 99));
+}
+
 function relativeLineNumberGutter(
   field: StateField<RangeSet<GutterMarker>>,
 ): Extension {
@@ -69,10 +75,10 @@ function relativeLineNumberGutter(
     class: "cm-lineNumbers",
     markers: (view) => view.state.field(field),
     initialSpacer: (view) =>
-      new LineNumberMarker(String(maxLineNumber(view.state.doc.lines))),
+      new LineNumberMarker(lineNumberSpacerLabel(view.state.doc.lines)),
     updateSpacer: (spacer, update) => {
       const next = new LineNumberMarker(
-        String(maxLineNumber(update.view.state.doc.lines)),
+        lineNumberSpacerLabel(update.view.state.doc.lines),
       );
       return spacer.eq(next) ? spacer : next;
     },

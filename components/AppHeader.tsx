@@ -11,6 +11,7 @@ type AppHeaderProps = {
   ready: boolean;
   note: string;
   canNewSheet?: boolean;
+  onNewSheet: () => void;
   onOpenSheetPicker: () => void;
   roomId?: string | null;
   headerExtra?: ReactNode;
@@ -32,6 +33,7 @@ export function AppHeader({
   ready,
   note,
   canNewSheet = true,
+  onNewSheet,
   onOpenSheetPicker,
   roomId,
   headerExtra,
@@ -61,6 +63,7 @@ export function AppHeader({
             note={note}
             disabled={!ready}
             canNewSheet={canNewSheet}
+            onNewSheet={onNewSheet}
             onOpenSheetPicker={onOpenSheetPicker}
             uiVariant={uiVariant}
             onUiVariantChange={onUiVariantChange}

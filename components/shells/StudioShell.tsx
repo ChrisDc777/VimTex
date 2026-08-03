@@ -536,6 +536,7 @@ export function StudioShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
+        onNewRoom={handleNewRoom}
         onOpenSheetPicker={() => setSheetPickerOpen(true)}
         onViewModeChange={handleViewMode}
         onEditorModeChange={handleEditorMode}

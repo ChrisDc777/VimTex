@@ -466,6 +466,7 @@ export function ForgeShell({
         ready={ready}
         note={note}
         canNewSheet={canNewTab}
+        onNewSheet={handleNewSheet}
         onOpenSheetPicker={() => setSheetPickerOpen(true)}
         roomId={roomId}
         uiVariant={uiVariant}
@@ -657,6 +658,7 @@ export function ForgeShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
+        onNewRoom={handleNewRoom}
         onOpenSheetPicker={() => setSheetPickerOpen(true)}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}

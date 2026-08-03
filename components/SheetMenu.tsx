@@ -14,6 +14,7 @@ type SheetMenuProps = {
   note: string;
   disabled?: boolean;
   canNewSheet?: boolean;
+  onNewSheet: () => void;
   onOpenSheetPicker: () => void;
   uiVariant?: UiVariant;
   onUiVariantChange?: (variant: UiVariant) => void;
@@ -54,6 +55,7 @@ export function SheetMenu({
   note,
   disabled,
   canNewSheet = true,
+  onNewSheet,
   onOpenSheetPicker,
   uiVariant,
   onUiVariantChange,
@@ -165,12 +167,23 @@ export function SheetMenu({
           className="vt-header-menu__item"
           disabled={!canNewSheet}
           title={canNewSheet ? undefined : "Maximum 5 tabs"}
-          onClick={() => run(onOpenSheetPicker)}
+          onClick={() => run(onNewSheet)}
         >
           <span className="vt-header-menu__label">New sheet</span>
           <span className="vt-header-menu__hint">
-            {canNewSheet ? "Fresh room" : "Max 5 tabs"}
+            {canNewSheet ? "Blank" : "Max 5 tabs"}
           </span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          disabled={!canNewSheet}
+          title={canNewSheet ? undefined : "Maximum 5 tabs"}
+          onClick={() => run(onOpenSheetPicker)}
+        >
+          <span className="vt-header-menu__label">Templates…</span>
+          <span className="vt-header-menu__hint">Choose a template</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
         <div className="vt-caption px-2 py-1 text-mute">Export</div>
