@@ -12,12 +12,17 @@ import { StudioMenu } from "@/components/studio/StudioMenu";
 import { StudioCommandPalette } from "@/components/studio/StudioCommandPalette";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
+import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { StudioRoomChat } from "@/components/studio/StudioRoomChat";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
+import {
+  WorkspaceProvider,
+  useWorkspaceController,
+} from "@/components/workspace/WorkspaceContext";
 import {
   createCollabUser,
   createRoomId,
@@ -50,6 +55,7 @@ import type {
   CollabStatus,
   CollabUser,
   NewRoomOptions,
+  PeerInfo,
   ViewMode,
   VimMode,
 } from "@/lib/types";
@@ -82,7 +88,7 @@ export function StudioShell({
   const [roomId, setRoomId] = useState<string | null>(null);
   const [collabStatus, setCollabStatus] =
     useState<CollabStatus>("connecting");
-  const [peerCount, setPeerCount] = useState(1);
+  const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [user, setUser] = useState<CollabUser | null>(null);
   const [needsName, setNeedsName] = useState(false);
@@ -189,7 +195,7 @@ export function StudioShell({
     );
     setChatOpen(false);
     setCollabStatus("connecting");
-    setPeerCount(1);
+    setPeers([]);
     setVimMode("normal");
     requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
@@ -247,6 +253,19 @@ export function StudioShell({
   const ready = hydrated && !!roomId && !!user && !needsName;
   const namePickerOpen = needsName || editingName;
 
+  const workspace = useWorkspaceController({
+    enabled: ready,
+    roomId,
+    user,
+    collaborationEnabled: true,
+    emptyRoomSeed: seed,
+    onTextChange: setNote,
+    onCollabStatus: setCollabStatus,
+    onPeersChange: setPeers,
+  });
+
+  const selfClientId = workspace?.getClientId() ?? null;
+
   const { layout: paneLayout, resizePane, resizeMobileBottom, resetPane } =
     usePaneLayout({
       open: { left: false, right: chatOpen },
@@ -265,6 +284,7 @@ export function StudioShell({
   } as CSSProperties;
 
   return (
+    <WorkspaceProvider value={workspace}>
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
       <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
@@ -347,18 +367,11 @@ export function StudioShell({
               <VimEditor
                 key={`${roomId}-${editorMode}`}
                 ref={editorRef}
-                roomId={roomId}
-                user={user}
-                collaborationEnabled
                 vimEnabled={editorMode === "vim"}
                 inlineMath={viewMode === "realtime"}
                 relativeLineNumbers={relativeLineNumbers}
-                emptyRoomSeed={seed}
                 showPlaceholder={false}
-                onChange={setNote}
                 onVimModeChange={setVimMode}
-                onCollabStatus={setCollabStatus}
-                onPeerCount={setPeerCount}
               />
             ) : (
               <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
@@ -409,9 +422,9 @@ export function StudioShell({
             <StudioRoomChat
               embedded
               onClose={() => setChatOpen(false)}
-              peerCount={peerCount}
+              peers={peers}
+              selfClientId={selfClientId}
               user={user}
-              editorRef={editorRef}
               chatReady={ready}
             />
           </SidePanel>
@@ -421,7 +434,8 @@ export function StudioShell({
       <StudioStatusBar
         vimMode={editorMode === "standard" ? "standard" : vimMode}
         collabStatus={collabStatus}
-        peerCount={peerCount}
+        peers={peers}
+        selfClientId={selfClientId}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
@@ -461,7 +475,9 @@ export function StudioShell({
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
       />
+      <VtToaster />
     </div>
+    </WorkspaceProvider>
   );
 }
 

@@ -12,6 +12,22 @@ export type CollabUser = {
   color: string;
   /** Semi-transparent selection fill for remote peers (y-codemirror.next). */
   colorLight: string;
+  /** Optional remote avatar image (e.g. DiceBear URL); initials fallback. */
+  avatarUrl?: string | null;
+};
+
+/**
+ * Live view of one collaborator in the room (including the local user).
+ * Derived from Yjs awareness; `typing` is considered stale after a timeout.
+ */
+export type PeerInfo = {
+  clientId: number;
+  name: string;
+  color: string;
+  colorLight: string;
+  avatarUrl?: string | null;
+  lastSeen: number;
+  typing: boolean;
 };
 
 export type UiVariant = "studio" | "forge";

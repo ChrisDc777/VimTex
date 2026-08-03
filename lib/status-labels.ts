@@ -27,10 +27,6 @@ export function formatCollabStatus(status: CollabStatus): string {
   return "Connecting…";
 }
 
-export function formatPeerCount(count: number): string {
-  return count === 1 ? "1 peer" : `${count} peers`;
-}
-
 export function statusDotClass(status: CollabStatus): string {
   if (status === "local") return "vt-status-dot vt-status-dot--local";
   if (status === "connected") return "vt-status-dot vt-status-dot--connected";

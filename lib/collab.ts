@@ -1,3 +1,4 @@
+import { avatarUrlFor } from "./avatars";
 import type { CollabUser } from "./types";
 
 const NAMES = [
@@ -32,6 +33,34 @@ const COLORS: Array<{ color: string; colorLight: string }> = [
 
 const DISPLAY_NAME_KEY = "vimtex:displayName";
 const USER_COLOR_KEY = "vimtex:userColorIndex";
+const AVATAR_SEED_KEY = "vimtex:avatarSeed";
+
+/**
+ * Stable per-device avatar seed, so a peer gets a consistent random DiceBear
+ * face across sessions until they pick one explicitly (future feature).
+ */
+function getOrCreateAvatarSeed(): string {
+  if (typeof window !== "undefined") {
+    try {
+      const existing = localStorage.getItem(AVATAR_SEED_KEY);
+      if (existing) return existing;
+    } catch {
+      // ignore
+    }
+  }
+  const seed =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : String(Math.random());
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(AVATAR_SEED_KEY, seed);
+    } catch {
+      // ignore
+    }
+  }
+  return seed;
+}
 
 function hash(input: string): number {
   let h = 0;
@@ -108,6 +137,7 @@ export function createCollabUser(opts?: {
     name,
     color: palette.color,
     colorLight: palette.colorLight,
+    avatarUrl: avatarUrlFor(getOrCreateAvatarSeed()),
   };
 }
 

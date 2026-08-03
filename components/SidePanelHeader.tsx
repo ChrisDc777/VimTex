@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export type SidePanelHeaderProps = {
   title: string;
-  meta?: string;
+  meta?: ReactNode;
   actions?: ReactNode;
 };
 

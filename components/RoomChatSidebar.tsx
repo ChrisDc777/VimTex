@@ -5,7 +5,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
 import { postAiChat } from "@/lib/ai-client";
@@ -20,31 +19,34 @@ import {
   newChatMessageId,
   type RoomChatMessage,
 } from "@/lib/room-chat";
-import type { CollabUser } from "@/lib/types";
+import type { CollabUser, PeerInfo } from "@/lib/types";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { CloseIcon } from "@/components/chat/icons";
+import { AvatarStack } from "@/components/presence/AvatarStack";
+import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
-import type { VimEditorHandle } from "@/components/VimEditor";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export type RoomChatSidebarProps = {
   open: boolean;
   onClose: () => void;
-  peerCount: number;
+  peers: PeerInfo[];
+  selfClientId?: number | null;
   user: CollabUser;
-  editorRef: RefObject<VimEditorHandle | null>;
-  /** Bumps when the editor remounts (e.g. room ready) so chat can resubscribe. */
+  /** Bumps when the room is ready so chat can resubscribe. */
   chatReady: boolean;
 };
 
 export function RoomChatSidebar({
   open,
   onClose,
-  peerCount,
+  peers,
+  selfClientId,
   user,
-  editorRef,
   chatReady,
 }: RoomChatSidebarProps) {
+  const workspace = useWorkspace();
   const [model, setModel] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -82,32 +84,10 @@ export function RoomChatSidebar({
       setCurrentClientId(null);
       return;
     }
-
-    let unsub: (() => void) | undefined;
-    let cancelled = false;
-    let tries = 0;
-    let raf = 0;
-
-    const trySub = () => {
-      if (cancelled) return;
-      const editor = editorRef.current;
-      if (!editor || editor.getClientId() == null) {
-        if (tries++ < 60) {
-          raf = requestAnimationFrame(trySub);
-        }
-        return;
-      }
-      setCurrentClientId(editor.getClientId());
-      unsub = editor.subscribeChat(setMessages);
-    };
-
-    trySub();
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      unsub?.();
-    };
-  }, [chatReady, editorRef]);
+    if (!workspace) return;
+    setCurrentClientId(workspace.getClientId());
+    return workspace.subscribeChat(setMessages);
+  }, [chatReady, workspace]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -180,8 +160,8 @@ export function RoomChatSidebar({
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
-      const editor = editorRef.current;
-      if (!editor) return;
+      const ws = workspace;
+      if (!ws) return;
 
       const instruction = stripAiMention(userMsg.text);
       if (!instruction) {
@@ -198,12 +178,12 @@ export function RoomChatSidebar({
       try {
         const data = await postAiChat({
           instruction,
-          document: editor.getContent(),
+          document: ws.getText(),
           model,
         });
 
         const parsed = parseAssistantReply(data.message ?? "");
-        const clientId = editor.getClientId() ?? userMsg.clientId;
+        const clientId = ws.getClientId() ?? userMsg.clientId;
         const aiMsg: RoomChatMessage = {
           id: newChatMessageId(),
           clientId,
@@ -215,9 +195,9 @@ export function RoomChatSidebar({
           createdAt: Date.now(),
           documentEdit: parsed.documentEdit,
         };
-        editor.appendChatMessage(aiMsg);
+        ws.appendChatMessage(aiMsg);
         if (parsed.documentEdit != null) {
-          editor.applyAiEdit(parsed.documentEdit);
+          ws.applyAiEdit(parsed.documentEdit);
         }
       } catch (err) {
         const detail = err instanceof Error ? err.message : "Unknown error";
@@ -228,15 +208,15 @@ export function RoomChatSidebar({
         setBusy(false);
       }
     },
-    [editorRef, model],
+    [workspace, model],
   );
 
   const send = useCallback(async () => {
     const text = input.trim();
-    const editor = editorRef.current;
-    if (!text || busy || !editor) return;
+    const ws = workspace;
+    if (!text || busy || !ws) return;
 
-    const clientId = editor.getClientId();
+    const clientId = ws.getClientId();
     if (clientId == null) return;
 
     const mention = mentionsAi(text);
@@ -256,15 +236,16 @@ export function RoomChatSidebar({
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
+    workspace?.publishTyping(false);
     if (inputRef.current) {
       inputRef.current.style.height = "";
     }
-    editor.appendChatMessage(userMsg);
+    ws.appendChatMessage(userMsg);
 
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, editorRef, input, invokeAi, user.color, user.name]);
+  }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
@@ -280,7 +261,17 @@ export function RoomChatSidebar({
     <div className="flex h-full min-h-0 flex-col">
       <SidePanelHeader
         title="Chat"
-        meta={`${peerCount} online`}
+        meta={
+          <>
+            <AvatarStack
+              peers={peers}
+              selfClientId={selfClientId}
+              max={3}
+              size={22}
+            />
+            <span>{peers.length} online</span>
+          </>
+        }
         actions={
           <button
             type="button"
@@ -307,6 +298,12 @@ export function RoomChatSidebar({
         onSuggestion={insertSuggestion}
         stickBottom={stickBottom}
         onScrollToBottom={scrollToBottom}
+        peerCount={peers.length}
+      />
+
+      <TypingIndicator
+        typing={peers.filter((peer) => peer.typing)}
+        selfClientId={selfClientId}
       />
 
       <ChatComposer
@@ -320,6 +317,7 @@ export function RoomChatSidebar({
         onInputChange={(value, caret) => {
           setInput(value);
           updateMentionState(value, caret);
+          workspace?.publishTyping(value.trim().length > 0);
         }}
         onModelChange={handleModelChange}
         onSend={() => void send()}

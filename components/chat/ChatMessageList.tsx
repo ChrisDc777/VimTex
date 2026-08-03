@@ -24,6 +24,8 @@ type ChatMessageListProps = {
   onSuggestion: (text: string) => void;
   stickBottom: boolean;
   onScrollToBottom: () => void;
+  /** Current room occupancy; used to show a "waiting for peers" empty state. */
+  peerCount?: number;
 };
 
 export function ChatMessageList({
@@ -40,6 +42,7 @@ export function ChatMessageList({
   onSuggestion,
   stickBottom,
   onScrollToBottom,
+  peerCount,
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -52,6 +55,12 @@ export function ChatMessageList({
             <p className="vt-chat-empty__subtitle">
               Mention @vimothy to edit the note
             </p>
+            {peerCount != null && peerCount <= 1 ? (
+              <p className="vt-chat-empty__waiting">
+                You&apos;re the only one here — share the room link to invite
+                teammates.
+              </p>
+            ) : null}
             <div className="vt-chat-empty__suggestions">
               {EMPTY_SUGGESTIONS.map((suggestion) => (
                 <button

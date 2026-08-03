@@ -1,12 +1,14 @@
 "use client";
 
 import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
-import type { CollabStatus, VimMode } from "@/lib/types";
+import { PeerChips } from "@/components/presence/PeerChips";
+import type { CollabStatus, PeerInfo, VimMode } from "@/lib/types";
 
 type StudioStatusBarProps = {
   vimMode: VimMode;
   collabStatus: CollabStatus;
-  peerCount: number;
+  peers: PeerInfo[];
+  selfClientId?: number | null;
   userName: string;
   onEditName?: () => void;
   onOpenCheatsheet?: () => void;
@@ -25,7 +27,8 @@ function formatMode(mode: VimMode): string {
 export function StudioStatusBar({
   vimMode,
   collabStatus,
-  peerCount,
+  peers,
+  selfClientId,
   userName,
   onEditName,
   onOpenCheatsheet,
@@ -74,10 +77,13 @@ export function StudioStatusBar({
         </span>
         {collabStatus === "connected" ? (
           <>
-            <span className="shrink-0" aria-hidden>
-              ·
-            </span>
-            <span className="shrink-0">{peerCount} online</span>
+            <PeerChips
+              peers={peers}
+              selfClientId={selfClientId}
+              max={3}
+              size={18}
+            />
+            <span className="shrink-0">{peers.length} online</span>
           </>
         ) : null}
         <span className="hidden shrink-0 sm:inline" aria-hidden>

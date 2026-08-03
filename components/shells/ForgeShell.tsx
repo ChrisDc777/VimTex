@@ -13,6 +13,7 @@ import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { ReconnectBanner } from "@/components/ReconnectBanner";
 import { SnippetMenu } from "@/components/SnippetMenu";
+import { VtToaster } from "@/components/VtToaster";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
@@ -24,6 +25,10 @@ import {
   SidePanelRailButton,
 } from "@/components/SidePanelRail";
 import type { VimEditorHandle } from "@/components/VimEditor";
+import {
+  WorkspaceProvider,
+  useWorkspaceController,
+} from "@/components/workspace/WorkspaceContext";
 import {
   createCollabUser,
   loadDisplayName,
@@ -55,7 +60,7 @@ import {
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
-import type { CollabStatus, CollabUser, VimMode } from "@/lib/types";
+import type { CollabStatus, CollabUser, PeerInfo, VimMode } from "@/lib/types";
 
 const VimEditor = dynamic(
   () => import("@/components/VimEditor").then((m) => m.VimEditor),
@@ -84,7 +89,7 @@ export function ForgeShell({
   const [localSeed, setLocalSeed] = useState<string | null>(null);
   const [collabStatus, setCollabStatus] =
     useState<CollabStatus>("connecting");
-  const [peerCount, setPeerCount] = useState(1);
+  const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [urlRoomId, setUrlRoomId] = useState<string | null>(null);
   const [user, setUser] = useState<CollabUser | null>(null);
@@ -339,12 +344,26 @@ export function ForgeShell({
 
   const ready = hydrated && !!roomId && !!user;
 
+  const workspace = useWorkspaceController({
+    enabled: ready,
+    roomId,
+    user,
+    collaborationEnabled: true,
+    localSeed,
+    onTextChange: handleNoteChange,
+    onCollabStatus: setCollabStatus,
+    onPeersChange: setPeers,
+  });
+
+  const selfClientId = workspace?.getClientId() ?? null;
+
   const openRoomIds = useMemo(
     () => new Set(tabs.map((tab) => tab.roomId)),
     [tabs],
   );
 
   return (
+    <WorkspaceProvider value={workspace}>
     <div className="app-shell ui-forge flex h-dvh flex-col text-ink">
       <AppHeader
         ready={ready}
@@ -404,17 +423,10 @@ export function ForgeShell({
                     <VimEditor
                       key={`${roomId}-${editorMode}`}
                       ref={editorRef}
-                      roomId={roomId}
-                      user={user}
-                      collaborationEnabled
                       vimEnabled={editorMode === "vim"}
                       inlineMath
                       relativeLineNumbers={relativeLineNumbers}
-                      localSeed={localSeed}
-                      onChange={handleNoteChange}
                       onVimModeChange={setVimMode}
-                      onCollabStatus={setCollabStatus}
-                      onPeerCount={setPeerCount}
                     />
                   </div>
                 </>
@@ -466,9 +478,9 @@ export function ForgeShell({
                 <RoomChatSidebar
                   open={rightPanelOpen}
                   onClose={closeRightPanel}
-                  peerCount={peerCount}
+                  peers={peers}
+                  selfClientId={selfClientId}
                   user={user}
-                  editorRef={editorRef}
                   chatReady={ready}
                 />
               </div>
@@ -519,7 +531,8 @@ export function ForgeShell({
       <StatusBar
         vimMode={editorMode === "standard" ? "standard" : vimMode}
         collabStatus={collabStatus}
-        peerCount={peerCount}
+        peers={peers}
+        selfClientId={selfClientId}
         userName={user?.name ?? "…"}
         onEditName={user ? openNameEdit : undefined}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
@@ -538,6 +551,8 @@ export function ForgeShell({
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
       />
+      <VtToaster />
     </div>
+    </WorkspaceProvider>
   );
 }

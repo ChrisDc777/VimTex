@@ -3,17 +3,18 @@
 import {
   abbreviateVimMode,
   formatCollabStatus,
-  formatPeerCount,
   formatVimMode,
   statusDotClass,
 } from "@/lib/status-labels";
 import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
-import type { CollabStatus, VimMode } from "@/lib/types";
+import { PeerChips } from "@/components/presence/PeerChips";
+import type { CollabStatus, PeerInfo, VimMode } from "@/lib/types";
 
 type StatusBarProps = {
   vimMode: VimMode;
   collabStatus: CollabStatus;
-  peerCount: number;
+  peers: PeerInfo[];
+  selfClientId?: number | null;
   userName: string;
   onEditName?: () => void;
   onOpenCheatsheet?: () => void;
@@ -22,7 +23,8 @@ type StatusBarProps = {
 export function StatusBar({
   vimMode,
   collabStatus,
-  peerCount,
+  peers,
+  selfClientId,
   userName,
   onEditName,
   onOpenCheatsheet,
@@ -89,14 +91,12 @@ export function StatusBar({
         <span className={statusDotClass(collabStatus)} aria-hidden />
         <span className="vt-footer__status-label">{statusLabel}</span>
         {collabStatus === "connected" ? (
-          <>
-            <span className="vt-footer__status-sep" aria-hidden>
-              ·
-            </span>
-            <span className="vt-footer__peer-count">
-              {formatPeerCount(peerCount)}
-            </span>
-          </>
+          <PeerChips
+            peers={peers}
+            selfClientId={selfClientId}
+            max={3}
+            size={18}
+          />
         ) : null}
       </div>
     </footer>

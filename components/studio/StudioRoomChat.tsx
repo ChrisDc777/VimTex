@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
 import { postAiChat } from "@/lib/ai-client";
@@ -24,9 +23,11 @@ import {
   newChatMessageId,
   type RoomChatMessage,
 } from "@/lib/room-chat";
-import type { CollabUser } from "@/lib/types";
-import type { VimEditorHandle } from "@/components/VimEditor";
+import type { CollabUser, PeerInfo } from "@/lib/types";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { AvatarStack } from "@/components/presence/AvatarStack";
+import { TypingIndicator } from "@/components/presence/TypingIndicator";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export type StudioRoomChatProps = {
   /** When false, render nothing (legacy standalone aside). */
@@ -34,10 +35,10 @@ export type StudioRoomChatProps = {
   /** Render inner panel only — parent supplies sizing chrome (SidePanel). */
   embedded?: boolean;
   onClose: () => void;
-  peerCount: number;
+  peers: PeerInfo[];
+  selfClientId?: number | null;
   user: CollabUser;
-  editorRef: RefObject<VimEditorHandle | null>;
-  /** Bumps when the editor remounts (e.g. room ready) so chat can resubscribe. */
+  /** Bumps when the room is ready so chat can resubscribe. */
   chatReady: boolean;
 };
 
@@ -66,11 +67,12 @@ export function StudioRoomChat({
   open = true,
   embedded = false,
   onClose,
-  peerCount,
+  peers,
+  selfClientId,
   user,
-  editorRef,
   chatReady,
 }: StudioRoomChatProps) {
+  const workspace = useWorkspace();
   const [model, setModel] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -104,32 +106,10 @@ export function StudioRoomChat({
       setCurrentClientId(null);
       return;
     }
-
-    let unsub: (() => void) | undefined;
-    let cancelled = false;
-    let tries = 0;
-    let raf = 0;
-
-    const trySub = () => {
-      if (cancelled) return;
-      const editor = editorRef.current;
-      if (!editor || editor.getClientId() == null) {
-        if (tries++ < 60) {
-          raf = requestAnimationFrame(trySub);
-        }
-        return;
-      }
-      setCurrentClientId(editor.getClientId());
-      unsub = editor.subscribeChat(setMessages);
-    };
-
-    trySub();
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      unsub?.();
-    };
-  }, [chatReady, editorRef]);
+    if (!workspace) return;
+    setCurrentClientId(workspace.getClientId());
+    return workspace.subscribeChat(setMessages);
+  }, [chatReady, workspace]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -180,8 +160,8 @@ export function StudioRoomChat({
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
-      const editor = editorRef.current;
-      if (!editor) return;
+      const ws = workspace;
+      if (!ws) return;
 
       const instruction = stripAiMention(userMsg.text);
       if (!instruction) {
@@ -198,12 +178,12 @@ export function StudioRoomChat({
       try {
         const data = await postAiChat({
           instruction,
-          document: editor.getContent(),
+          document: ws.getText(),
           model,
         });
 
         const parsed = parseAssistantReply(data.message ?? "");
-        const clientId = editor.getClientId() ?? userMsg.clientId;
+        const clientId = ws.getClientId() ?? userMsg.clientId;
         const aiMsg: RoomChatMessage = {
           id: newChatMessageId(),
           clientId,
@@ -215,9 +195,9 @@ export function StudioRoomChat({
           createdAt: Date.now(),
           documentEdit: parsed.documentEdit,
         };
-        editor.appendChatMessage(aiMsg);
+        ws.appendChatMessage(aiMsg);
         if (parsed.documentEdit != null) {
-          editor.applyAiEdit(parsed.documentEdit);
+          ws.applyAiEdit(parsed.documentEdit);
         }
       } catch (err) {
         const detail = err instanceof Error ? err.message : "Unknown error";
@@ -228,15 +208,15 @@ export function StudioRoomChat({
         setBusy(false);
       }
     },
-    [editorRef, model],
+    [workspace, model],
   );
 
   const send = useCallback(async () => {
     const text = input.trim();
-    const editor = editorRef.current;
-    if (!text || busy || !editor) return;
+    const ws = workspace;
+    if (!text || busy || !ws) return;
 
-    const clientId = editor.getClientId();
+    const clientId = ws.getClientId();
     if (clientId == null) return;
 
     const mention = mentionsAi(text);
@@ -256,15 +236,16 @@ export function StudioRoomChat({
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
+    workspace?.publishTyping(false);
     if (inputRef.current) {
       inputRef.current.style.height = "";
     }
-    editor.appendChatMessage(userMsg);
+    ws.appendChatMessage(userMsg);
 
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, editorRef, input, invokeAi, user.color, user.name]);
+  }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
@@ -280,8 +261,14 @@ export function StudioRoomChat({
     <>
       <div className="vt-chat-panel__header">
         <p className="vt-chat-panel__title">
-          Chat <span>· {peerCount} online</span>
+          Chat <span>· {peers.length} online</span>
         </p>
+        <AvatarStack
+          peers={peers}
+          selfClientId={selfClientId}
+          max={3}
+          size={22}
+        />
         <button
           type="button"
           onClick={onClose}
@@ -298,12 +285,18 @@ export function StudioRoomChat({
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2.5 py-2"
       >
         {messages.length === 0 ? (
-          <p className="text-xs leading-relaxed text-mute">
-            Message the room. Type @ to ask Vimothy.
-          </p>
-        ) : null}
-
-        {messages.map((m, i) => {
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs leading-relaxed text-mute">
+              Message the room. Type @ to ask Vimothy.
+            </p>
+            {peers.length <= 1 ? (
+              <p className="vt-chat-empty__waiting">
+                You&apos;re the only one here — share the room link to invite
+                teammates.
+              </p>
+            ) : null}
+          </div>
+        ) : null}        {messages.map((m, i) => {
           const isAi = m.role === "ai";
           const isSelf =
             !isAi &&
@@ -368,6 +361,11 @@ export function StudioRoomChat({
         ) : null}
       </div>
 
+      <TypingIndicator
+        typing={peers.filter((peer) => peer.typing)}
+        selfClientId={selfClientId}
+      />
+
       <ChatComposer
         input={input}
         busy={busy}
@@ -379,6 +377,7 @@ export function StudioRoomChat({
         onInputChange={(value, caret) => {
           setInput(value);
           updateMentionState(value, caret);
+          workspace?.publishTyping(value.trim().length > 0);
         }}
         onModelChange={setModel}
         onSend={() => void send()}
