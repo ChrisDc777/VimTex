@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import {
+  loadCustomTemplates,
+  removeCustomTemplate,
+  type SessionTemplate,
+} from "@/lib/templates";
 
 type SaveTemplateDialogProps = {
   open: boolean;
@@ -16,18 +21,24 @@ export function SaveTemplateDialog({
   onSave,
 }: SaveTemplateDialogProps) {
   const [value, setValue] = useState(defaultName);
+  const [customs, setCustoms] = useState<SessionTemplate[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
     setValue(defaultName);
+    setCustoms(loadCustomTemplates());
     const t = window.setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     }, 0);
     return () => window.clearTimeout(t);
   }, [open, defaultName]);
+
+  const handleDelete = (id: string) => {
+    setCustoms(removeCustomTemplate(id));
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +96,31 @@ export function SaveTemplateDialog({
             spellCheck={false}
           />
         </label>
+        {customs.length > 0 ? (
+          <div className="mt-5">
+            <p className="vt-caption text-mute">Saved templates</p>
+            <ul className="mt-2 space-y-1.5">
+              {customs.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-hairline bg-canvas-soft px-3 py-2"
+                >
+                  <span className="min-w-0 truncate text-sm text-ink">
+                    {t.label}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${t.label}`}
+                    onClick={() => handleDelete(t.id)}
+                    className="vt-pill vt-pill--ghost vt-pill--label shrink-0"
+                  >
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"

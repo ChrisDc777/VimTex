@@ -50,7 +50,7 @@ c = \\sqrt{a^2 + b^2}
     hint: "Step-through derivation",
     content: `# Derivation
 
-Goal: state what you are deriving.
+Goal: {{goal}}
 
 Start from a known rule:
 
@@ -113,7 +113,7 @@ Name
     hint: "Abstract, methods, results",
     content: `# Paper
 
-Title:
+Title: {{title}}
 
 ## Abstract
 
