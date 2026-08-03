@@ -335,6 +335,12 @@ function parseExplicitDelimiters(text: string): NoteSegment[] {
   return segments;
 }
 
+/** `%` starts a line comment; comments are hidden from the rendered preview. */
+function stripComment(line: string): string {
+  const idx = line.indexOf("%");
+  return idx === -1 ? line : line.slice(0, idx);
+}
+
 /** Auto-detect TeX command spans inside text; whole lines are not promoted. */
 function autoMathLines(content: string, baseOffset: number): NoteSegment[] {
   if (!content) return [];
@@ -357,9 +363,10 @@ function autoMathLines(content: string, baseOffset: number): NoteSegment[] {
       continue;
     }
 
-    if (part.length === 0) continue;
+    const line = stripComment(part);
+    if (line.length === 0) continue;
 
-    segments.push(...parseInlineAutoMath(part, absFrom));
+    segments.push(...parseInlineAutoMath(line, absFrom));
   }
 
   return segments;

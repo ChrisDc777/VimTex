@@ -42,12 +42,13 @@ Browser                    Node (server.mjs :3001)
 | CI / typecheck / API limits | ✅ | `.github/workflows/ci.yml`, `proxy.ts` |
 | Problem reference image | ✅ | `ProblemReferencePanel.tsx` |
 | Two-client collab E2E | ✅ | `e2e/studio-collab.spec.ts` |
+| Canonical document format | ✅ | `docs/FORMAT.md`, `lib/render-note.ts` |
 | Auth / room ACL | ❌ | — |
 | AI diff accept/reject | 🔄 | — |
 
 ## Critical technical debt
 
-1. **Document format ambiguity** — starter Markdown headers vs TeX-focused renderer (#13).
+1. ~~**Document format ambiguity**~~ — resolved by `docs/FORMAT.md` (#13); `%` comments and `$`-as-literal aligned across highlighter and renderer.
 2. **AI is destructive** — full-buffer replace; no diff accept/reject (#M3).
 3. **Monolithic editor** — `VimEditor.tsx` still owns Yjs + chat wiring (#5 deeper).
 4. **Security** — short room IDs; no room auth on public deploy.

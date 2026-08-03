@@ -4,6 +4,8 @@
 
 A collaborative math scratchpad — open a room, type TeX like Vim, and watch KaTeX render as you go. Share the link; everyone edits the same buffer in realtime. Ask `@ai` to rewrite an equation and the whole room sees the change.
 
+> Not the Vim/Neovim LaTeX plugin `lervag/vimtex` — this is a browser-based web app.
+
 **Studio** is the default workspace (Share, Chat, Live/Split). **Forge** (tabs, problem panel, mobile rails) is available as a toggleable alternative. Preference is stored in `localStorage` (`vimtex:uiVariant`).
 
 No accounts required. Sheets can also autosave locally per room in Forge.

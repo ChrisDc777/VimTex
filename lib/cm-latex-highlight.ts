@@ -103,7 +103,6 @@ const TEXT_COMMANDS = new Set([
 const COMMAND_RE = /\\[@a-zA-Z]+/g;
 const ENV_NAME_RE = /\\(?:begin|end)\{([a-zA-Z*]+)\}/g;
 const MATH_DELIM_RE = /\\(?:\(|\)|\[|\])/g;
-const DOLLAR_DELIM_RE = /\$\$?/g;
 const BRACKET_RE = /[{}[\]]/g;
 const NUMBER_RE = /\b\d+(?:\.\d+)?\b/g;
 const OPERATOR_RE = /[\^_]/g;
@@ -219,7 +218,6 @@ function buildHighlightDecorations(doc: string): DecorationSet {
     addEnvNameMatches(spans, active, activeBase);
     addTextStringMatches(spans, active, activeBase);
     addMatches(spans, active, activeBase, MATH_DELIM_RE, "mathDelim");
-    addMatches(spans, active, activeBase, DOLLAR_DELIM_RE, "mathDelim");
     addMatches(spans, active, activeBase, SPECIAL_CHAR_RE, "specialChar");
     addMatches(spans, active, activeBase, ESCAPE_RE, "escape");
     addMatches(spans, active, activeBase, ALIGN_RE, "align");
