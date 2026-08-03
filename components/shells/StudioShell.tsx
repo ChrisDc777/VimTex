@@ -10,6 +10,8 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StudioMenu } from "@/components/studio/StudioMenu";
 import { CommandPalette } from "@/components/CommandPalette";
+import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
+import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { VtToaster } from "@/components/VtToaster";
@@ -43,7 +45,15 @@ import { useStudioSplitLayout } from "@/lib/use-studio-split-layout";
 import { usePaneLayout } from "@/lib/use-pane-layout";
 import { openPreferences } from "@/lib/ui-events";
 import { STARTER_NOTE } from "@/lib/starter-content";
-import { getTemplateContent } from "@/lib/templates";
+import {
+  buildTemplateDefaults,
+  extractTemplateVariables,
+  fillTemplateVariables,
+  getTemplateById,
+  makeTemplateId,
+  saveCustomTemplate,
+  type SessionTemplate,
+} from "@/lib/templates";
 import {
   clearRecentRooms,
   loadRecentRooms,
@@ -97,6 +107,12 @@ export function StudioShell({
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [templatePending, setTemplatePending] =
+    useState<SessionTemplate | null>(null);
+  const [templateDefaults, setTemplateDefaults] = useState<
+    Record<string, string>
+  >({});
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
@@ -183,22 +199,63 @@ export function StudioShell({
     setEditingName(true);
   }, []);
 
-  const handleNewRoom = useCallback((opts?: NewRoomOptions) => {
-    const room = opts?.roomId ?? createRoomId();
-    writeRoomToLocation(room);
-    setRoomId(room);
-    setNote("");
-    setSeed(
-      opts?.templateId
-        ? getTemplateContent(opts.templateId)
-        : STARTER_NOTE,
-    );
-    setChatOpen(false);
-    setCollabStatus("connecting");
-    setPeers([]);
-    setVimMode("normal");
-    requestAnimationFrame(() => editorRef.current?.focus());
-  }, []);
+  const startRoomWithContent = useCallback(
+    (content: string, roomIdOverride?: string) => {
+      const room = roomIdOverride ?? createRoomId();
+      writeRoomToLocation(room);
+      setRoomId(room);
+      setNote("");
+      setSeed(content || STARTER_NOTE);
+      setChatOpen(false);
+      setCollabStatus("connecting");
+      setPeers([]);
+      setVimMode("normal");
+      requestAnimationFrame(() => editorRef.current?.focus());
+    },
+    [],
+  );
+
+  const handleNewRoom = useCallback(
+    (opts?: NewRoomOptions) => {
+      const template = opts?.templateId
+        ? getTemplateById(opts.templateId)
+        : undefined;
+      const variables = template
+        ? extractTemplateVariables(template.content)
+        : [];
+      if (template && variables.length > 0) {
+        setTemplateDefaults(buildTemplateDefaults(variables, user?.name));
+        setTemplatePending(template);
+        return;
+      }
+      startRoomWithContent(template?.content ?? "", opts?.roomId);
+    },
+    [user?.name, startRoomWithContent],
+  );
+
+  const handleTemplateSubmit = useCallback(
+    (values: Record<string, string>) => {
+      if (!templatePending) return;
+      startRoomWithContent(fillTemplateVariables(templatePending.content, values));
+      setTemplatePending(null);
+    },
+    [templatePending, startRoomWithContent],
+  );
+
+  const handleSaveTemplate = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      saveCustomTemplate({
+        id: makeTemplateId(trimmed),
+        label: trimmed,
+        hint: "Custom",
+        content: note,
+      });
+      setSaveTemplateOpen(false);
+    },
+    [note],
+  );
 
   // Keep the recent-rooms list fresh (records the current room on entry and
   // on every room switch, including template/blank new sheets).
@@ -476,6 +533,20 @@ export function StudioShell({
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
         onOpenOnboarding={() => setOnboardingOpen(true)}
+        onSaveAsTemplate={() => setSaveTemplateOpen(true)}
+      />
+      <TemplateVariablesDialog
+        open={templatePending !== null}
+        template={templatePending}
+        defaults={templateDefaults}
+        onClose={() => setTemplatePending(null)}
+        onSubmit={handleTemplateSubmit}
+      />
+      <SaveTemplateDialog
+        open={saveTemplateOpen}
+        defaultName="My template"
+        onClose={() => setSaveTemplateOpen(false)}
+        onSave={handleSaveTemplate}
       />
       <VtToaster />
     </div>
