@@ -30,6 +30,7 @@ type CommandPaletteProps = {
   onToggleChat: () => void;
   onOpenCheatsheet: () => void;
   onOpenPreferences: () => void;
+  onOpenOnboarding: () => void;
   /** Split/Live shell (Studio) — adds the view-mode switch command. */
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
@@ -83,6 +84,7 @@ export function CommandPalette({
   onTogglePreview,
   onOpenCheatsheet,
   onOpenPreferences,
+  onOpenOnboarding,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -187,6 +189,13 @@ export function CommandPalette({
       hint: "Editor",
       run: () => onOpenPreferences(),
     });
+    list.push({
+      id: "onboarding",
+      label: "Show welcome intro",
+      keywords: "welcome onboarding intro get started help",
+      hint: "Help",
+      run: () => onOpenOnboarding(),
+    });
     const otherVariant = uiVariant === "studio" ? "forge" : "studio";
     list.push({
       id: "switch-shell",
@@ -210,6 +219,7 @@ export function CommandPalette({
     onTogglePreview,
     onOpenCheatsheet,
     onOpenPreferences,
+    onOpenOnboarding,
     onUiVariantChange,
   ]);
 

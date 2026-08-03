@@ -457,6 +457,7 @@ export function StudioShell({
       <VimCheatsheetDialog
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
       />
       <CommandPalette
         open={paletteOpen}
@@ -474,6 +475,7 @@ export function StudioShell({
         onToggleChat={() => setChatOpen((v) => !v)}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
       />
       <VtToaster />
     </div>
