@@ -16,7 +16,6 @@ import {
 import { defaultKeymap } from "@codemirror/commands";
 import { CodeMirror, getCM, vim, Vim } from "@replit/codemirror-vim";
 import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 import { mathInlineWidgets } from "@/lib/cm-math-widgets";
 import { editorPlaceholder } from "@/lib/cm-placeholder";
@@ -26,58 +25,34 @@ import {
   createLineNumberCompartment,
   lineNumberExtensions,
 } from "@/lib/cm-line-numbers";
-import { getCollabWsBase } from "@/lib/collab";
-import type { RoomChatMessage } from "@/lib/room-chat";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import {
   SNIPPET_CURSOR,
   SNIPPET_SEL_CLOSE,
   SNIPPET_SEL_OPEN,
 } from "@/lib/snippets";
 import { EDITOR_PLACEHOLDER } from "@/lib/starter-content";
-import type { CollabStatus, CollabUser, VimMode } from "@/lib/types";
+import type { VimMode } from "@/lib/types";
 
 export type VimEditorHandle = {
   focus: () => void;
-  getContent: () => string;
-  /** Replace the entire Yjs-backed buffer (syncs to all peers). */
-  replaceAll: (content: string) => void;
-  /** Alias for replaceAll — used by room @ai edits. */
-  applyAiEdit: (content: string) => void;
   /**
    * Insert a snippet template at the cursor, honoring SNIPPET_CURSOR /
    * SNIPPET_SEL_* markers from lib/snippets.
    */
   insertSnippet: (template: string) => void;
-  /** Local Yjs client id, or null before the doc is ready. */
-  getClientId: () => number | null;
-  /** Subscribe to the shared room chat array; returns unsubscribe. */
-  subscribeChat: (
-    cb: (messages: RoomChatMessage[]) => void,
-  ) => () => void;
-  appendChatMessage: (msg: RoomChatMessage) => void;
 };
 
 type VimEditorProps = {
-  roomId: string;
-  user: CollabUser;
-  /** When true, connect WebSocket and sync with peers. Default true. */
-  collaborationEnabled?: boolean;
   /** When false, plain CodeMirror keybindings (no Vim). Default true. */
   vimEnabled?: boolean;
   /** Render KaTeX inline widgets in the editor. Default true. */
   inlineMath?: boolean;
   /** Show relative line numbers in the gutter (default true). */
   relativeLineNumbers?: boolean;
-  /** Local autosave seed when the buffer is empty (solo or pre-sync). */
-  localSeed?: string | null;
-  /** Seed inserted after first collab sync if the room is empty. */
-  emptyRoomSeed?: string | null;
   /** Show empty-editor placeholder. Default true. */
   showPlaceholder?: boolean;
-  onChange: (value: string) => void;
   onVimModeChange: (mode: VimMode) => void;
-  onCollabStatus: (status: CollabStatus) => void;
-  onPeerCount: (count: number) => void;
 };
 
 const vimTexTheme = EditorView.theme(
@@ -112,16 +87,31 @@ const vimTexTheme = EditorView.theme(
   { dark: true },
 );
 
-function setAwarenessUser(
-  provider: WebsocketProvider,
-  user: CollabUser,
-): void {
-  provider.awareness.setLocalStateField("user", {
-    name: user.name,
-    color: user.color,
-    colorLight: user.colorLight,
-  });
-}
+/** Remote peer cursor/selection labels, matched to the app's design tokens. */
+const remoteSelectionTheme = EditorView.theme({
+  ".cm-ySelectionInfo": {
+    fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+    fontSize: "10px",
+    fontWeight: "600",
+    lineHeight: "1.6",
+    borderRadius: "4px",
+    paddingLeft: "5px",
+    paddingRight: "5px",
+    top: "-1.45em",
+    boxShadow: "0 1px 4px rgba(0, 0, 0, 0.35)",
+  },
+  ".cm-ySelectionCaret": {
+    borderLeftWidth: "1.5px",
+    borderRightWidth: "1.5px",
+  },
+  ".cm-ySelectionCaretDot": {
+    border: "1px solid var(--canvas)",
+    width: "0.42em",
+    height: "0.42em",
+    top: "-0.24em",
+    left: "-0.24em",
+  },
+});
 
 /** Active Y.UndoManager for the live editor — used by Vim chord maps. */
 let activeUndoManager: Y.UndoManager | null = null;
@@ -147,246 +137,67 @@ function wireVimUndoRedo(): void {
 export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
   function VimEditor(
     {
-      roomId,
-      user,
-      collaborationEnabled = true,
       vimEnabled = true,
       inlineMath = true,
       relativeLineNumbers = true,
-      localSeed,
-      emptyRoomSeed = null,
       showPlaceholder = true,
-      onChange,
       onVimModeChange,
-      onCollabStatus,
-      onPeerCount,
     },
     ref,
   ) {
+    const workspace = useWorkspace();
     const hostRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
-    const providerRef = useRef<WebsocketProvider | null>(null);
-    const undoManagerRef = useRef<Y.UndoManager | null>(null);
-    const ydocRef = useRef<Y.Doc | null>(null);
-    const ytextRef = useRef<Y.Text | null>(null);
-    const ychatRef = useRef<Y.Array<RoomChatMessage> | null>(null);
     const inlineMathRef = useRef(new Compartment());
     const lineNumberCompartmentRef = useRef(createLineNumberCompartment());
-    const onChangeRef = useRef(onChange);
     const onVimModeChangeRef = useRef(onVimModeChange);
-    const onCollabStatusRef = useRef(onCollabStatus);
-    const onPeerCountRef = useRef(onPeerCount);
-    const userRef = useRef(user);
-    const localSeedRef = useRef(localSeed);
-    const emptyRoomSeedRef = useRef(emptyRoomSeed);
-    const relativeLineNumbersRef = useRef(relativeLineNumbers);
 
-    onChangeRef.current = onChange;
     onVimModeChangeRef.current = onVimModeChange;
-    onCollabStatusRef.current = onCollabStatus;
-    onPeerCountRef.current = onPeerCount;
-    userRef.current = user;
-    localSeedRef.current = localSeed;
-    emptyRoomSeedRef.current = emptyRoomSeed;
-    relativeLineNumbersRef.current = relativeLineNumbers;
 
-    useImperativeHandle(ref, () => {
-      const replaceAll = (content: string) => {
-        const ydoc = ydocRef.current;
-        const ytext = ytextRef.current;
-        if (!ydoc || !ytext) return;
-        ydoc.transact(() => {
-          const len = ytext.length;
-          if (len > 0) ytext.delete(0, len);
-          if (content.length > 0) ytext.insert(0, content);
-        }, "ai-edit");
-      };
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        viewRef.current?.focus();
+      },
+      insertSnippet: (template) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const markerPattern = /[\uE000\uE001\uE002]/g;
+        const sel = view.state.selection.main;
+        const stripped = template.replace(markerPattern, "");
+        const idxBefore = (n: number) =>
+          template.slice(0, n).replace(markerPattern, "").length;
 
-      const readChat = (): RoomChatMessage[] => {
-        const arr = ychatRef.current;
-        if (!arr) return [];
-        return arr.toArray().filter(
-          (m): m is RoomChatMessage =>
-            !!m &&
-            typeof m === "object" &&
-            typeof m.id === "string" &&
-            typeof m.text === "string",
-        );
-      };
+        const cursorIdx = template.indexOf(SNIPPET_CURSOR);
+        const selOpenIdx = template.indexOf(SNIPPET_SEL_OPEN);
+        const selCloseIdx = template.indexOf(SNIPPET_SEL_CLOSE);
 
-      return {
-        focus: () => {
-          viewRef.current?.focus();
-        },
-        getContent: () =>
-          ytextRef.current?.toString() ??
-          viewRef.current?.state.doc.toString() ??
-          "",
-        replaceAll,
-        applyAiEdit: replaceAll,
-        getClientId: () => ydocRef.current?.clientID ?? null,
-        insertSnippet: (template) => {
-          const view = viewRef.current;
-          if (!view) return;
-          const markerPattern = /[\uE000\uE001\uE002]/g;
-          const sel = view.state.selection.main;
-          const stripped = template.replace(markerPattern, "");
-          const idxBefore = (n: number) =>
-            template.slice(0, n).replace(markerPattern, "").length;
+        let anchor = sel.from + stripped.length;
+        let head: number | undefined;
+        if (cursorIdx >= 0) {
+          anchor = sel.from + idxBefore(cursorIdx);
+        } else if (selOpenIdx >= 0 && selCloseIdx > selOpenIdx) {
+          anchor = sel.from + idxBefore(selCloseIdx);
+          head = sel.from + idxBefore(selOpenIdx);
+        }
 
-          const cursorIdx = template.indexOf(SNIPPET_CURSOR);
-          const selOpenIdx = template.indexOf(SNIPPET_SEL_OPEN);
-          const selCloseIdx = template.indexOf(SNIPPET_SEL_CLOSE);
-
-          let anchor = sel.from + stripped.length;
-          let head: number | undefined;
-          if (cursorIdx >= 0) {
-            anchor = sel.from + idxBefore(cursorIdx);
-          } else if (selOpenIdx >= 0 && selCloseIdx > selOpenIdx) {
-            anchor = sel.from + idxBefore(selCloseIdx);
-            head = sel.from + idxBefore(selOpenIdx);
-          }
-
-          view.dispatch({
-            changes: {
-              from: sel.from,
-              to: sel.to,
-              insert: stripped,
-            },
-            selection: { anchor, head },
-            scrollIntoView: true,
-          });
-          view.focus();
-        },
-        subscribeChat: (cb) => {
-          const arr = ychatRef.current;
-          if (!arr) {
-            cb([]);
-            return () => {};
-          }
-          const emit = () => cb(readChat());
-          emit();
-          arr.observe(emit);
-          return () => {
-            arr.unobserve(emit);
-          };
-        },
-        appendChatMessage: (msg) => {
-          const ydoc = ydocRef.current;
-          const arr = ychatRef.current;
-          if (!ydoc || !arr) return;
-          ydoc.transact(() => {
-            arr.push([msg]);
-          }, "chat");
-        },
-      };
-    });
+        view.dispatch({
+          changes: {
+            from: sel.from,
+            to: sel.to,
+            insert: stripped,
+          },
+          selection: { anchor, head },
+          scrollIntoView: true,
+        });
+        view.focus();
+      },
+    }));
 
     useEffect(() => {
-      const provider = providerRef.current;
-      if (!provider) return;
-      setAwarenessUser(provider, user);
-    }, [user.name, user.color, user.colorLight, user]);
+      const host = hostRef.current;
+      if (!host || !workspace) return;
 
-    useEffect(() => {
-      const ydoc = ydocRef.current;
-      const ytext = ytextRef.current;
-      const um = undoManagerRef.current;
-      if (!ydoc || !ytext || !um) return;
-
-      const seed = localSeed?.trim();
-      if (!seed || ytext.length > 0) return;
-
-      ydoc.transact(() => {
-        ytext.insert(0, seed);
-      }, "local-seed");
-      um.clear();
-    }, [localSeed]);
-
-    useEffect(() => {
-      if (!hostRef.current) return;
-
-      const ydoc = new Y.Doc();
-      const ytext = ydoc.getText("codemirror");
-      const ychat = ydoc.getArray<RoomChatMessage>("chat");
-      ydocRef.current = ydoc;
-      ytextRef.current = ytext;
-      ychatRef.current = ychat;
-      const wsBase = getCollabWsBase();
-      const provider = new WebsocketProvider(wsBase, roomId, ydoc, {
-        connect: collaborationEnabled,
-      });
-      providerRef.current = provider;
-
-      setAwarenessUser(provider, userRef.current);
-
-      const um = new Y.UndoManager(ytext);
-      undoManagerRef.current = um;
-
-      const updatePeerCount = () => {
-        onPeerCountRef.current(provider.awareness.getStates().size);
-      };
-
-      const onStatus = (event: { status: string }) => {
-        if (
-          event.status === "connected" ||
-          event.status === "disconnected" ||
-          event.status === "connecting"
-        ) {
-          onCollabStatusRef.current(event.status);
-        }
-      };
-
-      const emitText = () => {
-        onChangeRef.current(ytext.toString());
-      };
-      ytext.observe(emitText);
-
-      if (collaborationEnabled) {
-        onCollabStatusRef.current("connecting");
-        provider.on("status", onStatus);
-        provider.awareness.on("change", updatePeerCount);
-        updatePeerCount();
-
-        let seeded = false;
-        const maybeSeed = (synced: boolean) => {
-          if (!synced || seeded) return;
-          seeded = true;
-          if (ytext.length === 0) {
-            const seed =
-              emptyRoomSeedRef.current?.trim() ||
-              localSeedRef.current?.trim() ||
-              "";
-            if (seed) {
-              ydoc.transact(() => {
-                ytext.insert(0, seed);
-              }, "seed");
-              um.clear();
-            }
-          }
-          emitText();
-        };
-        provider.on("sync", maybeSeed);
-      } else {
-        onCollabStatusRef.current("local");
-        onPeerCountRef.current(1);
-        if (ytext.length === 0) {
-          const seed = localSeedRef.current?.trim();
-          if (seed) {
-            ydoc.transact(() => {
-              ytext.insert(0, seed);
-            }, "local-seed");
-            um.clear();
-          }
-        }
-        emitText();
-      }
-
-      const updateListener = EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          onChangeRef.current(update.state.doc.toString());
-        }
-      });
+      const { ytext, provider, undoManager: um } = workspace;
 
       wireVimUndoRedo();
       activeUndoManager = um;
@@ -430,7 +241,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         extensions: [
           ...(vimEnabled ? [vim()] : []),
           lineNumberCompartmentRef.current.of(
-            lineNumberExtensions(relativeLineNumbersRef.current),
+            lineNumberExtensions(relativeLineNumbers),
           ),
           highlightActiveLine(),
           drawSelection(),
@@ -439,8 +250,8 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           ...latexHighlightExtension,
           keymap.of(defaultKeymap),
           vimTexTheme,
+          remoteSelectionTheme,
           EditorView.lineWrapping,
-          updateListener,
           yCollab(ytext, provider.awareness, { undoManager: um }),
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
@@ -449,7 +260,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
 
       const view = new EditorView({
         state,
-        parent: hostRef.current,
+        parent: host,
       });
       viewRef.current = view;
 
@@ -472,26 +283,15 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         }
         CodeMirror.commands.undo = prevUndo;
         CodeMirror.commands.redo = prevRedo;
-        if (collaborationEnabled) {
-          provider.off("status", onStatus);
-          provider.awareness.off("change", updatePeerCount);
-        }
-        ytext.unobserve(emitText);
-        provider.destroy();
-        um.destroy();
         if (activeUndoManager === um) activeUndoManager = null;
-        ydoc.destroy();
         view.destroy();
         viewRef.current = null;
-        providerRef.current = null;
-        undoManagerRef.current = null;
-        ydocRef.current = null;
-        ytextRef.current = null;
-        ychatRef.current = null;
       };
-      // Remount when room, collab, or Vim binding changes.
+      // Remount when the workspace (room/collab) or Vim binding changes.
+      // inlineMath/relativeLineNumbers/showPlaceholder reconfigure via
+      // compartments/placeholder below — no view remount needed.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId, collaborationEnabled, vimEnabled]);
+    }, [workspace, vimEnabled]);
 
     useEffect(() => {
       const view = viewRef.current;

@@ -466,14 +466,14 @@
 .ui-studio .vt-chat-composer__field {
   flex: 1;
   min-width: 0;
-  min-height: 32px;
+  min-height: 24px;
   max-height: 88px;
   resize: none;
-  border: 1px solid var(--hairline);
-  border-radius: 14px;
-  background: var(--canvas-soft);
+  overflow-y: auto;
+  border: none;
+  background: transparent;
   color: var(--ink);
-  padding: 7px 11px;
+  padding: 2px 4px;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 13px;
   line-height: 1.35;
@@ -492,10 +492,6 @@
 
 .ui-studio .vt-chat-composer__field:disabled {
   opacity: 0.5;
-}
-
-.ui-studio .vt-chat-composer__field:focus-visible {
-  border-color: color-mix(in srgb, var(--accent-breeze) 55%, var(--hairline));
 }
 
 .ui-studio .vt-chat-model {

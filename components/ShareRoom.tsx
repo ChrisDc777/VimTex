@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SafeSvg } from "@/components/SafeSvg";
+import { notify } from "@/lib/toasts";
 
 type ShareRoomProps = {
   roomId: string;
@@ -25,6 +26,7 @@ export function ShareRoom({ roomId, variant = "forge" }: ShareRoomProps) {
       await navigator.clipboard.writeText(href);
       setCopied(true);
       setFallbackUrl(null);
+      notify.success("Room link copied");
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       setFallbackUrl(href);
