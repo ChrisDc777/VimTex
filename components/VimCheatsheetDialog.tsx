@@ -94,7 +94,10 @@ export function VimCheatsheetDialog({
           {onOpenOnboarding ? (
             <button
               type="button"
-              onClick={onOpenOnboarding}
+              onClick={() => {
+                onClose();
+                onOpenOnboarding?.();
+              }}
               className="vt-pill vt-pill--ghost vt-pill--label"
             >
               Replay welcome
