@@ -6,7 +6,6 @@ import { SafeSvg } from "@/components/SafeSvg";
 import type { EditorMode } from "@/lib/editor-mode";
 import { exportAsMd, exportAsTex } from "@/lib/export";
 import type { UiVariant } from "@/lib/ui-variant";
-import { getAllTemplates } from "@/lib/templates";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { NewRoomOptions } from "@/lib/types";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
@@ -20,6 +19,7 @@ type StudioMenuProps = {
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
   onNewRoom: (opts?: NewRoomOptions) => void;
+  onOpenSheetPicker: () => void;
   recentRooms: RecentRoom[];
   onClearRecentRooms: () => void;
   relativeLineNumbers: boolean;
@@ -56,6 +56,7 @@ export function StudioMenu({
   uiVariant,
   onUiVariantChange,
   onNewRoom,
+  onOpenSheetPicker,
   recentRooms,
   onClearRecentRooms,
   relativeLineNumbers,
@@ -151,25 +152,11 @@ export function StudioMenu({
           type="button"
           role="menuitem"
           className="vt-header-menu__item"
-          onClick={() => run(() => onNewRoom())}
+          onClick={() => run(() => onOpenSheetPicker())}
         >
-          <span className="vt-header-menu__label">New room</span>
-          <span className="vt-header-menu__hint">Starter</span>
+          <span className="vt-header-menu__label">New sheet…</span>
+          <span className="vt-header-menu__hint">Templates</span>
         </button>
-        {getAllTemplates()
-          .filter((t) => t.id !== "blank")
-          .map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="menuitem"
-            className="vt-header-menu__item"
-            onClick={() => run(() => onNewRoom({ templateId: t.id }))}
-          >
-            <span className="vt-header-menu__label">{t.label}</span>
-            <span className="vt-header-menu__hint">{t.hint}</span>
-          </button>
-        ))}
         <div className="vt-header-menu__divider" role="separator" />
         <div className="vt-caption px-2 py-1 text-mute">Export</div>
         <button

@@ -17,6 +17,7 @@ import { VtToaster } from "@/components/VtToaster";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
+import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
@@ -122,6 +123,7 @@ export function ForgeShell({
     Record<string, string>
   >({});
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [sheetPickerOpen, setSheetPickerOpen] = useState(false);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
@@ -408,6 +410,14 @@ export function ForgeShell({
     [note],
   );
 
+  const handleSheetSelect = useCallback(
+    (templateId: string) => {
+      setSheetPickerOpen(false);
+      handleNewRoom({ templateId });
+    },
+    [handleNewRoom],
+  );
+
   const handleSelectTab = useCallback(
     (targetRoomId: string) => {
       selectTab(targetRoomId, note);
@@ -456,7 +466,7 @@ export function ForgeShell({
         ready={ready}
         note={note}
         canNewSheet={canNewTab}
-        onNewSheet={handleNewSheet}
+        onOpenSheetPicker={() => setSheetPickerOpen(true)}
         roomId={roomId}
         uiVariant={uiVariant}
         onUiVariantChange={onUiVariantChange}
@@ -647,7 +657,7 @@ export function ForgeShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
-        onNewRoom={handleNewRoom}
+        onOpenSheetPicker={() => setSheetPickerOpen(true)}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}
         onToggleChat={toggleChat}
@@ -669,6 +679,11 @@ export function ForgeShell({
         defaultName="My template"
         onClose={() => setSaveTemplateOpen(false)}
         onSave={handleSaveTemplate}
+      />
+      <NewSheetDialog
+        open={sheetPickerOpen}
+        onClose={() => setSheetPickerOpen(false)}
+        onSelect={handleSheetSelect}
       />
       <VtToaster />
     </div>

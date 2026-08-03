@@ -12,6 +12,7 @@ import { StudioMenu } from "@/components/studio/StudioMenu";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
+import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { VtToaster } from "@/components/VtToaster";
@@ -113,6 +114,7 @@ export function StudioShell({
     Record<string, string>
   >({});
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [sheetPickerOpen, setSheetPickerOpen] = useState(false);
   const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
@@ -257,6 +259,14 @@ export function StudioShell({
     [note],
   );
 
+  const handleSheetSelect = useCallback(
+    (templateId: string) => {
+      setSheetPickerOpen(false);
+      handleNewRoom({ templateId });
+    },
+    [handleNewRoom],
+  );
+
   // Keep the recent-rooms list fresh (records the current room on entry and
   // on every room switch, including template/blank new sheets).
   useEffect(() => {
@@ -392,6 +402,7 @@ export function StudioShell({
             uiVariant={uiVariant}
             onUiVariantChange={onUiVariantChange}
             onNewRoom={handleNewRoom}
+            onOpenSheetPicker={() => setSheetPickerOpen(true)}
             recentRooms={recentRooms}
             onClearRecentRooms={() => {
               clearRecentRooms();
@@ -525,7 +536,7 @@ export function StudioShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
-        onNewRoom={handleNewRoom}
+        onOpenSheetPicker={() => setSheetPickerOpen(true)}
         onViewModeChange={handleViewMode}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}
@@ -547,6 +558,11 @@ export function StudioShell({
         defaultName="My template"
         onClose={() => setSaveTemplateOpen(false)}
         onSave={handleSaveTemplate}
+      />
+      <NewSheetDialog
+        open={sheetPickerOpen}
+        onClose={() => setSheetPickerOpen(false)}
+        onSelect={handleSheetSelect}
       />
       <VtToaster />
     </div>

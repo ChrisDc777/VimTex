@@ -96,7 +96,7 @@ test.describe("M1 core editing and activation", () => {
       palette.getByRole("option", { name: /copy room link/i }),
     ).toBeVisible();
     await expect(
-      palette.getByRole("option", { name: /new homework/i }),
+      palette.getByRole("option", { name: /new sheet/i }),
     ).toBeVisible();
     await expect(
       palette.getByRole("option", { name: /export as latex/i }),

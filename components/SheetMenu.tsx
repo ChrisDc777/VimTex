@@ -14,7 +14,7 @@ type SheetMenuProps = {
   note: string;
   disabled?: boolean;
   canNewSheet?: boolean;
-  onNewSheet: () => void;
+  onOpenSheetPicker: () => void;
   uiVariant?: UiVariant;
   onUiVariantChange?: (variant: UiVariant) => void;
   relativeLineNumbers?: boolean;
@@ -54,7 +54,7 @@ export function SheetMenu({
   note,
   disabled,
   canNewSheet = true,
-  onNewSheet,
+  onOpenSheetPicker,
   uiVariant,
   onUiVariantChange,
   relativeLineNumbers,
@@ -165,7 +165,7 @@ export function SheetMenu({
           className="vt-header-menu__item"
           disabled={!canNewSheet}
           title={canNewSheet ? undefined : "Maximum 5 tabs"}
-          onClick={() => run(onNewSheet)}
+          onClick={() => run(onOpenSheetPicker)}
         >
           <span className="vt-header-menu__label">New sheet</span>
           <span className="vt-header-menu__hint">

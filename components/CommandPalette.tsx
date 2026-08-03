@@ -11,13 +11,9 @@ import {
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
-import {
-  getAllTemplates,
-  type SessionTemplate,
-} from "@/lib/templates";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
-import type { NewRoomOptions, ViewMode } from "@/lib/types";
+import type { ViewMode } from "@/lib/types";
 
 type CommandPaletteProps = {
   open: boolean;
@@ -27,7 +23,7 @@ type CommandPaletteProps = {
   editorMode: EditorMode;
   uiVariant: UiVariant;
   chatOpen: boolean;
-  onNewRoom: (opts?: NewRoomOptions) => void;
+  onOpenSheetPicker: () => void;
   onEditorModeChange: (mode: EditorMode) => void;
   onUiVariantChange: (variant: UiVariant) => void;
   onToggleChat: () => void;
@@ -80,7 +76,7 @@ export function CommandPalette({
   editorMode,
   uiVariant,
   chatOpen,
-  onNewRoom,
+  onOpenSheetPicker,
   onViewModeChange,
   onEditorModeChange,
   onUiVariantChange,
@@ -93,9 +89,6 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const [templates, setTemplates] = useState<SessionTemplate[]>(
-    getAllTemplates,
-  );
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -120,15 +113,13 @@ export function CommandPalette({
         run: () => void copyRoomLink(),
       });
     }
-    for (const t of templates) {
-      list.push({
-        id: `new-${t.id}`,
-        label: `New ${t.id === "blank" ? "blank sheet" : t.label.toLowerCase()}`,
-        keywords: `new room sheet template ${t.label.toLowerCase()}`,
-        hint: t.hint,
-        run: () => onNewRoom({ templateId: t.id }),
-      });
-    }
+    list.push({
+      id: "new-sheet",
+      label: "New sheet…",
+      keywords: "new room sheet template blank blank sheet template picker",
+      hint: "Template",
+      run: () => onOpenSheetPicker(),
+    });
     list.push({
       id: "save-template",
       label: "Save current note as template",
@@ -227,8 +218,7 @@ export function CommandPalette({
     editorMode,
     uiVariant,
     chatOpen,
-    templates,
-    onNewRoom,
+    onOpenSheetPicker,
     onViewModeChange,
     onEditorModeChange,
     onToggleChat,
@@ -254,7 +244,6 @@ export function CommandPalette({
     if (!open) return;
     setQuery("");
     setActiveIndex(0);
-    setTemplates(getAllTemplates());
     const t = window.setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
