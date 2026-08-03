@@ -55,6 +55,26 @@ test.describe("M1 core editing and activation", () => {
     await palette
       .getByRole("option", { name: /show welcome intro/i })
       .click();
+    await expect(palette).toHaveCount(0);
+
+    const dialog = page.getByRole("dialog", { name: /welcome to vimtex/i });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    await dialog.getByRole("button", { name: /start editing/i }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test("onboarding can be re-opened from the shortcuts & tips dialog", async ({
+    page,
+  }) => {
+    await openForge(page);
+
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("?");
+    const cheatsheet = page.getByRole("dialog", { name: /shortcuts & tips/i });
+    await expect(cheatsheet).toBeVisible({ timeout: 5_000 });
+
+    await cheatsheet.getByRole("button", { name: /replay welcome/i }).click();
+    await expect(cheatsheet).toHaveCount(0);
 
     const dialog = page.getByRole("dialog", { name: /welcome to vimtex/i });
     await expect(dialog).toBeVisible({ timeout: 5_000 });
