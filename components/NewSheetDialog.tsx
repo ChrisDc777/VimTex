@@ -74,38 +74,40 @@ export function NewSheetDialog({
         <div
           ref={listRef}
           aria-label="Templates"
-          className="mt-4 max-h-[min(60vh,20rem)] space-y-1.5 overflow-y-auto pr-0.5"
+          className="mt-4 max-h-[min(60vh,20rem)] overflow-y-auto rounded-[var(--radius-sm)] border border-hairline bg-canvas"
         >
           {templates.map((t) => {
             const custom = t.id.startsWith("custom-");
             return (
               <div
                 key={t.id}
-                className="flex items-stretch gap-2 rounded-[var(--radius-sm)] border border-hairline bg-canvas-soft"
+                className="border-t border-hairline first:border-t-0"
               >
-                <button
-                  type="button"
-                  data-sheet-card="true"
-                  onClick={() => onSelect(t.id)}
-                  className="min-w-0 flex-1 rounded-[var(--radius-sm)] px-3 py-2 text-left outline-none focus:bg-ink/5"
-                >
-                  <span className="block truncate text-sm text-ink">
-                    {t.label}
-                  </span>
-                  <span className="vt-caption block truncate text-mute">
-                    {t.hint}
-                  </span>
-                </button>
-                {custom ? (
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    aria-label={`Delete ${t.label}`}
-                    onClick={() => handleDelete(t.id)}
-                    className="vt-pill vt-pill--ghost vt-pill--label m-1.5 shrink-0"
+                    data-sheet-card="true"
+                    onClick={() => onSelect(t.id)}
+                    className="min-w-0 flex-1 px-3 py-2.5 text-left outline-none transition-colors hover:bg-canvas-mid focus-visible:bg-canvas-mid"
                   >
-                    Delete
+                    <span className="block truncate text-sm text-ink">
+                      {t.label}
+                    </span>
+                    <span className="vt-caption block truncate text-mute">
+                      {t.hint}
+                    </span>
                   </button>
-                ) : null}
+                  {custom ? (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${t.label}`}
+                      onClick={() => handleDelete(t.id)}
+                      className="mr-2 shrink-0 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-mute transition-colors hover:bg-canvas-mid hover:text-ink focus-visible:bg-canvas-mid focus-visible:text-ink focus:outline-none"
+                    >
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
               </div>
             );
           })}

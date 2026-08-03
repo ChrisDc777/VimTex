@@ -56,13 +56,26 @@ function relativeLineNumberField(): StateField<RangeSet<GutterMarker>> {
   });
 }
 
+function maxLineNumber(lines: number): number {
+  let last = 9;
+  while (last < lines) last = last * 10 + 9;
+  return last;
+}
+
 function relativeLineNumberGutter(
   field: StateField<RangeSet<GutterMarker>>,
 ): Extension {
   return gutter({
     class: "cm-lineNumbers",
     markers: (view) => view.state.field(field),
-    initialSpacer: () => new LineNumberMarker("0"),
+    initialSpacer: (view) =>
+      new LineNumberMarker(String(maxLineNumber(view.state.doc.lines))),
+    updateSpacer: (spacer, update) => {
+      const next = new LineNumberMarker(
+        String(maxLineNumber(update.view.state.doc.lines)),
+      );
+      return spacer.eq(next) ? spacer : next;
+    },
   });
 }
 
