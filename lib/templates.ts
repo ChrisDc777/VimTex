@@ -62,6 +62,67 @@ Conclusion:
 \\therefore \\int x^n \\, dx = \\frac{x^{n+1}}{n+1} + C
 `,
   },
+  {
+    id: "notes",
+    label: "Notes",
+    hint: "Definitions, theorems, examples",
+    content: `# Notes
+
+Capture definitions, theorems, and worked examples below.
+
+## Definition
+
+A sequence \\( a_n \\) converges to \\( L \\) when its terms get arbitrarily close to \\( L \\).
+
+## Theorem
+
+\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}
+
+## Worked example
+
+\\int_0^1 x^2 \\, dx = \\frac{1}{3}
+`,
+  },
+  {
+    id: "letter",
+    label: "Letter",
+    hint: "Correspondence with a key result",
+    content: `# Letter
+
+Dear Reader,
+
+Thank you for your time. The key result referenced below follows from the enclosed argument:
+
+\\int \\frac{1}{1 + x^2} \\, dx = \\arctan x + C
+
+Please let me know if you have any questions.
+
+Sincerely,
+
+Name
+`,
+  },
+  {
+    id: "paper",
+    label: "Paper",
+    hint: "Abstract, methods, results",
+    content: `# Paper
+
+Title:
+
+## Abstract
+
+## Introduction
+
+## Methods
+
+## Results
+
+\\sigma^2 = \\frac{1}{N} \\sum_{i=1}^{N} (x_i - \\mu)^2
+
+## Conclusion
+`,
+  },
 ];
 
 /** Look up template content by id, falling back to an empty string. */

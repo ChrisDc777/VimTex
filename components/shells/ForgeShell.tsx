@@ -579,6 +579,7 @@ export function ForgeShell({
       <VimCheatsheetDialog
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
       />
       <CommandPalette
         open={paletteOpen}
@@ -595,6 +596,7 @@ export function ForgeShell({
         onTogglePreview={togglePreview}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
       />
       <VtToaster />
     </div>

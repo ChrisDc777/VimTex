@@ -5,6 +5,8 @@ import { useEffect, useId } from "react";
 type VimCheatsheetDialogProps = {
   open: boolean;
   onClose: () => void;
+  /** Re-opens the onboarding intro (optional; shown when provided). */
+  onOpenOnboarding?: () => void;
 };
 
 const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
@@ -43,6 +45,7 @@ function RowList({ rows }: { rows: Array<{ keys: string; action: string }> }) {
 export function VimCheatsheetDialog({
   open,
   onClose,
+  onOpenOnboarding,
 }: VimCheatsheetDialogProps) {
   const titleId = useId();
 
@@ -87,7 +90,16 @@ export function VimCheatsheetDialog({
           <p className="vt-caption mt-4 text-mute">Vim keys</p>
           <RowList rows={VIM_ROWS} />
         </div>
-        <div className="mt-5">
+        <div className="mt-5 flex items-center gap-3">
+          {onOpenOnboarding ? (
+            <button
+              type="button"
+              onClick={onOpenOnboarding}
+              className="vt-pill vt-pill--ghost vt-pill--label"
+            >
+              Replay welcome
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onClose}

@@ -41,6 +41,27 @@ test.describe("M1 core editing and activation", () => {
     ).toHaveCount(0);
   });
 
+  test("onboarding can be re-opened from the command palette", async ({
+    page,
+  }) => {
+    await openForge(page);
+
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("Control+K");
+    const palette = page.getByRole("dialog", { name: /command palette/i });
+    await expect(palette).toBeVisible({ timeout: 5_000 });
+
+    await palette.getByLabel("Command palette").fill("welcome");
+    await palette
+      .getByRole("option", { name: /show welcome intro/i })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: /welcome to vimtex/i });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    await dialog.getByRole("button", { name: /start editing/i }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+
   test("Forge opens the command palette with Ctrl/Cmd+K and filters commands", async ({
     page,
   }) => {
