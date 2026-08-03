@@ -15,6 +15,8 @@ import { ReconnectBanner } from "@/components/ReconnectBanner";
 import { SnippetMenu } from "@/components/SnippetMenu";
 import { VtToaster } from "@/components/VtToaster";
 import { CommandPalette } from "@/components/CommandPalette";
+import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
+import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
@@ -44,7 +46,15 @@ import {
 } from "@/lib/panel-storage";
 import { saveNote } from "@/lib/storage";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
-import { getTemplateContent } from "@/lib/templates";
+import {
+  buildTemplateDefaults,
+  extractTemplateVariables,
+  fillTemplateVariables,
+  getTemplateById,
+  makeTemplateId,
+  saveCustomTemplate,
+  type SessionTemplate,
+} from "@/lib/templates";
 import {
   loadEditorMode,
   saveEditorMode,
@@ -106,6 +116,12 @@ export function ForgeShell({
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [templatePending, setTemplatePending] =
+    useState<SessionTemplate | null>(null);
+  const [templateDefaults, setTemplateDefaults] = useState<
+    Record<string, string>
+  >({});
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
@@ -337,17 +353,59 @@ export function ForgeShell({
     newTab(note);
   }, [newTab, note]);
 
-  const handleNewRoom = useCallback(
-    (opts?: NewRoomOptions) => {
+  const startRoomWithContent = useCallback(
+    (content: string) => {
       if (!canNewTab) return;
       const freshRoom = createRoomId();
-      const content = opts?.templateId
-        ? getTemplateContent(opts.templateId)
-        : "";
       if (content) saveNote(freshRoom, content);
       openRoom(freshRoom, note);
     },
     [canNewTab, openRoom, note],
+  );
+
+  const handleNewRoom = useCallback(
+    (opts?: NewRoomOptions) => {
+      if (!canNewTab) return;
+      const template = opts?.templateId
+        ? getTemplateById(opts.templateId)
+        : undefined;
+      const variables = template
+        ? extractTemplateVariables(template.content)
+        : [];
+      if (template && variables.length > 0) {
+        setTemplateDefaults(buildTemplateDefaults(variables, user?.name));
+        setTemplatePending(template);
+        return;
+      }
+      startRoomWithContent(template?.content ?? "");
+    },
+    [canNewTab, user?.name, startRoomWithContent],
+  );
+
+  const handleTemplateSubmit = useCallback(
+    (values: Record<string, string>) => {
+      if (!templatePending) return;
+      startRoomWithContent(
+        fillTemplateVariables(templatePending.content, values),
+      );
+      setTemplatePending(null);
+    },
+    [templatePending, startRoomWithContent],
+  );
+
+  const handleSaveTemplate = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      saveCustomTemplate({
+        id: makeTemplateId(trimmed),
+        label: trimmed,
+        hint: "Custom",
+        content: note,
+      });
+      setSaveTemplateOpen(false);
+    },
+    [note],
   );
 
   const handleSelectTab = useCallback(
@@ -597,6 +655,20 @@ export function ForgeShell({
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
         onOpenOnboarding={() => setOnboardingOpen(true)}
+        onSaveAsTemplate={() => setSaveTemplateOpen(true)}
+      />
+      <TemplateVariablesDialog
+        open={templatePending !== null}
+        template={templatePending}
+        defaults={templateDefaults}
+        onClose={() => setTemplatePending(null)}
+        onSubmit={handleTemplateSubmit}
+      />
+      <SaveTemplateDialog
+        open={saveTemplateOpen}
+        defaultName="My template"
+        onClose={() => setSaveTemplateOpen(false)}
+        onSave={handleSaveTemplate}
       />
       <VtToaster />
     </div>

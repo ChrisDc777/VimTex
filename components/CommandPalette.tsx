@@ -11,7 +11,10 @@ import {
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
-import { SESSION_TEMPLATES } from "@/lib/templates";
+import {
+  getAllTemplates,
+  type SessionTemplate,
+} from "@/lib/templates";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { NewRoomOptions, ViewMode } from "@/lib/types";
@@ -31,6 +34,7 @@ type CommandPaletteProps = {
   onOpenCheatsheet: () => void;
   onOpenPreferences: () => void;
   onOpenOnboarding: () => void;
+  onSaveAsTemplate: () => void;
   /** Split/Live shell (Studio) — adds the view-mode switch command. */
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
@@ -85,9 +89,13 @@ export function CommandPalette({
   onOpenCheatsheet,
   onOpenPreferences,
   onOpenOnboarding,
+  onSaveAsTemplate,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [templates, setTemplates] = useState<SessionTemplate[]>(
+    getAllTemplates,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -112,7 +120,7 @@ export function CommandPalette({
         run: () => void copyRoomLink(),
       });
     }
-    for (const t of SESSION_TEMPLATES) {
+    for (const t of templates) {
       list.push({
         id: `new-${t.id}`,
         label: `New ${t.id === "blank" ? "blank sheet" : t.label.toLowerCase()}`,
@@ -121,6 +129,13 @@ export function CommandPalette({
         run: () => onNewRoom({ templateId: t.id }),
       });
     }
+    list.push({
+      id: "save-template",
+      label: "Save current note as template",
+      keywords: "save custom template reuse library",
+      hint: "Template",
+      run: () => onSaveAsTemplate(),
+    });
     list.push(
       {
         id: "export-tex",
@@ -212,6 +227,7 @@ export function CommandPalette({
     editorMode,
     uiVariant,
     chatOpen,
+    templates,
     onNewRoom,
     onViewModeChange,
     onEditorModeChange,
@@ -220,6 +236,7 @@ export function CommandPalette({
     onOpenCheatsheet,
     onOpenPreferences,
     onOpenOnboarding,
+    onSaveAsTemplate,
     onUiVariantChange,
   ]);
 
@@ -237,6 +254,7 @@ export function CommandPalette({
     if (!open) return;
     setQuery("");
     setActiveIndex(0);
+    setTemplates(getAllTemplates());
     const t = window.setTimeout(() => {
       inputRef.current?.focus();
     }, 0);

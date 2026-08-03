@@ -6,7 +6,7 @@ import { SafeSvg } from "@/components/SafeSvg";
 import type { EditorMode } from "@/lib/editor-mode";
 import { exportAsMd, exportAsTex } from "@/lib/export";
 import type { UiVariant } from "@/lib/ui-variant";
-import { SESSION_TEMPLATES } from "@/lib/templates";
+import { getAllTemplates } from "@/lib/templates";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { NewRoomOptions } from "@/lib/types";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
@@ -156,7 +156,9 @@ export function StudioMenu({
           <span className="vt-header-menu__label">New room</span>
           <span className="vt-header-menu__hint">Starter</span>
         </button>
-        {SESSION_TEMPLATES.filter((t) => t.id !== "blank").map((t) => (
+        {getAllTemplates()
+          .filter((t) => t.id !== "blank")
+          .map((t) => (
           <button
             key={t.id}
             type="button"
