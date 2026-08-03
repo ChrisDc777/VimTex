@@ -9,7 +9,7 @@ import { SidePanel } from "@/components/SidePanel";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StudioMenu } from "@/components/studio/StudioMenu";
-import { StudioCommandPalette } from "@/components/studio/StudioCommandPalette";
+import { CommandPalette } from "@/components/CommandPalette";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { VtToaster } from "@/components/VtToaster";
@@ -458,7 +458,7 @@ export function StudioShell({
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
       />
-      <StudioCommandPalette
+      <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         roomId={roomId}

@@ -9,12 +9,18 @@ export async function prepareApp(
     variant?: UiVariant;
     /** When set, Studio skips the name gate. */
     displayName?: string;
+    /** Preselect the editor keybindings (default: Vim). */
+    editorMode?: "vim" | "standard";
+    /** Seed onboarding as already seen (default: true). */
+    onboardingSeen?: boolean;
   } = {},
 ) {
   const variant = opts.variant ?? "studio";
   const displayName = opts.displayName;
+  const editorMode = opts.editorMode;
+  const onboardingSeen = opts.onboardingSeen ?? true;
   await page.addInitScript(
-    ({ variant: v, displayName: name }) => {
+    ({ variant: v, displayName: name, editorMode: mode, onboardingSeen: seen }) => {
       if (document.cookie.includes("vimtex_test_cleared=1")) return;
       document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
       try {
@@ -22,12 +28,13 @@ export async function prepareApp(
         sessionStorage.clear();
         localStorage.setItem("vimtex:uiVariant", v);
         if (name) localStorage.setItem("vimtex:displayName", name);
-        localStorage.setItem("vimtex:onboardingSeen", "1");
+        if (seen) localStorage.setItem("vimtex:onboardingSeen", "1");
+        if (mode) localStorage.setItem("vimtex:editorMode", mode);
       } catch {
         /* ignore */
       }
     },
-    { variant, displayName },
+    { variant, displayName, editorMode, onboardingSeen },
   );
 }
 

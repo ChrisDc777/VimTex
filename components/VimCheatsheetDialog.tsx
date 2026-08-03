@@ -8,7 +8,7 @@ type VimCheatsheetDialogProps = {
 };
 
 const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
-  { keys: "Ctrl/Cmd+K", action: "Open command palette (Studio)" },
+  { keys: "Ctrl/Cmd+K", action: "Open command palette" },
   { keys: "Ctrl/Cmd+,", action: "Open preferences" },
   { keys: "?", action: "Open this shortcuts & tips panel" },
 ];

@@ -14,6 +14,7 @@ import { ProblemReferencePanel } from "@/components/ProblemReferencePanel";
 import { ReconnectBanner } from "@/components/ReconnectBanner";
 import { SnippetMenu } from "@/components/SnippetMenu";
 import { VtToaster } from "@/components/VtToaster";
+import { CommandPalette } from "@/components/CommandPalette";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
@@ -31,6 +32,7 @@ import {
 } from "@/components/workspace/WorkspaceContext";
 import {
   createCollabUser,
+  createRoomId,
   loadDisplayName,
   readRoomFromLocation,
   saveDisplayName,
@@ -42,6 +44,7 @@ import {
 } from "@/lib/panel-storage";
 import { saveNote } from "@/lib/storage";
 import { loadOnboardingSeen, saveOnboardingSeen } from "@/lib/onboarding";
+import { getTemplateContent } from "@/lib/templates";
 import {
   loadEditorMode,
   saveEditorMode,
@@ -60,7 +63,13 @@ import {
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
-import type { CollabStatus, CollabUser, PeerInfo, VimMode } from "@/lib/types";
+import type {
+  CollabStatus,
+  CollabUser,
+  NewRoomOptions,
+  PeerInfo,
+  VimMode,
+} from "@/lib/types";
 
 const VimEditor = dynamic(
   () => import("@/components/VimEditor").then((m) => m.VimEditor),
@@ -96,6 +105,7 @@ export function ForgeShell({
   const [editingName, setEditingName] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
@@ -138,6 +148,12 @@ export function ForgeShell({
         if (event.key === ",") {
           event.preventDefault();
           openPreferences();
+          return;
+        }
+        if (event.key.toLowerCase() === "k") {
+          event.preventDefault();
+          setPaletteOpen((v) => !v);
+          return;
         }
         return;
       }
@@ -320,6 +336,19 @@ export function ForgeShell({
   const handleNewSheet = useCallback(() => {
     newTab(note);
   }, [newTab, note]);
+
+  const handleNewRoom = useCallback(
+    (opts?: NewRoomOptions) => {
+      if (!canNewTab) return;
+      const freshRoom = createRoomId();
+      const content = opts?.templateId
+        ? getTemplateContent(opts.templateId)
+        : "";
+      if (content) saveNote(freshRoom, content);
+      openRoom(freshRoom, note);
+    },
+    [canNewTab, openRoom, note],
+  );
 
   const handleSelectTab = useCallback(
     (targetRoomId: string) => {
@@ -550,6 +579,22 @@ export function ForgeShell({
       <VimCheatsheetDialog
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
+      />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        roomId={roomId}
+        note={note}
+        editorMode={editorMode}
+        uiVariant={uiVariant}
+        chatOpen={chatOpen}
+        onNewRoom={handleNewRoom}
+        onEditorModeChange={handleEditorMode}
+        onUiVariantChange={onUiVariantChange}
+        onToggleChat={toggleChat}
+        onTogglePreview={togglePreview}
+        onOpenCheatsheet={() => setCheatsheetOpen(true)}
+        onOpenPreferences={() => openPreferences()}
       />
       <VtToaster />
     </div>

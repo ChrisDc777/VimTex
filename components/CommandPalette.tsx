@@ -16,22 +16,25 @@ import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { NewRoomOptions, ViewMode } from "@/lib/types";
 
-type StudioCommandPaletteProps = {
+type CommandPaletteProps = {
   open: boolean;
   onClose: () => void;
   roomId: string | null;
   note: string;
-  viewMode: ViewMode;
   editorMode: EditorMode;
   uiVariant: UiVariant;
   chatOpen: boolean;
   onNewRoom: (opts?: NewRoomOptions) => void;
-  onViewModeChange: (mode: ViewMode) => void;
   onEditorModeChange: (mode: EditorMode) => void;
   onUiVariantChange: (variant: UiVariant) => void;
   onToggleChat: () => void;
   onOpenCheatsheet: () => void;
   onOpenPreferences: () => void;
+  /** Split/Live shell (Studio) — adds the view-mode switch command. */
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  /** Forge — adds a "Toggle preview" command (no Split/Live toggle there). */
+  onTogglePreview?: () => void;
 };
 
 type Command = {
@@ -63,7 +66,7 @@ function CommandGlyph() {
   );
 }
 
-export function StudioCommandPalette({
+export function CommandPalette({
   open,
   onClose,
   roomId,
@@ -77,14 +80,16 @@ export function StudioCommandPalette({
   onEditorModeChange,
   onUiVariantChange,
   onToggleChat,
+  onTogglePreview,
   onOpenCheatsheet,
   onOpenPreferences,
-}: StudioCommandPaletteProps) {
+}: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const paletteLabel = "Command palette";
 
   const runAndClose = useCallback(
     (run: () => void) => {
@@ -130,15 +135,26 @@ export function StudioCommandPalette({
         run: () => exportAsMd(note),
       },
     );
-    list.push({
-      id: "toggle-view",
-      label:
-        viewMode === "split" ? "Switch to Live view" : "Switch to Split view",
-      keywords: "view preview live split render",
-      hint: "View",
-      run: () =>
-        onViewModeChange(viewMode === "split" ? "realtime" : "split"),
-    });
+    if (viewMode && onViewModeChange) {
+      list.push({
+        id: "toggle-view",
+        label:
+          viewMode === "split" ? "Switch to Live view" : "Switch to Split view",
+        keywords: "view preview live split render",
+        hint: "View",
+        run: () =>
+          onViewModeChange(viewMode === "split" ? "realtime" : "split"),
+      });
+    }
+    if (onTogglePreview) {
+      list.push({
+        id: "toggle-preview",
+        label: "Toggle preview",
+        keywords: "preview render",
+        hint: "View",
+        run: () => onTogglePreview(),
+      });
+    }
     const otherMode = editorMode === "vim" ? "standard" : "vim";
     list.push({
       id: "toggle-editor-mode",
@@ -191,6 +207,7 @@ export function StudioCommandPalette({
     onViewModeChange,
     onEditorModeChange,
     onToggleChat,
+    onTogglePreview,
     onOpenCheatsheet,
     onOpenPreferences,
     onUiVariantChange,
@@ -267,7 +284,7 @@ export function StudioCommandPalette({
       className="vt-overlay fixed inset-0 z-[70] flex items-start justify-center px-4 pt-[max(5vh,var(--header-h))]"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={titleId}
+      aria-label={paletteLabel}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -296,7 +313,7 @@ export function StudioCommandPalette({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command…"
-            aria-label="Command palette"
+            aria-label={paletteLabel}
             autoComplete="off"
             spellCheck={false}
             className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-mute"
@@ -362,4 +379,3 @@ async function copyRoomLink(): Promise<void> {
     }
   }
 }
-
