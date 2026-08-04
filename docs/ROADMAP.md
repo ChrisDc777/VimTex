@@ -59,9 +59,9 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | Priority | Issue theme | Size |
 |----------|-------------|------|
 | P0 | Collab/persistence architecture RFC | M |
-| P0 | Reconnect UX + offline banner | S |
-| P1 | Named peer list + join/leave events | S |
-| P1 | Selection ranges + typing indicator | M |
+| P0 | Reconnect UX + offline banner | S | ✅ landed early |
+| P1 | Named peer list + join/leave events | S | ✅ presence chips / peers |
+| P1 | Selection ranges + typing indicator | M | ✅ typing via awareness |
 | P1 | Read-only share links | M |
 | P1 | Room TTL + optional password | M |
 | P2 | Follow-user / presenter mode | M |

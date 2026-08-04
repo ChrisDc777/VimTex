@@ -12,6 +12,7 @@
     "start:next": "next start -H 127.0.0.1 -p 3001",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test lib/**/*.test.mjs",
     "test:e2e": "playwright test",
     "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001"
   },

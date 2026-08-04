@@ -111,7 +111,8 @@ features must stay distinct; only shared plumbing converges.
 
 ## Anti-patterns
 
-- Two copies of `VimEditor` or `RoomChatSidebar`
+- Duplicate chat AI/send logic — use `lib/use-room-chat.ts` with thin Studio/Forge skins
+- Two copies of `VimEditor` (one editor + WorkspaceProvider is enough)
 - CSS-only toggle without shared state layer
 - Forge as default before Studio parity verified
 - Premium gate blocking Share on free tier

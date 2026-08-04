@@ -7,9 +7,17 @@ import type { CollabStatus } from "@/lib/types";
 
 type ReconnectBannerProps = {
   status: CollabStatus;
+  /**
+   * When true, copy mentions local buffering (Forge autosave).
+   * Studio keeps edits only in the in-memory Yjs doc until reconnect.
+   */
+  localBuffer?: boolean;
 };
 
-export function ReconnectBanner({ status }: ReconnectBannerProps) {
+export function ReconnectBanner({
+  status,
+  localBuffer = false,
+}: ReconnectBannerProps) {
   const workspace = useWorkspace();
   const [online, setOnline] = useState(true);
   const wasConnectedRef = useRef(false);
@@ -52,9 +60,13 @@ export function ReconnectBanner({ status }: ReconnectBannerProps) {
 
   const message = online
     ? disconnected
-      ? "Connection lost — edits keep saving locally and will resync."
+      ? localBuffer
+        ? "Connection lost — edits keep saving locally and will resync."
+        : "Connection lost — edits stay in this tab until you reconnect."
       : "Reconnecting…"
-    : "You're offline — edits keep saving locally and will resync when you're back online.";
+    : localBuffer
+      ? "You're offline — edits keep saving locally and will resync when you're back online."
+      : "You're offline — edits stay in this tab until you're back online.";
 
   return (
     <div

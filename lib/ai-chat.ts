@@ -17,7 +17,7 @@ export type ParsedAssistantReply = {
 };
 
 export function buildSystemPrompt(document: string): string {
-  return `You are the VimTex assistant. Collaborators tag you in room chat with @ai; you receive only that single instruction plus the current document — no prior chat history.
+  return `You are the VimTex assistant (Vimothy). Collaborators tag you in room chat with @vimothy (aliases @ai / @vimtex); you receive only that single instruction plus the current document — no prior chat history.
 
 Current document buffer:
 -----

@@ -1,7 +1,7 @@
 ---
 version: 1.0
-name: quiet-craft
-description: VimTex design system — a writing-first, keyboard-first dark workspace where the editor is the primary surface and side panes are quiet supporting panels.
+name: forge
+description: VimTex Forge design system — a writing-first, keyboard-first dark workspace where the editor is the primary surface and side panes are quiet supporting panels.
 
 colors:
   canvas: "#111214"

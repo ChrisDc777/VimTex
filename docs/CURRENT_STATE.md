@@ -30,7 +30,7 @@ Browser                    Node (server.mjs :3001)
 | Live Yjs collab + carets | ✅ | `VimEditor.tsx`, `server.mjs` |
 | Studio Split / Live preview | ✅ | `ViewToggle.tsx`, `lib/studio-layout.ts` |
 | Forge editor tabs + unified right panel | ✅ | `EditorTabBar.tsx`, `lib/use-editor-tabs.ts`, `SidePanel.tsx` |
-| Room chat + @ai | ✅ | `RoomChatSidebar.tsx`, `api/chat/route.ts` |
+| Room chat + @vimothy | ✅ | `useRoomChat`, `StudioRoomChat.tsx`, `RoomChatSidebar.tsx`, `api/chat/route.ts` |
 | Share copy + fallback | ✅ | `ShareRoom.tsx` |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
 | Onboarding + Vim cheatsheet | ✅ | `OnboardingDialog.tsx`, `VimCheatsheetDialog.tsx` |
@@ -49,9 +49,11 @@ Browser                    Node (server.mjs :3001)
 ## Critical technical debt
 
 1. ~~**Document format ambiguity**~~ — resolved by `docs/FORMAT.md` (#13); `%` comments and `$`-as-literal aligned across highlighter and renderer.
-2. **AI is destructive** — full-buffer replace; no diff accept/reject (#M3).
-3. **Monolithic editor** — `VimEditor.tsx` still owns Yjs + chat wiring (#5 deeper).
-4. **Security** — short room IDs; no room auth on public deploy.
+2. **AI is destructive** — full-buffer replace; no diff accept/reject (#M3 / #27).
+3. ~~**Monolithic editor**~~ — `WorkspaceController` + `WorkspaceProvider` landed (#5); shells still hold orchestration React state.
+4. **Security** — room URLs are capabilities; no ACL yet — see `docs/RFC-collab-persistence.md` (#20).
+5. ~~**Dual chat AI paths**~~ — unified via `lib/use-room-chat.ts`.
+6. **Persistence** — in-memory Yjs by default; optional LevelDB path must be wired or removed (RFC #20).
 
 ## Convergence status
 
