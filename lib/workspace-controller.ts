@@ -25,6 +25,10 @@ export type WorkspaceControllerOptions = {
    * are blocked in the controller (server also refuses Yjs writes).
    */
   viewToken?: string | null;
+  /**
+   * Session auth token for password-protected rooms (`auth` WS query param).
+   */
+  authToken?: string | null;
   /** Local autosave seed when the buffer is empty (solo or pre-sync). */
   localSeed?: string | null;
   /** Seed inserted after first collab sync if the room is empty. */
@@ -116,6 +120,7 @@ export class WorkspaceController {
       user,
       collaborationEnabled = true,
       viewToken = null,
+      authToken = null,
     } = options;
     this.collaborationEnabled = collaborationEnabled;
     this.readOnly = Boolean(viewToken?.trim());
@@ -130,6 +135,8 @@ export class WorkspaceController {
     const params: Record<string, string> = {};
     const trimmedView = viewToken?.trim();
     if (trimmedView) params.view = trimmedView;
+    const trimmedAuth = authToken?.trim();
+    if (trimmedAuth) params.auth = trimmedAuth;
     this.provider = new WebsocketProvider(wsBase, roomId, this.ydoc, {
       connect: collaborationEnabled,
       params,

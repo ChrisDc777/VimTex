@@ -11,12 +11,15 @@ type ShareRoomProps = {
   variant?: "studio" | "forge";
   /** Hide view-link minting when already viewing read-only. */
   readOnly?: boolean;
+  /** Open room password / TTL settings. */
+  onOpenSettings?: () => void;
 };
 
 export function ShareRoom({
   roomId,
   variant = "forge",
   readOnly = false,
+  onOpenSettings,
 }: ShareRoomProps) {
   const [copied, setCopied] = useState<"edit" | "view" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -139,6 +142,19 @@ export function ShareRoom({
           >
             Copy view-only link
           </button>
+          {onOpenSettings ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenSettings();
+              }}
+            >
+              Room settings…
+            </button>
+          ) : null}
         </div>
       ) : null}
       {fallbackUrl ? (
