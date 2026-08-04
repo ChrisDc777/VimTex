@@ -62,6 +62,7 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 - **Without** `YPERSISTENCE`, a server restart clears all rooms (in-memory only).
 - **With** `YPERSISTENCE=/path/to/dir`, docs are stored in LevelDB (`y-leveldb`) and survive restarts. See `docs/RFC-collab-persistence.md`.
 - Forge also keeps a **browser localStorage** copy per room as a solo refresh cache (not authoritative after sync).
+- **Share → Copy view-only link** mints a `?view=` HMAC token (`ROOM_SECRET`). View-only clients sync presence and the buffer but cannot edit or post chat; the WS server rejects their Yjs writes. Knowing the bare room id remains the edit capability.
 
 ---
 

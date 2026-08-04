@@ -34,6 +34,7 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
+import { readViewTokenFromLocation } from "@/lib/room-auth";
 import {
   loadEditorMode,
   saveEditorMode,
@@ -113,6 +114,7 @@ export function StudioShell({
   const [sheetPickerOpen, setSheetPickerOpen] = useState(false);
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
+  const [viewToken, setViewToken] = useState<string | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
@@ -120,6 +122,7 @@ export function StudioShell({
     const room = existing ?? createRoomId();
     writeRoomToLocation(room);
     setRoomId(room);
+    setViewToken(readViewTokenFromLocation());
 
     const storedMode = loadViewMode();
     if (storedMode != null) setViewMode(storedMode);
@@ -199,8 +202,9 @@ export function StudioShell({
   const startRoomWithContent = useCallback(
     (content: string, roomIdOverride?: string) => {
       const room = roomIdOverride ?? createRoomId();
-      writeRoomToLocation(room);
+      writeRoomToLocation(room, { clearViewToken: true });
       setRoomId(room);
+      setViewToken(null);
       setNote("");
       setSeed(content || STARTER_NOTE);
       setChatOpen(false);
@@ -279,6 +283,7 @@ export function StudioShell({
     roomId,
     user,
     collaborationEnabled: true,
+    viewToken,
     emptyRoomSeed: seed,
     onTextChange: setNote,
     onCollabStatus: setCollabStatus,
@@ -286,6 +291,7 @@ export function StudioShell({
   });
 
   const selfClientId = workspace?.getClientId() ?? null;
+  const readOnly = Boolean(viewToken);
 
   const { layout: paneLayout, resizePane, resizeMobileBottom, resetPane } =
     usePaneLayout({
@@ -322,7 +328,9 @@ export function StudioShell({
           role="toolbar"
           aria-label="Workspace tools"
         >
-          {roomId ? <ShareRoom roomId={roomId} variant="studio" /> : null}
+          {roomId ? (
+            <ShareRoom roomId={roomId} variant="studio" readOnly={readOnly} />
+          ) : null}
           <button
             type="button"
             aria-pressed={chatOpen}

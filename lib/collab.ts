@@ -161,9 +161,15 @@ export function readRoomFromLocation(): string | null {
   return room || null;
 }
 
-export function writeRoomToLocation(room: string): void {
+export function writeRoomToLocation(
+  room: string,
+  opts?: { clearViewToken?: boolean },
+): void {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.searchParams.set("room", room);
+  if (opts?.clearViewToken) {
+    url.searchParams.delete("view");
+  }
   window.history.replaceState({}, "", url.toString());
 }

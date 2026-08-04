@@ -10,7 +10,7 @@ test.describe("Studio collaboration (#10)", () => {
   test("name picker is required before the editor mounts", async ({ page }) => {
     await joinStudioRoom(page, { name: "Gate" });
     await expect(page.getByText("VimTex").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /copy room link/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /share room/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^(open|close) chat$/i })).toBeVisible();
   });
 

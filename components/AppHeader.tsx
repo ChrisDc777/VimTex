@@ -27,6 +27,8 @@ type AppHeaderProps = {
   openRoomIds?: ReadonlySet<string>;
   /** When true the editor buffer is empty — brand animation stays active. */
   canvasBlank?: boolean;
+  /** View-only share session — ShareRoom shows a badge instead of mint UI. */
+  readOnly?: boolean;
 };
 
 export function AppHeader({
@@ -48,6 +50,7 @@ export function AppHeader({
   onOpenRoom,
   openRoomIds,
   canvasBlank = true,
+  readOnly = false,
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
@@ -57,7 +60,7 @@ export function AppHeader({
 
       <div className="vt-header__nav">
         <div className="vt-header__actions" aria-label="File">
-          {roomId ? <ShareRoom roomId={roomId} /> : null}
+          {roomId ? <ShareRoom roomId={roomId} readOnly={readOnly} /> : null}
           {headerExtra}
           <SheetMenu
             note={note}
