@@ -53,7 +53,7 @@ Browser                    Node (server.mjs :3001)
 3. ~~**Monolithic editor**~~ — `WorkspaceController` + `WorkspaceProvider` landed (#5); shells still hold orchestration React state.
 4. **Security** — room URLs are capabilities; no ACL yet — see `docs/RFC-collab-persistence.md` (#20).
 5. ~~**Dual chat AI paths**~~ — unified via `lib/use-room-chat.ts`.
-6. **Persistence** — in-memory Yjs by default; optional LevelDB path must be wired or removed (RFC #20).
+6. **Persistence** — in-memory Yjs by default; set `YPERSISTENCE` for LevelDB (`y-leveldb`). See `docs/RFC-collab-persistence.md` (#20, #71).
 
 ## Convergence status
 
