@@ -57,10 +57,11 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 
 ## Room lifetime
 
-- Reconnecting to the same `?room=` restores the shared in-memory Yjs doc while the Node process is up.
+- Reconnecting to the same `?room=` restores the shared Yjs doc while the Node process is up.
 - Empty rooms (zero WebSocket clients) are garbage-collected after `YROOM_IDLE_MS` (default **30 minutes**).
-- Server restart clears all in-memory rooms unless `YPERSISTENCE` is configured.
-- Forge also keeps a **browser localStorage** copy per room for solo refresh restore.
+- **Without** `YPERSISTENCE`, a server restart clears all rooms (in-memory only).
+- **With** `YPERSISTENCE=/path/to/dir`, docs are stored in LevelDB (`y-leveldb`) and survive restarts. See `docs/RFC-collab-persistence.md`.
+- Forge also keeps a **browser localStorage** copy per room as a solo refresh cache (not authoritative after sync).
 
 ---
 

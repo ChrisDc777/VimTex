@@ -57,3 +57,7 @@ bun.lock
 
 # local Classic UI reference (not shipped)
 .classic-snapshot/
+
+# durable Yjs / room metadata (local)
+.data/
+yjs-data/

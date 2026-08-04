@@ -1,6 +1,6 @@
 # RFC: Production collaboration and persistence
 
-**Status:** Proposed  
+**Status:** Accepted (M2 near-term = option A)  
 **Issue:** [#20](https://github.com/ChrisDc777/VimTex/issues/20)  
 **Date:** 2026-08-04  
 **Author:** VimTex maintainers (ChrisDc777 fork)
@@ -38,7 +38,7 @@ M2 wants: read-only share links (#23), room TTL / optional password (#24), snaps
 
 **Choose A for M2.** Keep the custom `server.mjs` + y-websocket stack.
 
-1. **Wire or remove LevelDB:** add optional `y-leveldb` behind `YPERSISTENCE`, document it in README, or delete the dead branch. Prefer **wire as optional** so demos can survive restart without forcing Postgres.
+1. **Wire LevelDB:** `y-leveldb` is a dependency; set `YPERSISTENCE=/path/to/dir` to enable. If the env var is set but the module is missing, the server fails fast with a clear log.
 2. **Source of truth:** when connected, `WorkspaceController` Y.Doc is SoT. Forge localStorage remains a **client cache only** (seed empty rooms / solo refresh), never authoritative over the server doc after sync.
 3. **Idle GC vs TTL:** keep process-local idle GC. Room **TTL** (#24) is a separate absolute expiry clock stored with the room metadata (LevelDB or a tiny side map), independent of “no clients.”
 4. **Defer B** to M5 / when multi-region or multi-instance is required. Client already talks Yjs protocols; migrating the server later should not require shell rewrites.
