@@ -325,6 +325,7 @@ test.describe("VimTex UX shell", () => {
     const share = page.getByRole("button", { name: /^share$/i });
     await expect(share).toBeVisible();
     await share.click();
+    await page.getByRole("menuitem", { name: /copy edit link/i }).click();
     await expect(
       page.getByRole("button", { name: /^(share|copied)$/i }),
     ).toBeVisible();

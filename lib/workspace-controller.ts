@@ -20,6 +20,11 @@ export type WorkspaceControllerOptions = {
   user: CollabUser;
   /** When true, connect WebSocket and sync with peers. Default true. */
   collaborationEnabled?: boolean;
+  /**
+   * When set, join as view-only: WS sends `view` param and local mutations
+   * are blocked in the controller (server also refuses Yjs writes).
+   */
+  viewToken?: string | null;
   /** Local autosave seed when the buffer is empty (solo or pre-sync). */
   localSeed?: string | null;
   /** Seed inserted after first collab sync if the room is empty. */
@@ -81,6 +86,8 @@ export class WorkspaceController {
   readonly provider: WebsocketProvider;
   readonly undoManager: Y.UndoManager;
   readonly collaborationEnabled: boolean;
+  /** True when this client joined with a view-only capability token. */
+  readonly readOnly: boolean;
 
   private callbacks: WorkspaceCallbacks = {
     onTextChange: () => {},
@@ -104,8 +111,14 @@ export class WorkspaceController {
   private readonly maybeSeed: (synced: boolean) => void;
 
   constructor(options: WorkspaceControllerOptions) {
-    const { roomId, user, collaborationEnabled = true } = options;
+    const {
+      roomId,
+      user,
+      collaborationEnabled = true,
+      viewToken = null,
+    } = options;
     this.collaborationEnabled = collaborationEnabled;
+    this.readOnly = Boolean(viewToken?.trim());
     this.localSeed = options.localSeed?.trim() ?? null;
     this.emptyRoomSeed = options.emptyRoomSeed?.trim() ?? null;
 
@@ -114,8 +127,12 @@ export class WorkspaceController {
     this.ychat = this.ydoc.getArray<RoomChatMessage>("chat");
 
     const wsBase = getCollabWsBase();
+    const params: Record<string, string> = {};
+    const trimmedView = viewToken?.trim();
+    if (trimmedView) params.view = trimmedView;
     this.provider = new WebsocketProvider(wsBase, roomId, this.ydoc, {
       connect: collaborationEnabled,
+      params,
     });
     setAwarenessUser(this.provider, user);
 
@@ -143,7 +160,7 @@ export class WorkspaceController {
     this.maybeSeed = (synced: boolean) => {
       if (!synced || this.seeded) return;
       this.seeded = true;
-      if (this.ytext.length === 0) {
+      if (!this.readOnly && this.ytext.length === 0) {
         const seed = this.emptyRoomSeed || this.localSeed;
         if (seed) {
           this.ydoc.transact(() => {
@@ -255,7 +272,7 @@ export class WorkspaceController {
    */
   setLocalSeed(seed: string | null): void {
     this.localSeed = seed?.trim() ?? null;
-    if (!this.localSeed || this.ytext.length > 0) return;
+    if (this.readOnly || !this.localSeed || this.ytext.length > 0) return;
     if (this.collaborationEnabled && !this.seeded) return;
     this.ydoc.transact(() => {
       this.ytext.insert(0, this.localSeed!);
@@ -265,11 +282,13 @@ export class WorkspaceController {
 
   /** Run a mutation inside a Yjs transaction (undo-scoped by origin). */
   transact(fn: (ytext: Y.Text) => void, origin?: string): void {
+    if (this.readOnly) return;
     this.ydoc.transact(() => fn(this.ytext), origin);
   }
 
   /** Replace the entire buffer (syncs to all peers). */
   replaceAll(content: string): void {
+    if (this.readOnly) return;
     this.transact(
       (ytext) => {
         const len = ytext.length;
@@ -286,6 +305,7 @@ export class WorkspaceController {
   }
 
   appendChatMessage(msg: RoomChatMessage): void {
+    if (this.readOnly) return;
     this.ydoc.transact(() => {
       this.ychat.push([msg]);
     }, "chat");

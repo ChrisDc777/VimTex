@@ -10,6 +10,7 @@ const debounce = require('lodash.debounce')
 
 const callbackHandler = require('./callback.js').callbackHandler
 const isCallbackSet = require('./callback.js').isCallbackSet
+const { verifyViewToken } = require('./room-auth.js')
 
 const CALLBACK_DEBOUNCE_WAIT = parseInt(process.env.CALLBACK_DEBOUNCE_WAIT) || 2000
 const CALLBACK_DEBOUNCE_MAXWAIT = parseInt(process.env.CALLBACK_DEBOUNCE_MAXWAIT) || 10000
@@ -221,7 +222,20 @@ const messageListener = (conn, doc, message) => {
     const decoder = decoding.createDecoder(message)
     const messageType = decoding.readVarUint(decoder)
     switch (messageType) {
-      case messageSync:
+      case messageSync: {
+        // Read-only clients may only request state (SyncStep1). SyncStep2 and
+        // Update would apply client-authored Yjs changes (edits + chat).
+        if (conn.__vimtexReadOnly) {
+          const syncType = decoding.readVarUint(decoder)
+          if (syncType === syncProtocol.messageYjsSyncStep1) {
+            encoding.writeVarUint(encoder, messageSync)
+            syncProtocol.writeSyncStep2(encoder, doc, decoding.readVarUint8Array(decoder))
+            if (encoding.length(encoder) > 1) {
+              send(doc, conn, encoding.toUint8Array(encoder))
+            }
+          }
+          break
+        }
         encoding.writeVarUint(encoder, messageSync)
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn)
 
@@ -232,7 +246,9 @@ const messageListener = (conn, doc, message) => {
           send(doc, conn, encoding.toUint8Array(encoder))
         }
         break
+      }
       case messageAwareness: {
+        // Presence (name/caret) is allowed for view-only peers.
         awarenessProtocol.applyAwarenessUpdate(doc.awareness, decoding.readVarUint8Array(decoder), conn)
         break
       }
@@ -290,11 +306,40 @@ const pingTimeout = 30000
  * @param {any} req
  * @param {any} opts
  */
-exports.setupWSConnection = (conn, req, { docName = req.url.slice(1).split('?')[0], gc = true } = {}) => {
+exports.setupWSConnection = (conn, req, { docName = null, gc = true } = {}) => {
   conn.binaryType = 'arraybuffer'
+  const rawUrl = typeof req.url === 'string' ? req.url : '/'
+  let resolvedDocName = docName
+  /** @type {URLSearchParams} */
+  let searchParams
+  try {
+    const parsed = new URL(rawUrl, 'http://localhost')
+    resolvedDocName = resolvedDocName ?? decodeURIComponent(parsed.pathname.replace(/^\//, ''))
+    searchParams = parsed.searchParams
+  } catch {
+    resolvedDocName = resolvedDocName ?? rawUrl.slice(1).split('?')[0]
+    searchParams = new URLSearchParams(rawUrl.includes('?') ? rawUrl.split('?')[1] : '')
+  }
+  if (!resolvedDocName) {
+    conn.close()
+    return
+  }
+
+  const viewToken = searchParams.get('view')
+  if (viewToken) {
+    if (!verifyViewToken(resolvedDocName, viewToken)) {
+      console.warn('[vimtex] Rejected WS join with invalid view token for room', resolvedDocName)
+      conn.close()
+      return
+    }
+    conn.__vimtexReadOnly = true
+  } else {
+    conn.__vimtexReadOnly = false
+  }
+
   // get doc, initialize if it does not exist yet
-  const doc = getYDoc(docName, gc)
-  cancelIdleGc(docName)
+  const doc = getYDoc(resolvedDocName, gc)
+  cancelIdleGc(resolvedDocName)
   doc.conns.set(conn, new Set())
   // listen and reply to events
   conn.on('message', /** @param {ArrayBuffer} message */ message => messageListener(conn, doc, new Uint8Array(message)))

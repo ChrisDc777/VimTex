@@ -39,7 +39,9 @@ import {
   loadDisplayName,
   readRoomFromLocation,
   saveDisplayName,
+  writeRoomToLocation,
 } from "@/lib/collab";
+import { readViewTokenFromLocation } from "@/lib/room-auth";
 import {
   loadRightPanelView,
   saveRightPanelView,
@@ -123,6 +125,8 @@ export function ForgeShell({
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
+  const [viewToken, setViewToken] = useState<string | null>(null);
+  const [viewRoomId, setViewRoomId] = useState<string | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -204,7 +208,11 @@ export function ForgeShell({
 
   useEffect(() => {
     try {
-      setUrlRoomId(readRoomFromLocation());
+      const roomFromUrl = readRoomFromLocation();
+      setUrlRoomId(roomFromUrl);
+      const token = readViewTokenFromLocation();
+      setViewToken(token);
+      setViewRoomId(token ? roomFromUrl : null);
       setRightPanelView(loadRightPanelView());
       setEditorMode(loadEditorMode());
       setRelativeLineNumbers(loadRelativeLineNumbers());
@@ -219,6 +227,15 @@ export function ForgeShell({
       setHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!roomId || !viewRoomId) return;
+    if (roomId !== viewRoomId) {
+      writeRoomToLocation(roomId, { clearViewToken: true });
+      setViewToken(null);
+      setViewRoomId(null);
+    }
+  }, [roomId, viewRoomId]);
 
   const handleEditorMode = useCallback((mode: EditorMode) => {
     saveEditorMode(mode);
@@ -406,6 +423,8 @@ export function ForgeShell({
     roomId,
     user,
     collaborationEnabled: true,
+    viewToken:
+      viewToken && roomId && roomId === viewRoomId ? viewToken : null,
     localSeed,
     onTextChange: handleNoteChange,
     onCollabStatus: setCollabStatus,
@@ -413,6 +432,9 @@ export function ForgeShell({
   });
 
   const selfClientId = workspace?.getClientId() ?? null;
+  const readOnly = Boolean(
+    viewToken && roomId && roomId === viewRoomId,
+  );
 
   const openRoomIds = useMemo(
     () => new Set(tabs.map((tab) => tab.roomId)),
@@ -440,6 +462,7 @@ export function ForgeShell({
         onOpenRoom={handleOpenRoom}
         openRoomIds={openRoomIds}
         canvasBlank={note.trim().length === 0}
+        readOnly={readOnly}
         headerExtra={
           <SnippetMenu
             disabled={!ready}

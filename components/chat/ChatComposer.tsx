@@ -25,6 +25,8 @@ type ChatComposerProps = {
   onMentionSelect: (tag: string) => void;
   onMentionIndexChange: (index: number) => void;
   onMentionClose: () => void;
+  /** View-only rooms: hide send UI, show explanation. */
+  readOnly?: boolean;
 };
 
 export function ChatComposer({
@@ -41,8 +43,19 @@ export function ChatComposer({
   onMentionSelect,
   onMentionIndexChange,
   onMentionClose,
+  readOnly = false,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
+
+  if (readOnly) {
+    return (
+      <div className="vt-chat-composer-wrap">
+        <p className="vt-chat-composer__hint px-1 py-2">
+          View-only link — you can follow the room chat but not post.
+        </p>
+      </div>
+    );
+  }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (mentionOpen && filteredMentions.length > 0) {

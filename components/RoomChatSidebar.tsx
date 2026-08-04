@@ -99,6 +99,7 @@ export function RoomChatSidebar({
         onMentionSelect={chat.insertMention}
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}
+        readOnly={chat.readOnly}
       />
     </div>
   );

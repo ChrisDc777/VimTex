@@ -160,7 +160,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       },
       insertSnippet: (template) => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view || workspace?.readOnly) return;
         const markerPattern = /[\uE000\uE001\uE002]/g;
         const sel = view.state.selection.main;
         const stripped = template.replace(markerPattern, "");
@@ -253,6 +253,9 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           remoteSelectionTheme,
           EditorView.lineWrapping,
           yCollab(ytext, provider.awareness, { undoManager: um }),
+          ...(workspace.readOnly
+            ? [EditorState.readOnly.of(true), EditorView.editable.of(false)]
+            : []),
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
         ],

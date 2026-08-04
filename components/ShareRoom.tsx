@@ -2,35 +2,39 @@
 
 import { useState } from "react";
 import { SafeSvg } from "@/components/SafeSvg";
+import { buildRoomUrl, fetchViewToken } from "@/lib/room-auth";
 import { notify } from "@/lib/toasts";
 
 type ShareRoomProps = {
   roomId: string;
   /** Studio uses outline pill chrome; Forge keeps header-btn styling. */
   variant?: "studio" | "forge";
+  /** Hide view-link minting when already viewing read-only. */
+  readOnly?: boolean;
 };
 
-export function ShareRoom({ roomId, variant = "forge" }: ShareRoomProps) {
-  const [copied, setCopied] = useState(false);
+export function ShareRoom({
+  roomId,
+  variant = "forge",
+  readOnly = false,
+}: ShareRoomProps) {
+  const [copied, setCopied] = useState<"edit" | "view" | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const roomUrl = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("room", roomId);
-    return url.toString();
-  };
-
-  const copyLink = async () => {
-    const href = roomUrl();
+  const copyHref = async (href: string, kind: "edit" | "view") => {
     try {
       await navigator.clipboard.writeText(href);
-      setCopied(true);
+      setCopied(kind);
       setFallbackUrl(null);
-      notify.success("Room link copied");
-      window.setTimeout(() => setCopied(false), 1500);
+      notify.success(
+        kind === "view" ? "View-only link copied" : "Edit link copied",
+      );
+      window.setTimeout(() => setCopied(null), 1500);
     } catch {
       setFallbackUrl(href);
-      setCopied(false);
+      setCopied(null);
       try {
         window.prompt("Copy this room link:", href);
       } catch {
@@ -39,33 +43,104 @@ export function ShareRoom({ roomId, variant = "forge" }: ShareRoomProps) {
     }
   };
 
+  const copyEditLink = async () => {
+    setMenuOpen(false);
+    await copyHref(buildRoomUrl(roomId), "edit");
+  };
+
+  const copyViewLink = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    try {
+      const token = await fetchViewToken(roomId);
+      await copyHref(buildRoomUrl(roomId, { viewToken: token }), "view");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Could not mint link";
+      notify.error(detail);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const studioBtn = (active: boolean) =>
+    active
+      ? "vt-pill vt-pill--ghost vt-pill--icon text-[color:var(--accent-breeze)]"
+      : "vt-pill vt-pill--ghost vt-pill--icon";
+
+  const forgeBtn = (active: boolean) =>
+    active ? "vt-header-btn vt-header-btn--success" : "vt-header-btn";
+
+  if (readOnly) {
+    return (
+      <div className="relative flex items-center gap-1.5">
+        <span
+          className={
+            variant === "studio"
+              ? "vt-pill vt-pill--ghost text-xs text-mute"
+              : "vt-caption text-mute"
+          }
+          title="You opened a view-only link"
+        >
+          View only
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex items-center gap-1.5">
       <button
         type="button"
-        onClick={() => void copyLink()}
+        onClick={() => setMenuOpen((v) => !v)}
         className={
           variant === "studio"
-            ? copied
-              ? "vt-pill vt-pill--ghost vt-pill--icon text-[color:var(--accent-breeze)]"
-              : "vt-pill vt-pill--ghost vt-pill--icon"
-            : copied
-              ? "vt-header-btn vt-header-btn--success"
-              : "vt-header-btn"
+            ? studioBtn(copied != null)
+            : forgeBtn(copied != null)
         }
-        title={copied ? "Link copied" : `Copy link for room ${roomId}`}
+        title={
+          copied
+            ? "Link copied"
+            : `Share room ${roomId} (edit or view-only)`
+        }
         aria-label={
           variant === "studio"
             ? copied
               ? "Link copied"
-              : "Copy room link"
+              : "Share room"
             : undefined
         }
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
         aria-live="polite"
+        disabled={busy}
       >
         {copied ? <CheckIcon /> : <LinkIcon />}
         {variant === "studio" ? null : copied ? "Copied" : "Share"}
       </button>
+      {menuOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-1 min-w-[11rem] rounded-md border border-hairline bg-[color:var(--canvas)] py-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+            onClick={() => void copyEditLink()}
+          >
+            Copy edit link
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+            onClick={() => void copyViewLink()}
+            disabled={busy}
+          >
+            Copy view-only link
+          </button>
+        </div>
+      ) : null}
       {fallbackUrl ? (
         <input
           readOnly

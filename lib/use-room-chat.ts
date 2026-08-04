@@ -223,7 +223,7 @@ export function useRoomChat({
   const send = useCallback(async () => {
     const text = input.trim();
     const ws = workspace;
-    if (!text || busy || !ws) return;
+    if (!text || busy || !ws || ws.readOnly) return;
 
     const clientId = ws.getClientId();
     if (clientId == null) return;
@@ -275,6 +275,7 @@ export function useRoomChat({
 
   return {
     workspace,
+    readOnly: workspace?.readOnly ?? false,
     model,
     setModel,
     input,
