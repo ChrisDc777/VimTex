@@ -38,10 +38,20 @@ const idleGcTimers = new Map()
  * @type {{bindState: function(string,WSSharedDoc):void, writeState:function(string,WSSharedDoc):Promise<any>, provider: any}|null}
  */
 let persistence = null
-if (typeof persistenceDir === 'string') {
-  console.info('Persisting documents to "' + persistenceDir + '"')
-  // @ts-ignore
-  const LeveldbPersistence = require('y-leveldb').LeveldbPersistence
+if (typeof persistenceDir === 'string' && persistenceDir.length > 0) {
+  let LeveldbPersistence
+  try {
+    // Optional durable store — package is declared; fail clearly if install skipped.
+    LeveldbPersistence = require('y-leveldb').LeveldbPersistence
+  } catch (err) {
+    console.error(
+      '[vimtex] YPERSISTENCE is set but y-leveldb could not be loaded.',
+      'Run `npm install` (y-leveldb is a dependency).',
+      err instanceof Error ? err.message : err,
+    )
+    throw err
+  }
+  console.info('[vimtex] Persisting Yjs documents to "' + persistenceDir + '"')
   const ldb = new LeveldbPersistence(persistenceDir)
   persistence = {
     provider: ldb,
