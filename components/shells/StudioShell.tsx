@@ -17,6 +17,7 @@ import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
+import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
@@ -120,6 +121,7 @@ export function StudioShell({
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
+  const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
@@ -349,6 +351,9 @@ export function StudioShell({
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }
+              onOpenSnapshots={
+                readOnly ? undefined : () => setRoomSnapshotsOpen(true)
+              }
             />
           ) : null}
           <button
@@ -558,6 +563,13 @@ export function StudioShell({
           roomId={roomId}
           onClose={() => setRoomSettingsOpen(false)}
           onSaved={gate.applyMeta}
+        />
+      ) : null}
+      {roomId ? (
+        <RoomSnapshotsDialog
+          open={roomSnapshotsOpen}
+          roomId={roomId}
+          onClose={() => setRoomSnapshotsOpen(false)}
         />
       ) : null}
       <VtToaster />

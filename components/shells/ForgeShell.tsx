@@ -21,6 +21,7 @@ import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
+import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
@@ -132,6 +133,7 @@ export function ForgeShell({
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [viewRoomId, setViewRoomId] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
+  const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -479,6 +481,9 @@ export function ForgeShell({
         onOpenRoomSettings={
           readOnly ? undefined : () => setRoomSettingsOpen(true)
         }
+        onOpenRoomSnapshots={
+          readOnly ? undefined : () => setRoomSnapshotsOpen(true)
+        }
         headerExtra={
           <SnippetMenu
             disabled={!ready}
@@ -697,6 +702,13 @@ export function ForgeShell({
           roomId={roomId}
           onClose={() => setRoomSettingsOpen(false)}
           onSaved={gate.applyMeta}
+        />
+      ) : null}
+      {roomId ? (
+        <RoomSnapshotsDialog
+          open={roomSnapshotsOpen}
+          roomId={roomId}
+          onClose={() => setRoomSnapshotsOpen(false)}
         />
       ) : null}
       <VtToaster />
