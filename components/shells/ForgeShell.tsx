@@ -19,6 +19,9 @@ import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
+import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
+import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
+import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
 import {
@@ -42,6 +45,7 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import { readViewTokenFromLocation } from "@/lib/room-auth";
+import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadRightPanelView,
   saveRightPanelView,
@@ -127,6 +131,7 @@ export function ForgeShell({
     useState<RightPanelView | null>(null);
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [viewRoomId, setViewRoomId] = useState<string | null>(null);
+  const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -416,7 +421,10 @@ export function ForgeShell({
     [closeTab, note],
   );
 
-  const ready = hydrated && !!roomId && !!user;
+  const nameReady = hydrated && !!roomId && !!user;
+  const gate = useRoomGate(roomId, nameReady);
+  const ready =
+    nameReady && gate.checked && !gate.expired && !gate.needsPassword;
 
   const workspace = useWorkspaceController({
     enabled: ready,
@@ -425,6 +433,7 @@ export function ForgeShell({
     collaborationEnabled: true,
     viewToken:
       viewToken && roomId && roomId === viewRoomId ? viewToken : null,
+    authToken: gate.authToken,
     localSeed,
     onTextChange: handleNoteChange,
     onCollabStatus: setCollabStatus,
@@ -440,6 +449,10 @@ export function ForgeShell({
     () => new Set(tabs.map((tab) => tab.roomId)),
     [tabs],
   );
+
+  if (gate.expired) {
+    return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;
+  }
 
   return (
     <WorkspaceProvider value={workspace}>
@@ -463,6 +476,9 @@ export function ForgeShell({
         openRoomIds={openRoomIds}
         canvasBlank={note.trim().length === 0}
         readOnly={readOnly}
+        onOpenRoomSettings={
+          readOnly ? undefined : () => setRoomSettingsOpen(true)
+        }
         headerExtra={
           <SnippetMenu
             disabled={!ready}
@@ -667,6 +683,22 @@ export function ForgeShell({
         onClose={() => setSheetPickerOpen(false)}
         onSelect={handleSheetSelect}
       />
+      {gate.needsPassword && roomId ? (
+        <RoomPasswordDialog
+          roomId={roomId}
+          busy={gate.unlocking}
+          error={gate.unlockError}
+          onSubmit={(password) => void gate.unlock(password)}
+        />
+      ) : null}
+      {roomId ? (
+        <RoomSettingsDialog
+          open={roomSettingsOpen}
+          roomId={roomId}
+          onClose={() => setRoomSettingsOpen(false)}
+          onSaved={gate.applyMeta}
+        />
+      ) : null}
       <VtToaster />
     </div>
     </WorkspaceProvider>

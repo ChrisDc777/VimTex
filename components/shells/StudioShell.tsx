@@ -15,6 +15,9 @@ import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
+import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
+import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
+import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
@@ -35,6 +38,7 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import { readViewTokenFromLocation } from "@/lib/room-auth";
+import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadEditorMode,
   saveEditorMode,
@@ -115,6 +119,7 @@ export function StudioShell({
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [viewToken, setViewToken] = useState<string | null>(null);
+  const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
@@ -275,7 +280,10 @@ export function StudioShell({
   });
 
   const isSplit = viewMode === "split";
-  const ready = hydrated && !!roomId && !!user && !needsName;
+  const nameReady = hydrated && !!roomId && !!user && !needsName;
+  const gate = useRoomGate(roomId, nameReady);
+  const ready =
+    nameReady && gate.checked && !gate.expired && !gate.needsPassword;
   const namePickerOpen = needsName || editingName;
 
   const workspace = useWorkspaceController({
@@ -284,6 +292,7 @@ export function StudioShell({
     user,
     collaborationEnabled: true,
     viewToken,
+    authToken: gate.authToken,
     emptyRoomSeed: seed,
     onTextChange: setNote,
     onCollabStatus: setCollabStatus,
@@ -310,6 +319,10 @@ export function StudioShell({
     "--studio-preview-mobile-height": `${splitLayout.previewMobileHeight}px`,
   } as CSSProperties;
 
+  if (gate.expired) {
+    return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;
+  }
+
   return (
     <WorkspaceProvider value={workspace}>
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
@@ -329,7 +342,14 @@ export function StudioShell({
           aria-label="Workspace tools"
         >
           {roomId ? (
-            <ShareRoom roomId={roomId} variant="studio" readOnly={readOnly} />
+            <ShareRoom
+              roomId={roomId}
+              variant="studio"
+              readOnly={readOnly}
+              onOpenSettings={
+                readOnly ? undefined : () => setRoomSettingsOpen(true)
+              }
+            />
           ) : null}
           <button
             type="button"
@@ -524,6 +544,22 @@ export function StudioShell({
         onClose={() => setSheetPickerOpen(false)}
         onSelect={handleSheetSelect}
       />
+      {gate.needsPassword && roomId ? (
+        <RoomPasswordDialog
+          roomId={roomId}
+          busy={gate.unlocking}
+          error={gate.unlockError}
+          onSubmit={(password) => void gate.unlock(password)}
+        />
+      ) : null}
+      {roomId ? (
+        <RoomSettingsDialog
+          open={roomSettingsOpen}
+          roomId={roomId}
+          onClose={() => setRoomSettingsOpen(false)}
+          onSaved={gate.applyMeta}
+        />
+      ) : null}
       <VtToaster />
     </div>
     </WorkspaceProvider>

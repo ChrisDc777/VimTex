@@ -43,6 +43,8 @@ export type UseWorkspaceControllerOptions = {
   collaborationEnabled?: boolean;
   /** View-only capability token from `?view=` (null/omit = edit). */
   viewToken?: string | null;
+  /** Password-room session token (`auth` WS param). */
+  authToken?: string | null;
   localSeed?: string | null;
   emptyRoomSeed?: string | null;
   onTextChange: (text: string) => void;
@@ -64,6 +66,7 @@ export function useWorkspaceController(
     user,
     collaborationEnabled = true,
     viewToken = null,
+    authToken = null,
     localSeed,
     emptyRoomSeed,
     onTextChange,
@@ -90,6 +93,7 @@ export function useWorkspaceController(
       user,
       collaborationEnabled,
       viewToken,
+      authToken,
       localSeed,
       emptyRoomSeed,
     });
@@ -98,9 +102,9 @@ export function useWorkspaceController(
       ws.destroy();
       setWorkspace(null);
     };
-    // Recreate only on room/collab/view-token changes — user/seed/callbacks sync below.
+    // Recreate only on room/collab/token changes — user/seed/callbacks sync below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, roomId, collaborationEnabled, viewToken]);
+  }, [enabled, roomId, collaborationEnabled, viewToken, authToken]);
 
   useEffect(() => {
     if (!workspace || !user) return;

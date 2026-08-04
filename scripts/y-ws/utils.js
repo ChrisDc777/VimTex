@@ -10,7 +10,8 @@ const debounce = require('lodash.debounce')
 
 const callbackHandler = require('./callback.js').callbackHandler
 const isCallbackSet = require('./callback.js').isCallbackSet
-const { verifyViewToken } = require('./room-auth.js')
+const { verifyViewToken, verifyAuthToken } = require('./room-auth.js')
+const { readRoomMeta, isRoomExpired } = require('./room-meta.js')
 
 const CALLBACK_DEBOUNCE_WAIT = parseInt(process.env.CALLBACK_DEBOUNCE_WAIT) || 2000
 const CALLBACK_DEBOUNCE_MAXWAIT = parseInt(process.env.CALLBACK_DEBOUNCE_MAXWAIT) || 10000
@@ -323,6 +324,21 @@ exports.setupWSConnection = (conn, req, { docName = null, gc = true } = {}) => {
   if (!resolvedDocName) {
     conn.close()
     return
+  }
+
+  const meta = readRoomMeta(resolvedDocName)
+  if (isRoomExpired(meta)) {
+    console.warn('[vimtex] Rejected WS join — room expired', resolvedDocName)
+    conn.close()
+    return
+  }
+  if (meta?.passwordHash) {
+    const auth = searchParams.get('auth')
+    if (!verifyAuthToken(resolvedDocName, auth)) {
+      console.warn('[vimtex] Rejected WS join — missing/invalid auth for room', resolvedDocName)
+      conn.close()
+      return
+    }
   }
 
   const viewToken = searchParams.get('view')

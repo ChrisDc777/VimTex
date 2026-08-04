@@ -3,11 +3,13 @@
  * Next API routes via createRequire / require.
  *
  * View token = HMAC-SHA256(secret, "ro:" + roomId) truncated base64url.
+ * Auth token = expiryMs.sig — unlocks password-protected rooms for a session.
  * Knowing the room id alone remains the edit capability (RFC #20 / #23).
  */
-const { createHmac, timingSafeEqual } = require('node:crypto')
+const { createHmac, timingSafeEqual, scryptSync, randomBytes } = require('node:crypto')
 
 const DEV_FALLBACK_SECRET = 'vimtex-dev-room-secret'
+const DEFAULT_AUTH_TTL_MS = 24 * 60 * 60 * 1000
 
 /**
  * @returns {string}
@@ -60,9 +62,91 @@ function verifyViewToken (roomId, token, secret = getRoomSecret()) {
   }
 }
 
+/**
+ * @param {string} roomId
+ * @param {number} [ttlMs]
+ * @param {string} [secret]
+ * @returns {string}
+ */
+function createAuthToken (roomId, ttlMs = DEFAULT_AUTH_TTL_MS, secret = getRoomSecret()) {
+  if (typeof roomId !== 'string' || roomId.length === 0) {
+    throw new Error('roomId required')
+  }
+  const expiresAt = Date.now() + Math.max(60_000, ttlMs)
+  const sig = createHmac('sha256', secret)
+    .update(`auth:${roomId}:${expiresAt}`, 'utf8')
+    .digest('base64url')
+    .slice(0, 22)
+  return `${expiresAt}.${sig}`
+}
+
+/**
+ * @param {string} roomId
+ * @param {string | null | undefined} token
+ * @param {string} [secret]
+ * @returns {boolean}
+ */
+function verifyAuthToken (roomId, token, secret = getRoomSecret()) {
+  if (typeof token !== 'string' || token.length === 0) return false
+  if (typeof roomId !== 'string' || roomId.length === 0) return false
+  const parts = token.split('.')
+  if (parts.length !== 2) return false
+  const expiresAt = Number(parts[0])
+  const sig = parts[1]
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false
+  const expected = createHmac('sha256', secret)
+    .update(`auth:${roomId}:${expiresAt}`, 'utf8')
+    .digest('base64url')
+    .slice(0, 22)
+  try {
+    const a = Buffer.from(sig)
+    const b = Buffer.from(expected)
+    if (a.length !== b.length) return false
+    return timingSafeEqual(a, b)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * @param {string} password
+ * @returns {string} saltHex:hashHex
+ */
+function hashPassword (password) {
+  const salt = randomBytes(16)
+  const hash = scryptSync(password, salt, 32)
+  return `${salt.toString('hex')}:${hash.toString('hex')}`
+}
+
+/**
+ * @param {string} password
+ * @param {string | null | undefined} stored
+ * @returns {boolean}
+ */
+function verifyPassword (password, stored) {
+  if (typeof password !== 'string' || !stored || typeof stored !== 'string') {
+    return false
+  }
+  const [saltHex, hashHex] = stored.split(':')
+  if (!saltHex || !hashHex) return false
+  try {
+    const salt = Buffer.from(saltHex, 'hex')
+    const expected = Buffer.from(hashHex, 'hex')
+    const actual = scryptSync(password, salt, expected.length)
+    return timingSafeEqual(actual, expected)
+  } catch {
+    return false
+  }
+}
+
 module.exports = {
   DEV_FALLBACK_SECRET,
+  DEFAULT_AUTH_TTL_MS,
   getRoomSecret,
   createViewToken,
   verifyViewToken,
+  createAuthToken,
+  verifyAuthToken,
+  hashPassword,
+  verifyPassword,
 }
