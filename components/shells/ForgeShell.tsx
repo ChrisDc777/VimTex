@@ -65,12 +65,8 @@ import {
   loadRelativeLineNumbers,
   saveRelativeLineNumbers,
 } from "@/lib/editor-settings";
-import {
-  clearRecentRooms,
-  loadRecentRooms,
-  recordRecentRoom,
-  type RecentRoom,
-} from "@/lib/recent-rooms";
+import { useRecentRoomsTracker } from "@/lib/use-recent-rooms-tracker";
+import { useShellShortcuts } from "@/lib/use-shell-shortcuts";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useEditorTabs } from "@/lib/use-editor-tabs";
 import { usePaneLayout } from "@/lib/use-pane-layout";
@@ -127,7 +123,6 @@ export function ForgeShell({
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView | null>(null);
-  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -150,40 +145,10 @@ export function ForgeShell({
     requestAnimationFrame(() => editorRef.current?.focus());
   }, []);
 
-  // Global app shortcuts: ? toggles shortcuts & tips; Ctrl/Cmd+, opens preferences.
-  useEffect(() => {
-    const isEditable = (target: EventTarget | null): boolean => {
-      const el = target as HTMLElement | null;
-      if (!el || el === document.body) return false;
-      return (
-        el.tagName === "INPUT" ||
-        el.tagName === "TEXTAREA" ||
-        el.isContentEditable
-      );
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey) {
-        if (event.key === ",") {
-          event.preventDefault();
-          openPreferences();
-          return;
-        }
-        if (event.key.toLowerCase() === "k") {
-          event.preventDefault();
-          setPaletteOpen((v) => !v);
-          return;
-        }
-        return;
-      }
-      if (event.key === "?") {
-        if (isEditable(event.target)) return;
-        event.preventDefault();
-        setCheatsheetOpen((v) => !v);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  useShellShortcuts({
+    onTogglePalette: useCallback(() => setPaletteOpen((v) => !v), []),
+    onToggleCheatsheet: useCallback(() => setCheatsheetOpen((v) => !v), []),
+  });
 
   const flushSave = useCallback((roomId: string, content: string) => {
     if (saveTimerRef.current) {
@@ -234,13 +199,8 @@ export function ForgeShell({
 
   const roomId = activeRoomId;
 
-  // Keep the recent-rooms list fresh (records the current room on entry and
-  // on every tab/room switch).
-  useEffect(() => {
-    if (!roomId) return;
-    recordRecentRoom(roomId);
-    setRecentRooms(loadRecentRooms());
-  }, [roomId]);
+  const { recentRooms, clear: clearTrackedRecentRooms } =
+    useRecentRoomsTracker(roomId);
 
   useEffect(() => {
     try {
@@ -476,10 +436,7 @@ export function ForgeShell({
         editorMode={editorMode}
         onEditorModeChange={handleEditorMode}
         recentRooms={recentRooms}
-        onClearRecentRooms={() => {
-          clearRecentRooms();
-          setRecentRooms([]);
-        }}
+        onClearRecentRooms={clearTrackedRecentRooms}
         onOpenRoom={handleOpenRoom}
         openRoomIds={openRoomIds}
         canvasBlank={note.trim().length === 0}
@@ -495,7 +452,7 @@ export function ForgeShell({
         }
       />
 
-      <ReconnectBanner status={collabStatus} />
+      <ReconnectBanner status={collabStatus} localBuffer />
 
       <div className="vt-workspace flex min-h-0 min-w-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">

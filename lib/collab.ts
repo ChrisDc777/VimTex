@@ -70,9 +70,9 @@ function hash(input: string): number {
   return h;
 }
 
-/** 12 hex chars = 48 bits of entropy (~2.8×10¹⁴ values). Not secret — share links are guessable at scale without auth. */
+/** 16 hex chars = 64 bits of entropy. Not a secret — share links remain capabilities without ACL. */
 export function createRoomId(): string {
-  const bytes = new Uint8Array(6);
+  const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
