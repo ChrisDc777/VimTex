@@ -13,6 +13,8 @@ type ShareRoomProps = {
   readOnly?: boolean;
   /** Open room password / TTL settings. */
   onOpenSettings?: () => void;
+  /** Open version history / snapshots. */
+  onOpenSnapshots?: () => void;
 };
 
 export function ShareRoom({
@@ -20,6 +22,7 @@ export function ShareRoom({
   variant = "forge",
   readOnly = false,
   onOpenSettings,
+  onOpenSnapshots,
 }: ShareRoomProps) {
   const [copied, setCopied] = useState<"edit" | "view" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -153,6 +156,19 @@ export function ShareRoom({
               }}
             >
               Room settings…
+            </button>
+          ) : null}
+          {onOpenSnapshots ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenSnapshots();
+              }}
+            >
+              Version history…
             </button>
           ) : null}
         </div>
