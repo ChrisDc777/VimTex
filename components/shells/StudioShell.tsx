@@ -38,7 +38,7 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
-import { readViewTokenFromLocation } from "@/lib/room-auth";
+import { readViewTokenFromLocation, resolveEditSecret } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadEditorMode,
@@ -120,6 +120,7 @@ export function StudioShell({
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [viewToken, setViewToken] = useState<string | null>(null);
+  const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -130,6 +131,7 @@ export function StudioShell({
     writeRoomToLocation(room);
     setRoomId(room);
     setViewToken(readViewTokenFromLocation());
+    setEditSecret(resolveEditSecret(room));
 
     const storedMode = loadViewMode();
     if (storedMode != null) setViewMode(storedMode);
@@ -209,9 +211,10 @@ export function StudioShell({
   const startRoomWithContent = useCallback(
     (content: string, roomIdOverride?: string) => {
       const room = roomIdOverride ?? createRoomId();
-      writeRoomToLocation(room, { clearViewToken: true });
+      writeRoomToLocation(room, { clearViewToken: true, clearEditSecret: true });
       setRoomId(room);
       setViewToken(null);
+      setEditSecret(null);
       setNote("");
       setSeed(content || STARTER_NOTE);
       setChatOpen(false);
@@ -294,6 +297,7 @@ export function StudioShell({
     user,
     collaborationEnabled: true,
     viewToken,
+    editSecret: viewToken ? null : editSecret,
     authToken: gate.authToken,
     emptyRoomSeed: seed,
     onTextChange: setNote,
@@ -348,6 +352,7 @@ export function StudioShell({
               roomId={roomId}
               variant="studio"
               readOnly={readOnly}
+              onEditSecret={setEditSecret}
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }

@@ -45,7 +45,7 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
-import { readViewTokenFromLocation } from "@/lib/room-auth";
+import { readViewTokenFromLocation, resolveEditSecret } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadRightPanelView,
@@ -132,6 +132,7 @@ export function ForgeShell({
     useState<RightPanelView | null>(null);
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [viewRoomId, setViewRoomId] = useState<string | null>(null);
+  const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -220,6 +221,7 @@ export function ForgeShell({
       const token = readViewTokenFromLocation();
       setViewToken(token);
       setViewRoomId(token ? roomFromUrl : null);
+      if (roomFromUrl) setEditSecret(resolveEditSecret(roomFromUrl));
       setRightPanelView(loadRightPanelView());
       setEditorMode(loadEditorMode());
       setRelativeLineNumbers(loadRelativeLineNumbers());
@@ -241,8 +243,14 @@ export function ForgeShell({
       writeRoomToLocation(roomId, { clearViewToken: true });
       setViewToken(null);
       setViewRoomId(null);
+      setEditSecret(resolveEditSecret(roomId));
     }
   }, [roomId, viewRoomId]);
+
+  useEffect(() => {
+    if (!roomId || viewToken) return;
+    setEditSecret(resolveEditSecret(roomId));
+  }, [roomId, viewToken]);
 
   const handleEditorMode = useCallback((mode: EditorMode) => {
     saveEditorMode(mode);
@@ -428,13 +436,16 @@ export function ForgeShell({
   const ready =
     nameReady && gate.checked && !gate.expired && !gate.needsPassword;
 
+  const effectiveViewToken =
+    viewToken && roomId && roomId === viewRoomId ? viewToken : null;
+
   const workspace = useWorkspaceController({
     enabled: ready,
     roomId,
     user,
     collaborationEnabled: true,
-    viewToken:
-      viewToken && roomId && roomId === viewRoomId ? viewToken : null,
+    viewToken: effectiveViewToken,
+    editSecret: effectiveViewToken ? null : editSecret,
     authToken: gate.authToken,
     localSeed,
     onTextChange: handleNoteChange,
@@ -443,9 +454,7 @@ export function ForgeShell({
   });
 
   const selfClientId = workspace?.getClientId() ?? null;
-  const readOnly = Boolean(
-    viewToken && roomId && roomId === viewRoomId,
-  );
+  const readOnly = Boolean(effectiveViewToken);
 
   const openRoomIds = useMemo(
     () => new Set(tabs.map((tab) => tab.roomId)),
@@ -484,6 +493,7 @@ export function ForgeShell({
         onOpenRoomSnapshots={
           readOnly ? undefined : () => setRoomSnapshotsOpen(true)
         }
+        onEditSecret={setEditSecret}
         headerExtra={
           <SnippetMenu
             disabled={!ready}

@@ -10,8 +10,8 @@ const debounce = require('lodash.debounce')
 
 const callbackHandler = require('./callback.js').callbackHandler
 const isCallbackSet = require('./callback.js').isCallbackSet
-const { verifyViewToken, verifyAuthToken } = require('./room-auth.js')
-const { readRoomMeta, isRoomExpired } = require('./room-meta.js')
+const { verifyViewToken, verifyAuthToken, verifyEditSecret } = require('./room-auth.js')
+const { readRoomMeta, isRoomExpired, hasEditAcl } = require('./room-meta.js')
 
 const CALLBACK_DEBOUNCE_WAIT = parseInt(process.env.CALLBACK_DEBOUNCE_WAIT) || 2000
 const CALLBACK_DEBOUNCE_MAXWAIT = parseInt(process.env.CALLBACK_DEBOUNCE_MAXWAIT) || 10000
@@ -342,6 +342,8 @@ exports.setupWSConnection = (conn, req, { docName = null, gc = true } = {}) => {
   }
 
   const viewToken = searchParams.get('view')
+  const editParam = searchParams.get('edit')
+
   if (viewToken) {
     if (!verifyViewToken(resolvedDocName, viewToken)) {
       console.warn('[vimtex] Rejected WS join with invalid view token for room', resolvedDocName)
@@ -349,7 +351,16 @@ exports.setupWSConnection = (conn, req, { docName = null, gc = true } = {}) => {
       return
     }
     conn.__vimtexReadOnly = true
+  } else if (hasEditAcl(meta)) {
+    // Guest ACL: writes require the opaque edit secret; bare room id is not enough.
+    if (!verifyEditSecret(editParam, meta.editSecret)) {
+      console.warn('[vimtex] Rejected WS join — missing/invalid edit capability for room', resolvedDocName)
+      conn.close()
+      return
+    }
+    conn.__vimtexReadOnly = false
   } else {
+    // Legacy rooms (no editSecret yet): room id remains the edit capability.
     conn.__vimtexReadOnly = false
   }
 

@@ -1,10 +1,12 @@
 /**
- * Capability tokens for room access (HMAC). Shared by the WS server and
- * Next API routes via createRequire / require.
+ * Capability tokens for room access (HMAC + opaque edit secrets).
+ * Shared by the WS server and Next API routes via createRequire / require.
  *
  * View token = HMAC-SHA256(secret, "ro:" + roomId) truncated base64url.
+ * Edit secret = opaque random stored in room meta (guest capability).
  * Auth token = expiryMs.sig — unlocks password-protected rooms for a session.
- * Knowing the room id alone remains the edit capability (RFC #20 / #23).
+ *
+ * Once a room has editSecret, knowing the room id alone is not enough to write.
  */
 const { createHmac, timingSafeEqual, scryptSync, randomBytes } = require('node:crypto')
 
@@ -55,6 +57,29 @@ function verifyViewToken (roomId, token, secret = getRoomSecret()) {
   try {
     const a = Buffer.from(token)
     const b = Buffer.from(expected)
+    if (a.length !== b.length) return false
+    return timingSafeEqual(a, b)
+  } catch {
+    return false
+  }
+}
+
+/** @returns {string} Opaque edit capability for a room (store in room meta). */
+function createEditSecret () {
+  return randomBytes(24).toString('base64url')
+}
+
+/**
+ * @param {string | null | undefined} presented
+ * @param {string | null | undefined} stored
+ * @returns {boolean}
+ */
+function verifyEditSecret (presented, stored) {
+  if (typeof presented !== 'string' || presented.length === 0) return false
+  if (typeof stored !== 'string' || stored.length === 0) return false
+  try {
+    const a = Buffer.from(presented)
+    const b = Buffer.from(stored)
     if (a.length !== b.length) return false
     return timingSafeEqual(a, b)
   } catch {
@@ -145,6 +170,8 @@ module.exports = {
   getRoomSecret,
   createViewToken,
   verifyViewToken,
+  createEditSecret,
+  verifyEditSecret,
   createAuthToken,
   verifyAuthToken,
   hashPassword,

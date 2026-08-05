@@ -31,6 +31,7 @@ type AppHeaderProps = {
   readOnly?: boolean;
   onOpenRoomSettings?: () => void;
   onOpenRoomSnapshots?: () => void;
+  onEditSecret?: (edit: string) => void;
 };
 
 export function AppHeader({
@@ -55,6 +56,7 @@ export function AppHeader({
   readOnly = false,
   onOpenRoomSettings,
   onOpenRoomSnapshots,
+  onEditSecret,
 }: AppHeaderProps) {
   return (
     <header className="vt-header vt-chrome border-b">
@@ -70,6 +72,7 @@ export function AppHeader({
               readOnly={readOnly}
               onOpenSettings={onOpenRoomSettings}
               onOpenSnapshots={onOpenRoomSnapshots}
+              onEditSecret={onEditSecret}
             />
           ) : null}
           {headerExtra}

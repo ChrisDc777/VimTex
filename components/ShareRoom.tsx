@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { SafeSvg } from "@/components/SafeSvg";
-import { buildRoomUrl, fetchViewToken } from "@/lib/room-auth";
+import {
+  buildRoomUrl,
+  ensureRoomCapabilities,
+  resolveEditSecret,
+} from "@/lib/room-auth";
+import { writeRoomToLocation } from "@/lib/collab";
 import { notify } from "@/lib/toasts";
 
 type ShareRoomProps = {
@@ -15,6 +20,11 @@ type ShareRoomProps = {
   onOpenSettings?: () => void;
   /** Open version history / snapshots. */
   onOpenSnapshots?: () => void;
+  /**
+   * Called after Share upgrades/returns an edit secret so the shell can
+   * reconnect WS with `edit` (and keep the URL in sync).
+   */
+  onEditSecret?: (edit: string) => void;
 };
 
 export function ShareRoom({
@@ -23,6 +33,7 @@ export function ShareRoom({
   readOnly = false,
   onOpenSettings,
   onOpenSnapshots,
+  onEditSecret,
 }: ShareRoomProps) {
   const [copied, setCopied] = useState<"edit" | "view" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,17 +60,42 @@ export function ShareRoom({
     }
   };
 
+  const ensureEdit = async (includeViewToken: boolean) => {
+    const caps = await ensureRoomCapabilities(roomId, {
+      edit: resolveEditSecret(roomId),
+      includeViewToken,
+    });
+    onEditSecret?.(caps.edit);
+    writeRoomToLocation(roomId, { editSecret: caps.edit, clearViewToken: true });
+    return caps;
+  };
+
   const copyEditLink = async () => {
     setMenuOpen(false);
-    await copyHref(buildRoomUrl(roomId), "edit");
+    setBusy(true);
+    try {
+      const caps = await ensureEdit(false);
+      await copyHref(
+        buildRoomUrl(roomId, { editSecret: caps.edit }),
+        "edit",
+      );
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Could not mint link";
+      notify.error(detail);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const copyViewLink = async () => {
     setMenuOpen(false);
     setBusy(true);
     try {
-      const token = await fetchViewToken(roomId);
-      await copyHref(buildRoomUrl(roomId, { viewToken: token }), "view");
+      const caps = await ensureEdit(true);
+      const viewToken = caps.viewToken;
+      if (!viewToken) throw new Error("View token missing");
+      // Keep this tab as editor (edit in URL/session); shared clipboard link is view-only.
+      await copyHref(buildRoomUrl(roomId, { viewToken }), "view");
     } catch (err) {
       const detail = err instanceof Error ? err.message : "Could not mint link";
       notify.error(detail);

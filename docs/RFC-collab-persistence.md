@@ -43,18 +43,30 @@ M2 wants: read-only share links (#23), room TTL / optional password (#24), snaps
 3. **Idle GC vs TTL:** keep process-local idle GC. Room **TTL** (#24) is a separate absolute expiry clock stored with the room metadata (LevelDB or a tiny side map), independent of “no clients.”
 4. **Defer B** to M5 / when multi-region or multi-instance is required. Client already talks Yjs protocols; migrating the server later should not require shell rewrites.
 
-## Capability model (for #23 / #24)
+## Capability model (guest mode)
 
-Rooms stay addressable by `?room=<id>`. Today IDs are 48-bit and **unguessable enough for casual use, not secrets**.
+Rooms stay addressable by `?room=<id>` (16 hex chars). **After the first Share**, the room id is only an address — writes require an opaque edit capability.
 
 | Capability | Mechanism |
 |------------|-----------|
-| **Edit (default)** | Knowing the room id (current behavior) |
-| **Read-only (#23)** | Separate `?room=&view=<token>` or `/r/<token>` where token is a HMAC of `roomId\|ro\|secret`. Server (or client gate) refuses write awareness updates / Yjs updates from RO clients — **prefer server-enforced** once persistence exists. |
-| **Password (#24)** | Optional password hash on room metadata; WS handshake or first HTTP challenge before attach. |
-| **Snapshots (#25)** | Periodic Yjs encodeStateAsUpdate blobs keyed by room + timestamp; restore creates a new update or replaces doc under confirmation. |
+| **Edit (guest)** | `?room=<id>&edit=<editSecret>` — random secret stored in room meta (`ROOM_DATA_DIR`). Minted/returned via `POST /api/rooms/:id/capabilities`. SessionStorage keeps the creator’s copy. |
+| **View-only (#23)** | `?room=<id>&view=<hmac>` — HMAC of `ro:roomId` with `ROOM_SECRET`. WS allows sync + presence; refuses Yjs writes. Stripping `?view=` does **not** escalate without `edit`. |
+| **Password (#24)** | Optional password hash on room metadata; WS requires `auth` session token after unlock. |
+| **Snapshots (#25)** | Manual `Y.encodeStateAsUpdate` blobs under `ROOM_DATA_DIR/snapshots`; restore replaces the live note text. |
 
-**Decision:** lengthen new room IDs to **16 hex chars (64-bit)** going forward; migrate is not required for old links. Document that room URLs are capabilities.
+**Legacy:** Rooms with no `editSecret` still treat knowing the room id as edit (pre-Share). First “Copy edit/view link” upgrades the room and enables ACL.
+
+**Decision:** lengthen new room IDs to **16 hex chars (64-bit)** going forward; migrate is not required for old links.
+
+### Guest → claimed (M5, not implemented)
+
+Guest phase: documents are owned by capability tokens, not user identities. Guests share only View or Edit links (no user-specific invites).
+
+When optional accounts land (see [#37](https://github.com/ChrisDc777/VimTex/issues/37)):
+
+1. A signed-in user may **claim** a guest room (prove edit capability, then attach ownership to the account).
+2. Ownership transfers to the account; sharing switches to the Docs/Notion model (user invites, roles, teams, managed share links).
+3. Existing edit/view capability links should remain valid or be rotated under account-managed sharing — details belong in the accounts RFC.
 
 ## Client architecture implications
 
@@ -64,7 +76,7 @@ Already landed and should remain the seam:
 - Shared `useRoomChat` for AI/chat (both shells)
 - Shell-specific chrome only (Studio stream chat vs Forge panel chat)
 
-Before implementing ACL in the UI, avoid forking logic in StudioShell and ForgeShell — extend the controller (e.g. `readOnly: boolean`, `reconnect()`, room meta).
+ACL and RO flags live on the controller (`readOnly`, WS `params` for `view` / `edit` / `auth`), not duplicated in both shells.
 
 ## AI edits (related risk)
 
@@ -78,10 +90,10 @@ Before implementing ACL in the UI, avoid forking logic in StudioShell and ForgeS
 4. #23 read-only tokens (server enforce).
 5. #24 password + absolute TTL metadata.
 6. #25 snapshot store on the chosen persistence layer.
+7. Guest edit capability tokens (room id ≠ write once ACL enabled).
 
 ## Open questions for product
 
-- Should read-only links allow chat read / chat post / neither?
 - Should password rooms still be discoverable by id alone (password only at join)?
 
-Defaults proposed: RO = view note + presence, no chat post, no edits; password = required once per browser session (sessionStorage flag).
+Defaults: RO = view note + presence, no chat post, no edits; password = required once per browser session (sessionStorage flag); edit = opaque `edit` secret after first Share.

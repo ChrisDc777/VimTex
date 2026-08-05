@@ -29,6 +29,11 @@ export type WorkspaceControllerOptions = {
    * Session auth token for password-protected rooms (`auth` WS query param).
    */
   authToken?: string | null;
+  /**
+   * Opaque guest edit capability (`edit` WS query param). Required once the
+   * room has been upgraded to ACL (editSecret in room meta).
+   */
+  editSecret?: string | null;
   /** Local autosave seed when the buffer is empty (solo or pre-sync). */
   localSeed?: string | null;
   /** Seed inserted after first collab sync if the room is empty. */
@@ -121,6 +126,7 @@ export class WorkspaceController {
       collaborationEnabled = true,
       viewToken = null,
       authToken = null,
+      editSecret = null,
     } = options;
     this.collaborationEnabled = collaborationEnabled;
     this.readOnly = Boolean(viewToken?.trim());
@@ -137,6 +143,8 @@ export class WorkspaceController {
     if (trimmedView) params.view = trimmedView;
     const trimmedAuth = authToken?.trim();
     if (trimmedAuth) params.auth = trimmedAuth;
+    const trimmedEdit = editSecret?.trim();
+    if (trimmedEdit && !trimmedView) params.edit = trimmedEdit;
     this.provider = new WebsocketProvider(wsBase, roomId, this.ydoc, {
       connect: collaborationEnabled,
       params,
