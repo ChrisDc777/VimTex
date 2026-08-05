@@ -4,6 +4,8 @@
  * Next API routes require that module. Browser only reads URL params / session.
  */
 
+import { writeRoomToLocation } from "@/lib/collab";
+
 /** Query param for a read-only view capability token. */
 export const VIEW_TOKEN_PARAM = "view";
 /** Query param for the opaque guest edit capability. */
@@ -69,6 +71,58 @@ export function resolveEditSecret(roomId: string): string | null {
   }
   clearEditSecret(roomId);
   return null;
+}
+
+export type BootstrapEditResult = {
+  /** Edit secret when this client may write; null for view-only or denied. */
+  edit: string | null;
+  /** True when the room already has ACL and this URL has no edit/view. */
+  denied: boolean;
+};
+
+/**
+ * Ensure the landing client can edit when appropriate:
+ * - view URL → no edit (read-only)
+ * - edit already in URL → use it
+ * - room has no ACL yet → mint editSecret and write `?edit=` (first land / new room)
+ * - room already has ACL without edit → denied (need a share link)
+ */
+export async function bootstrapEditCapability(
+  roomId: string,
+): Promise<BootstrapEditResult> {
+  if (readViewTokenFromLocation()) {
+    return { edit: null, denied: false };
+  }
+
+  const fromUrl = resolveEditSecret(roomId);
+  if (fromUrl) {
+    return { edit: fromUrl, denied: false };
+  }
+
+  try {
+    const statusRes = await fetch(
+      `/api/rooms/${encodeURIComponent(roomId)}/capabilities`,
+    );
+    if (statusRes.ok) {
+      const status = (await statusRes.json()) as { hasEditAcl?: boolean };
+      if (status.hasEditAcl) {
+        return { edit: null, denied: true };
+      }
+    }
+  } catch {
+    // Probe failed — try mint below.
+  }
+
+  try {
+    const caps = await ensureRoomCapabilities(roomId, { edit: null });
+    writeRoomToLocation(roomId, {
+      editSecret: caps.edit,
+      clearViewToken: true,
+    });
+    return { edit: caps.edit, denied: false };
+  } catch {
+    return { edit: null, denied: true };
+  }
 }
 
 export function buildRoomUrl(

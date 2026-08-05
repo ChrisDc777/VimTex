@@ -46,7 +46,11 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
-import { readViewTokenFromLocation, resolveEditSecret } from "@/lib/room-auth";
+import {
+  readViewTokenFromLocation,
+  resolveEditSecret,
+  bootstrapEditCapability,
+} from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadRightPanelView,
@@ -216,13 +220,13 @@ export function ForgeShell({
     useRecentRoomsTracker(roomId);
 
   useEffect(() => {
+    let cancelled = false;
     try {
       const roomFromUrl = readRoomFromLocation();
       setUrlRoomId(roomFromUrl);
       const token = readViewTokenFromLocation();
       setViewToken(token);
       setViewRoomId(token ? roomFromUrl : null);
-      if (roomFromUrl) setEditSecret(resolveEditSecret(roomFromUrl));
       setRightPanelView(loadRightPanelView());
       setEditorMode(loadEditorMode());
       setRelativeLineNumbers(loadRelativeLineNumbers());
@@ -231,11 +235,27 @@ export function ForgeShell({
         createCollabUser(storedName ? { name: storedName } : undefined),
       );
       if (!loadOnboardingSeen()) setOnboardingOpen(true);
+
+      const finish = (edit: string | null) => {
+        if (cancelled) return;
+        setEditSecret(edit);
+        setHydrated(true);
+      };
+
+      if (token || !roomFromUrl) {
+        finish(token ? null : roomFromUrl ? resolveEditSecret(roomFromUrl) : null);
+      } else {
+        void bootstrapEditCapability(roomFromUrl).then(({ edit }) => finish(edit));
+      }
     } catch {
-      setUser(createCollabUser());
-    } finally {
-      setHydrated(true);
+      if (!cancelled) {
+        setUser(createCollabUser());
+        setHydrated(true);
+      }
     }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -244,13 +264,22 @@ export function ForgeShell({
       writeRoomToLocation(roomId, { clearViewToken: true });
       setViewToken(null);
       setViewRoomId(null);
-      setEditSecret(resolveEditSecret(roomId));
+      void bootstrapEditCapability(roomId).then(({ edit }) => {
+        setEditSecret(edit);
+      });
     }
   }, [roomId, viewRoomId]);
 
   useEffect(() => {
     if (!roomId || viewToken) return;
-    setEditSecret(resolveEditSecret(roomId));
+    const fromUrl = resolveEditSecret(roomId);
+    if (fromUrl) {
+      setEditSecret(fromUrl);
+      return;
+    }
+    void bootstrapEditCapability(roomId).then(({ edit }) => {
+      setEditSecret(edit);
+    });
   }, [roomId, viewToken]);
 
   const handleEditorMode = useCallback((mode: EditorMode) => {

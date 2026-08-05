@@ -39,7 +39,10 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
-import { readViewTokenFromLocation, resolveEditSecret } from "@/lib/room-auth";
+import {
+  readViewTokenFromLocation,
+  bootstrapEditCapability,
+} from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadEditorMode,
@@ -127,34 +130,48 @@ export function StudioShell({
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const existing = readRoomFromLocation();
     const room = existing ?? createRoomId();
+    const view = readViewTokenFromLocation();
     writeRoomToLocation(room);
     setRoomId(room);
-    setViewToken(readViewTokenFromLocation());
-    setEditSecret(resolveEditSecret(room));
+    setViewToken(view);
 
-    const storedMode = loadViewMode();
-    if (storedMode != null) setViewMode(storedMode);
+    const finish = (edit: string | null) => {
+      if (cancelled) return;
+      setEditSecret(edit);
+      const storedMode = loadViewMode();
+      if (storedMode != null) setViewMode(storedMode);
 
-    const mode = loadEditorMode();
-    setEditorMode(mode);
+      const mode = loadEditorMode();
+      setEditorMode(mode);
 
-    const storedName = loadDisplayName();
-    if (storedName) {
-      setUser(createCollabUser({ name: storedName }));
-      setNeedsName(false);
-    } else if (mode === "standard") {
-      // Standard invitees skip the name modal.
-      setUser(createCollabUser());
-      setNeedsName(false);
-      if (!loadOnboardingSeen()) setOnboardingOpen(true);
+      const storedName = loadDisplayName();
+      if (storedName) {
+        setUser(createCollabUser({ name: storedName }));
+        setNeedsName(false);
+      } else if (mode === "standard") {
+        setUser(createCollabUser());
+        setNeedsName(false);
+        if (!loadOnboardingSeen()) setOnboardingOpen(true);
+      } else {
+        setUser(createCollabUser());
+        setNeedsName(true);
+      }
+      setRelativeLineNumbers(loadRelativeLineNumbers());
+      setHydrated(true);
+    };
+
+    if (view) {
+      finish(null);
     } else {
-      setUser(createCollabUser());
-      setNeedsName(true);
+      void bootstrapEditCapability(room).then(({ edit }) => finish(edit));
     }
-    setRelativeLineNumbers(loadRelativeLineNumbers());
-    setHydrated(true);
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -222,6 +239,9 @@ export function StudioShell({
       setCollabStatus("connecting");
       setPeers([]);
       setVimMode("normal");
+      void bootstrapEditCapability(room).then(({ edit }) => {
+        if (edit) setEditSecret(edit);
+      });
       requestAnimationFrame(() => editorRef.current?.focus());
     },
     [],
