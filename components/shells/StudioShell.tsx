@@ -41,7 +41,8 @@ import {
 } from "@/lib/collab";
 import {
   readViewTokenFromLocation,
-  bootstrapEditCapability,
+  resolveEditSecret,
+  mintEditCapabilityForNewRoom,
 } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
@@ -133,8 +134,8 @@ export function StudioShell({
     let cancelled = false;
     const existing = readRoomFromLocation();
     const room = existing ?? createRoomId();
+    const createdHere = !existing;
     const view = readViewTokenFromLocation();
-    writeRoomToLocation(room);
     setRoomId(room);
     setViewToken(view);
 
@@ -164,9 +165,20 @@ export function StudioShell({
     };
 
     if (view) {
+      writeRoomToLocation(room);
       finish(null);
+    } else if (createdHere) {
+      // Creator path: mint edit into the URL. Do not mint when opening an
+      // existing bare ?room= (strip-view must stay denied).
+      void mintEditCapabilityForNewRoom(room)
+        .then(({ edit }) => finish(edit))
+        .catch(() => {
+          writeRoomToLocation(room);
+          finish(null);
+        });
     } else {
-      void bootstrapEditCapability(room).then(({ edit }) => finish(edit));
+      writeRoomToLocation(room);
+      finish(resolveEditSecret(room));
     }
 
     return () => {
@@ -229,6 +241,7 @@ export function StudioShell({
   const startRoomWithContent = useCallback(
     (content: string, roomIdOverride?: string) => {
       const room = roomIdOverride ?? createRoomId();
+      const createdHere = !roomIdOverride;
       writeRoomToLocation(room, { clearViewToken: true, clearEditSecret: true });
       setRoomId(room);
       setViewToken(null);
@@ -239,9 +252,13 @@ export function StudioShell({
       setCollabStatus("connecting");
       setPeers([]);
       setVimMode("normal");
-      void bootstrapEditCapability(room).then(({ edit }) => {
-        if (edit) setEditSecret(edit);
-      });
+      if (createdHere) {
+        void mintEditCapabilityForNewRoom(room)
+          .then(({ edit }) => setEditSecret(edit))
+          .catch(() => setEditSecret(null));
+      } else {
+        setEditSecret(resolveEditSecret(room));
+      }
       requestAnimationFrame(() => editorRef.current?.focus());
     },
     [],

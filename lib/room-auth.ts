@@ -73,56 +73,20 @@ export function resolveEditSecret(roomId: string): string | null {
   return null;
 }
 
-export type BootstrapEditResult = {
-  /** Edit secret when this client may write; null for view-only or denied. */
-  edit: string | null;
-  /** True when the room already has ACL and this URL has no edit/view. */
-  denied: boolean;
-};
-
 /**
- * Ensure the landing client can edit when appropriate:
- * - view URL → no edit (read-only)
- * - edit already in URL → use it
- * - room has no ACL yet → mint editSecret and write `?edit=` (first land / new room)
- * - room already has ACL without edit → denied (need a share link)
+ * Mint edit capability for a room this client just created.
+ * Call only on create paths (`/` with no room, New room/tab) — never when
+ * opening an existing `?room=` (e.g. after stripping `?view=`).
  */
-export async function bootstrapEditCapability(
+export async function mintEditCapabilityForNewRoom(
   roomId: string,
-): Promise<BootstrapEditResult> {
-  if (readViewTokenFromLocation()) {
-    return { edit: null, denied: false };
-  }
-
-  const fromUrl = resolveEditSecret(roomId);
-  if (fromUrl) {
-    return { edit: fromUrl, denied: false };
-  }
-
-  try {
-    const statusRes = await fetch(
-      `/api/rooms/${encodeURIComponent(roomId)}/capabilities`,
-    );
-    if (statusRes.ok) {
-      const status = (await statusRes.json()) as { hasEditAcl?: boolean };
-      if (status.hasEditAcl) {
-        return { edit: null, denied: true };
-      }
-    }
-  } catch {
-    // Probe failed — try mint below.
-  }
-
-  try {
-    const caps = await ensureRoomCapabilities(roomId, { edit: null });
-    writeRoomToLocation(roomId, {
-      editSecret: caps.edit,
-      clearViewToken: true,
-    });
-    return { edit: caps.edit, denied: false };
-  } catch {
-    return { edit: null, denied: true };
-  }
+): Promise<{ edit: string }> {
+  const caps = await ensureRoomCapabilities(roomId, { edit: null });
+  writeRoomToLocation(roomId, {
+    editSecret: caps.edit,
+    clearViewToken: true,
+  });
+  return { edit: caps.edit };
 }
 
 export function buildRoomUrl(

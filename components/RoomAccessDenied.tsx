@@ -20,6 +20,17 @@ export function RoomAccessDenied({ roomId }: RoomAccessDeniedProps) {
         the room id alone is not enough.
       </p>
       <p className="mt-2 font-mono text-xs text-mute">{roomId}</p>
+      <a
+        href="/"
+        className="vt-btn mt-4"
+        onClick={(e) => {
+          e.preventDefault();
+          // Full load so Studio/Forge remount on a clean `/` (new room + edit).
+          window.location.assign("/");
+        }}
+      >
+        Start a new room
+      </a>
     </div>
   );
 }

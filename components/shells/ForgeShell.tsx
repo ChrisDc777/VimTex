@@ -47,9 +47,10 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import {
+  loadEditSecret,
   readViewTokenFromLocation,
   resolveEditSecret,
-  bootstrapEditCapability,
+  mintEditCapabilityForNewRoom,
 } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
@@ -138,6 +139,7 @@ export function ForgeShell({
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [viewRoomId, setViewRoomId] = useState<string | null>(null);
   const [editSecret, setEditSecret] = useState<string | null>(null);
+  const [capabilityReady, setCapabilityReady] = useState(false);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -192,6 +194,12 @@ export function ForgeShell({
     [focusEditor],
   );
 
+  const pendingMintRef = useRef<Set<string>>(new Set());
+
+  const handleRoomCreated = useCallback((createdRoomId: string) => {
+    pendingMintRef.current.add(createdRoomId);
+  }, []);
+
   const {
     tabs,
     activeRoomId,
@@ -208,6 +216,7 @@ export function ForgeShell({
     hydrated,
     onBeforeSwitch: handleBeforeSwitch,
     onAfterSwitch: handleAfterSwitch,
+    onRoomCreated: handleRoomCreated,
   });
 
   useEffect(() => {
@@ -236,20 +245,26 @@ export function ForgeShell({
       );
       if (!loadOnboardingSeen()) setOnboardingOpen(true);
 
-      const finish = (edit: string | null) => {
+      const finish = (edit: string | null, capsReady: boolean) => {
         if (cancelled) return;
         setEditSecret(edit);
+        setCapabilityReady(capsReady);
         setHydrated(true);
       };
 
-      if (token || !roomFromUrl) {
-        finish(token ? null : roomFromUrl ? resolveEditSecret(roomFromUrl) : null);
+      // Open existing URL room: never mint (strip-view must stay denied).
+      // Bare `/` creates a room via tabs — mint happens in onRoomCreated.
+      if (token) {
+        finish(null, true);
+      } else if (roomFromUrl) {
+        finish(resolveEditSecret(roomFromUrl), true);
       } else {
-        void bootstrapEditCapability(roomFromUrl).then(({ edit }) => finish(edit));
+        finish(null, false);
       }
     } catch {
       if (!cancelled) {
         setUser(createCollabUser());
+        setCapabilityReady(true);
         setHydrated(true);
       }
     }
@@ -261,25 +276,35 @@ export function ForgeShell({
   useEffect(() => {
     if (!roomId || !viewRoomId) return;
     if (roomId !== viewRoomId) {
-      writeRoomToLocation(roomId, { clearViewToken: true });
+      const edit = loadEditSecret(roomId);
+      writeRoomToLocation(roomId, {
+        clearViewToken: true,
+        ...(edit ? { editSecret: edit } : { clearEditSecret: true }),
+      });
       setViewToken(null);
       setViewRoomId(null);
-      void bootstrapEditCapability(roomId).then(({ edit }) => {
-        setEditSecret(edit);
-      });
+      setEditSecret(edit);
     }
   }, [roomId, viewRoomId]);
 
   useEffect(() => {
     if (!roomId || viewToken) return;
-    const fromUrl = resolveEditSecret(roomId);
-    if (fromUrl) {
-      setEditSecret(fromUrl);
+    if (pendingMintRef.current.has(roomId)) {
+      pendingMintRef.current.delete(roomId);
+      setCapabilityReady(false);
+      void mintEditCapabilityForNewRoom(roomId)
+        .then(({ edit }) => {
+          setEditSecret(edit);
+          setCapabilityReady(true);
+        })
+        .catch(() => {
+          setEditSecret(null);
+          setCapabilityReady(true);
+        });
       return;
     }
-    void bootstrapEditCapability(roomId).then(({ edit }) => {
-      setEditSecret(edit);
-    });
+    setEditSecret(resolveEditSecret(roomId));
+    setCapabilityReady(true);
   }, [roomId, viewToken]);
 
   const handleEditorMode = useCallback((mode: EditorMode) => {
@@ -381,10 +406,11 @@ export function ForgeShell({
     (content: string) => {
       if (!canNewTab) return;
       const freshRoom = createRoomId();
+      handleRoomCreated(freshRoom);
       if (content) saveNote(freshRoom, content);
       openRoom(freshRoom, note);
     },
-    [canNewTab, openRoom, note],
+    [canNewTab, openRoom, note, handleRoomCreated],
   );
 
   const handleNewRoom = useCallback(
@@ -461,7 +487,7 @@ export function ForgeShell({
     [closeTab, note],
   );
 
-  const nameReady = hydrated && !!roomId && !!user;
+  const nameReady = hydrated && capabilityReady && !!roomId && !!user;
   const effectiveViewToken =
     viewToken && roomId && roomId === viewRoomId ? viewToken : null;
   const gate = useRoomGate(roomId, nameReady, {

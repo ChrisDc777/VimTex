@@ -45,16 +45,16 @@ M2 wants: read-only share links (#23), room TTL / optional password (#24), snaps
 
 ## Capability model (guest mode)
 
-Rooms stay addressable by `?room=<id>` (16 hex chars). **After the first Share**, the room id is only an address — writes require an opaque edit capability.
+Rooms stay addressable by `?room=<id>` (16 hex chars). **After ACL is enabled**, the room id is only an address — writes require an opaque edit capability.
 
 | Capability | Mechanism |
 |------------|-----------|
-| **Edit (guest)** | `?room=<id>&edit=<editSecret>` — random secret stored in room meta (`ROOM_DATA_DIR`). Minted/returned via `POST /api/rooms/:id/capabilities`. SessionStorage keeps the creator’s copy. |
-| **View-only (#23)** | `?room=<id>&view=<hmac>` — HMAC of `ro:roomId` with `ROOM_SECRET`. WS allows sync + presence; refuses Yjs writes. Stripping `?view=` does **not** escalate without `edit`. |
+| **Edit (guest)** | `?room=<id>&edit=<editSecret>` — random secret stored in room meta (`ROOM_DATA_DIR`). Minted on **room create** (landing `/` / New room) and returned via `POST /api/rooms/:id/capabilities`. Opening a bare `?room=` never mints. |
+| **View-only (#23)** | `?room=<id>&view=<hmac>` — HMAC of `ro:roomId` with `ROOM_SECRET`. WS allows sync + presence; refuses Yjs writes. Stripping `?view=` does **not** escalate (no auto-mint of `edit`). |
 | **Password (#24)** | Optional password hash on room metadata; WS requires `auth` session token after unlock. |
 | **Snapshots (#25)** | Manual `Y.encodeStateAsUpdate` blobs under `ROOM_DATA_DIR/snapshots`; restore replaces the live note text. |
 
-**Legacy:** Rooms with no `editSecret` still treat knowing the room id as edit (pre-Share). First “Copy edit/view link” upgrades the room and enables ACL.
+**Legacy:** Rooms with no `editSecret` still treat knowing the room id as edit (pre-ACL). Share “Copy edit/view link” upgrades older rooms. New rooms mint `editSecret` at create time.
 
 **Decision:** lengthen new room IDs to **16 hex chars (64-bit)** going forward; migrate is not required for old links.
 
