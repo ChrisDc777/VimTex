@@ -57,8 +57,9 @@ export function clearEditSecret(roomId: string): void {
 }
 
 /**
- * Resolve edit capability: URL wins, then sessionStorage.
- * Also persists URL edit into sessionStorage for later tabs.
+ * Resolve edit capability from the URL only.
+ * Stripping `?edit=` must revoke access — do not fall back to sessionStorage.
+ * When present in the URL, mirror into sessionStorage for Share mint requests.
  */
 export function resolveEditSecret(roomId: string): string | null {
   const fromUrl = readEditSecretFromLocation();
@@ -66,7 +67,8 @@ export function resolveEditSecret(roomId: string): string | null {
     saveEditSecret(roomId, fromUrl);
     return fromUrl;
   }
-  return loadEditSecret(roomId);
+  clearEditSecret(roomId);
+  return null;
 }
 
 export function buildRoomUrl(

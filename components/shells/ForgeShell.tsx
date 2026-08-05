@@ -23,6 +23,7 @@ import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
+import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
 import {
@@ -432,12 +433,18 @@ export function ForgeShell({
   );
 
   const nameReady = hydrated && !!roomId && !!user;
-  const gate = useRoomGate(roomId, nameReady);
-  const ready =
-    nameReady && gate.checked && !gate.expired && !gate.needsPassword;
-
   const effectiveViewToken =
     viewToken && roomId && roomId === viewRoomId ? viewToken : null;
+  const gate = useRoomGate(roomId, nameReady, {
+    editSecret: effectiveViewToken ? null : editSecret,
+    viewToken: effectiveViewToken,
+  });
+  const ready =
+    nameReady &&
+    gate.checked &&
+    !gate.expired &&
+    !gate.needsPassword &&
+    !gate.needsShareLink;
 
   const workspace = useWorkspaceController({
     enabled: ready,
@@ -463,6 +470,10 @@ export function ForgeShell({
 
   if (gate.expired) {
     return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;
+  }
+
+  if (gate.needsShareLink && roomId) {
+    return <RoomAccessDenied roomId={roomId} />;
   }
 
   return (

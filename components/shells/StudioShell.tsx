@@ -19,6 +19,7 @@ import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
+import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
@@ -286,9 +287,16 @@ export function StudioShell({
 
   const isSplit = viewMode === "split";
   const nameReady = hydrated && !!roomId && !!user && !needsName;
-  const gate = useRoomGate(roomId, nameReady);
+  const gate = useRoomGate(roomId, nameReady, {
+    editSecret,
+    viewToken,
+  });
   const ready =
-    nameReady && gate.checked && !gate.expired && !gate.needsPassword;
+    nameReady &&
+    gate.checked &&
+    !gate.expired &&
+    !gate.needsPassword &&
+    !gate.needsShareLink;
   const namePickerOpen = needsName || editingName;
 
   const workspace = useWorkspaceController({
@@ -327,6 +335,10 @@ export function StudioShell({
 
   if (gate.expired) {
     return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;
+  }
+
+  if (gate.needsShareLink && roomId) {
+    return <RoomAccessDenied roomId={roomId} />;
   }
 
   return (
