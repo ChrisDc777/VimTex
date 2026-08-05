@@ -30,6 +30,7 @@ type RoomMeta = {
   updatedAt: number;
   expiresAt: number | null;
   passwordHash: string | null;
+  editSecret: string | null;
 };
 
 const ROOM_ID_PATTERN = /^[a-zA-Z0-9_-]{4,64}$/;
@@ -60,6 +61,7 @@ export async function GET(_req: Request, context: RouteContext) {
   return NextResponse.json({
     roomId,
     requiresPassword: Boolean(meta?.passwordHash),
+    hasEditAcl: Boolean(meta?.editSecret),
     expiresAt: meta?.expiresAt ?? null,
     expired: isRoomExpired(meta),
     createdAt: meta?.createdAt ?? null,

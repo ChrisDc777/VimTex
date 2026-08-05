@@ -15,6 +15,11 @@ export type RoomGateState = {
   authToken: string | null;
   /** True when password required and we don't have a valid session token yet. */
   needsPassword: boolean;
+  /**
+   * True when guest ACL is on but URL has neither edit nor view capability.
+   * Do not open the WS in this state (avoids reconnect loops).
+   */
+  needsShareLink: boolean;
   expired: boolean;
   unlockError: string | null;
   unlocking: boolean;
@@ -24,10 +29,20 @@ export type RoomGateState = {
   applyMeta: (meta: RoomMetaPublic) => void;
 };
 
+type CapOpts = {
+  editSecret?: string | null;
+  viewToken?: string | null;
+};
+
 /**
- * Loads room meta and gates collab until password unlock (sessionStorage).
+ * Loads room meta and gates collab until password unlock / share-link capability.
  */
-export function useRoomGate(roomId: string | null, enabled: boolean): RoomGateState {
+export function useRoomGate(
+  roomId: string | null,
+  enabled: boolean,
+  caps: CapOpts = {},
+): RoomGateState {
+  const { editSecret = null, viewToken = null } = caps;
   const [checked, setChecked] = useState(false);
   const [meta, setMeta] = useState<RoomMetaPublic | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -58,6 +73,7 @@ export function useRoomGate(roomId: string | null, enabled: boolean): RoomGateSt
       setMeta({
         roomId,
         requiresPassword: false,
+        hasEditAcl: false,
         expiresAt: null,
         expired: false,
       });
@@ -85,6 +101,7 @@ export function useRoomGate(roomId: string | null, enabled: boolean): RoomGateSt
             : {
                 roomId,
                 requiresPassword: true,
+                hasEditAcl: false,
                 expiresAt: null,
                 expired: false,
               },
@@ -114,12 +131,20 @@ export function useRoomGate(roomId: string | null, enabled: boolean): RoomGateSt
   const needsPassword = Boolean(
     checked && meta?.requiresPassword && !authToken && !expired,
   );
+  const needsShareLink = Boolean(
+    checked &&
+      meta?.hasEditAcl &&
+      !editSecret?.trim() &&
+      !viewToken?.trim() &&
+      !expired,
+  );
 
   return {
     checked,
     meta,
     authToken,
     needsPassword,
+    needsShareLink,
     expired,
     unlockError,
     unlocking,

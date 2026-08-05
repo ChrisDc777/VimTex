@@ -163,12 +163,22 @@ export function readRoomFromLocation(): string | null {
 
 export function writeRoomToLocation(
   room: string,
-  opts?: { clearViewToken?: boolean },
+  opts?: {
+    clearViewToken?: boolean;
+    clearEditSecret?: boolean;
+    editSecret?: string | null;
+  },
 ): void {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.searchParams.set("room", room);
   if (opts?.clearViewToken) {
+    url.searchParams.delete("view");
+  }
+  if (opts?.clearEditSecret) {
+    url.searchParams.delete("edit");
+  } else if (opts?.editSecret) {
+    url.searchParams.set("edit", opts.editSecret);
     url.searchParams.delete("view");
   }
   window.history.replaceState({}, "", url.toString());

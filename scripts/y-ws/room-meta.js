@@ -1,5 +1,5 @@
 /**
- * Filesystem room metadata (password hash, absolute TTL).
+ * Filesystem room metadata (password hash, absolute TTL, edit capability).
  * Directory: ROOM_DATA_DIR, or `<YPERSISTENCE>/../rooms`, or `.data/rooms`.
  */
 const fs = require('node:fs')
@@ -37,6 +37,7 @@ function metaPath (roomId) {
  *   updatedAt: number,
  *   expiresAt: number | null,
  *   passwordHash: string | null,
+ *   editSecret: string | null,
  * }} RoomMeta
  */
 
@@ -60,6 +61,10 @@ function readRoomMeta (roomId) {
       passwordHash:
         typeof data.passwordHash === 'string' && data.passwordHash
           ? data.passwordHash
+          : null,
+      editSecret:
+        typeof data.editSecret === 'string' && data.editSecret
+          ? data.editSecret
           : null,
     }
   } catch (err) {
@@ -104,6 +109,10 @@ function upsertRoomMeta (roomId, patch) {
       patch.passwordHash !== undefined
         ? patch.passwordHash
         : (existing?.passwordHash ?? null),
+    editSecret:
+      patch.editSecret !== undefined
+        ? patch.editSecret
+        : (existing?.editSecret ?? null),
   }
   return writeRoomMeta(next)
 }
@@ -117,10 +126,20 @@ function isRoomExpired (meta) {
   return Date.now() > Number(meta.expiresAt)
 }
 
+/**
+ * True when guest ACL is active (edit capability required for writes).
+ * @param {RoomMeta | null} meta
+ * @returns {boolean}
+ */
+function hasEditAcl (meta) {
+  return Boolean(meta?.editSecret)
+}
+
 module.exports = {
   getRoomDataDir,
   readRoomMeta,
   writeRoomMeta,
   upsertRoomMeta,
   isRoomExpired,
+  hasEditAcl,
 }

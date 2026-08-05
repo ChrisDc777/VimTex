@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoomId, writeRoomToLocation } from "@/lib/collab";
+import { loadEditSecret } from "@/lib/room-auth";
 import { deriveDocumentTitle } from "@/lib/document-title";
 import { loadNote } from "@/lib/storage";
 import {
@@ -19,6 +20,8 @@ type UseEditorTabsOptions = {
   hydrated: boolean;
   onBeforeSwitch?: (fromRoomId: string, note: string) => void;
   onAfterSwitch?: (toRoomId: string, localSeed: string | null) => void;
+  /** Fired when this hook allocates a brand-new room id (not when opening one). */
+  onRoomCreated?: (roomId: string) => void;
 };
 
 type UseEditorTabsResult = {
@@ -55,6 +58,7 @@ export function useEditorTabs({
   hydrated,
   onBeforeSwitch,
   onAfterSwitch,
+  onRoomCreated,
 }: UseEditorTabsOptions): UseEditorTabsResult {
   const [session, setSession] = useState<TabSession | null>(null);
   const [derivedTitles, setDerivedTitles] = useState<Record<string, string>>(
@@ -63,19 +67,28 @@ export function useEditorTabs({
   const deriveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onBeforeSwitchRef = useRef(onBeforeSwitch);
   const onAfterSwitchRef = useRef(onAfterSwitch);
+  const onRoomCreatedRef = useRef(onRoomCreated);
 
   useEffect(() => {
     onBeforeSwitchRef.current = onBeforeSwitch;
     onAfterSwitchRef.current = onAfterSwitch;
-  }, [onBeforeSwitch, onAfterSwitch]);
+    onRoomCreatedRef.current = onRoomCreated;
+  }, [onBeforeSwitch, onAfterSwitch, onRoomCreated]);
 
   useEffect(() => {
     if (!hydrated) return;
 
-    const stored = loadTabSession();
-    let next = stored ?? createInitialTabSession(urlRoomId);
+    let next: TabSession;
 
-    if (urlRoomId) {
+    if (!urlRoomId) {
+      // Bare `/` — always create a new room (mint via onRoomCreated).
+      // Restoring vimtex:tabs here reopens ACL rooms without ?edit= and
+      // looks "broken" vs incognito (empty storage).
+      next = createInitialTabSession(null);
+      onRoomCreatedRef.current?.(next.activeRoomId);
+    } else {
+      const stored = loadTabSession();
+      next = stored ?? createInitialTabSession(urlRoomId);
       next = mergeUrlRoomIntoSession(next, urlRoomId);
     }
 
@@ -90,7 +103,10 @@ export function useEditorTabs({
 
   useEffect(() => {
     if (!session?.activeRoomId) return;
-    writeRoomToLocation(session.activeRoomId);
+    const edit = loadEditSecret(session.activeRoomId);
+    writeRoomToLocation(session.activeRoomId, {
+      ...(edit ? { editSecret: edit } : { clearEditSecret: true }),
+    });
   }, [session?.activeRoomId]);
 
   const applySession = useCallback(
@@ -145,6 +161,7 @@ export function useEditorTabs({
         (prev) => {
           if (prev.tabs.length === 1) {
             const freshRoom = createRoomId();
+            onRoomCreatedRef.current?.(freshRoom);
             return {
               tabs: [{ roomId: freshRoom }],
               activeRoomId: freshRoom,
@@ -176,6 +193,7 @@ export function useEditorTabs({
 
       const fromRoomId = session.activeRoomId;
       const freshRoom = createRoomId();
+      onRoomCreatedRef.current?.(freshRoom);
       applySession(
         (prev) => ({
           tabs: [...prev.tabs, { roomId: freshRoom }],

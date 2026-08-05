@@ -3,6 +3,8 @@
 export type RoomMetaPublic = {
   roomId: string;
   requiresPassword: boolean;
+  /** Guest ACL enabled — bare room id cannot write. */
+  hasEditAcl?: boolean;
   expiresAt: number | null;
   expired: boolean;
   createdAt?: number | null;

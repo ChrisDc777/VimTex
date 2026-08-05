@@ -82,11 +82,21 @@ export function RoomSettingsDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="presentation"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
+    >
       <form
         onSubmit={(e) => void handleSubmit(e)}
         className="w-full max-w-md rounded-lg border border-hairline bg-[color:var(--canvas)] p-4 shadow-xl"
         aria-labelledby="room-settings-title"
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2">
           <h2 id="room-settings-title" className="text-sm font-semibold text-ink">

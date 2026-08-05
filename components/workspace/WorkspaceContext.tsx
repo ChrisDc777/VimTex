@@ -45,6 +45,8 @@ export type UseWorkspaceControllerOptions = {
   viewToken?: string | null;
   /** Password-room session token (`auth` WS param). */
   authToken?: string | null;
+  /** Guest edit capability (`edit` WS param). */
+  editSecret?: string | null;
   localSeed?: string | null;
   emptyRoomSeed?: string | null;
   onTextChange: (text: string) => void;
@@ -67,6 +69,7 @@ export function useWorkspaceController(
     collaborationEnabled = true,
     viewToken = null,
     authToken = null,
+    editSecret = null,
     localSeed,
     emptyRoomSeed,
     onTextChange,
@@ -94,6 +97,7 @@ export function useWorkspaceController(
       collaborationEnabled,
       viewToken,
       authToken,
+      editSecret,
       localSeed,
       emptyRoomSeed,
     });
@@ -104,7 +108,7 @@ export function useWorkspaceController(
     };
     // Recreate only on room/collab/token changes — user/seed/callbacks sync below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, roomId, collaborationEnabled, viewToken, authToken]);
+  }, [enabled, roomId, collaborationEnabled, viewToken, authToken, editSecret]);
 
   useEffect(() => {
     if (!workspace || !user) return;

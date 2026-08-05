@@ -92,11 +92,21 @@ export function RoomSnapshotsDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="presentation"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
+    >
       <div
         className="flex max-h-[min(80vh,32rem)] w-full max-w-md flex-col rounded-lg border border-hairline bg-[color:var(--canvas)] p-4 shadow-xl"
         role="dialog"
         aria-labelledby="room-snapshots-title"
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2">
           <h2 id="room-snapshots-title" className="text-sm font-semibold text-ink">

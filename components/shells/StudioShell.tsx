@@ -19,6 +19,7 @@ import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
+import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
@@ -38,7 +39,11 @@ import {
   saveDisplayName,
   writeRoomToLocation,
 } from "@/lib/collab";
-import { readViewTokenFromLocation } from "@/lib/room-auth";
+import {
+  readViewTokenFromLocation,
+  resolveEditSecret,
+  mintEditCapabilityForNewRoom,
+} from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
 import {
   loadEditorMode,
@@ -120,38 +125,65 @@ export function StudioShell({
   const [seed, setSeed] = useState<string | null>(STARTER_NOTE);
   const [relativeLineNumbers, setRelativeLineNumbers] = useState(true);
   const [viewToken, setViewToken] = useState<string | null>(null);
+  const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const existing = readRoomFromLocation();
     const room = existing ?? createRoomId();
-    writeRoomToLocation(room);
+    const createdHere = !existing;
+    const view = readViewTokenFromLocation();
     setRoomId(room);
-    setViewToken(readViewTokenFromLocation());
+    setViewToken(view);
 
-    const storedMode = loadViewMode();
-    if (storedMode != null) setViewMode(storedMode);
+    const finish = (edit: string | null) => {
+      if (cancelled) return;
+      setEditSecret(edit);
+      const storedMode = loadViewMode();
+      if (storedMode != null) setViewMode(storedMode);
 
-    const mode = loadEditorMode();
-    setEditorMode(mode);
+      const mode = loadEditorMode();
+      setEditorMode(mode);
 
-    const storedName = loadDisplayName();
-    if (storedName) {
-      setUser(createCollabUser({ name: storedName }));
-      setNeedsName(false);
-    } else if (mode === "standard") {
-      // Standard invitees skip the name modal.
-      setUser(createCollabUser());
-      setNeedsName(false);
-      if (!loadOnboardingSeen()) setOnboardingOpen(true);
+      const storedName = loadDisplayName();
+      if (storedName) {
+        setUser(createCollabUser({ name: storedName }));
+        setNeedsName(false);
+      } else if (mode === "standard") {
+        setUser(createCollabUser());
+        setNeedsName(false);
+        if (!loadOnboardingSeen()) setOnboardingOpen(true);
+      } else {
+        setUser(createCollabUser());
+        setNeedsName(true);
+      }
+      setRelativeLineNumbers(loadRelativeLineNumbers());
+      setHydrated(true);
+    };
+
+    if (view) {
+      writeRoomToLocation(room);
+      finish(null);
+    } else if (createdHere) {
+      // Creator path: mint edit into the URL. Do not mint when opening an
+      // existing bare ?room= (strip-view must stay denied).
+      void mintEditCapabilityForNewRoom(room)
+        .then(({ edit }) => finish(edit))
+        .catch(() => {
+          writeRoomToLocation(room);
+          finish(null);
+        });
     } else {
-      setUser(createCollabUser());
-      setNeedsName(true);
+      writeRoomToLocation(room);
+      finish(resolveEditSecret(room));
     }
-    setRelativeLineNumbers(loadRelativeLineNumbers());
-    setHydrated(true);
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -209,15 +241,24 @@ export function StudioShell({
   const startRoomWithContent = useCallback(
     (content: string, roomIdOverride?: string) => {
       const room = roomIdOverride ?? createRoomId();
-      writeRoomToLocation(room, { clearViewToken: true });
+      const createdHere = !roomIdOverride;
+      writeRoomToLocation(room, { clearViewToken: true, clearEditSecret: true });
       setRoomId(room);
       setViewToken(null);
+      setEditSecret(null);
       setNote("");
       setSeed(content || STARTER_NOTE);
       setChatOpen(false);
       setCollabStatus("connecting");
       setPeers([]);
       setVimMode("normal");
+      if (createdHere) {
+        void mintEditCapabilityForNewRoom(room)
+          .then(({ edit }) => setEditSecret(edit))
+          .catch(() => setEditSecret(null));
+      } else {
+        setEditSecret(resolveEditSecret(room));
+      }
       requestAnimationFrame(() => editorRef.current?.focus());
     },
     [],
@@ -283,9 +324,16 @@ export function StudioShell({
 
   const isSplit = viewMode === "split";
   const nameReady = hydrated && !!roomId && !!user && !needsName;
-  const gate = useRoomGate(roomId, nameReady);
+  const gate = useRoomGate(roomId, nameReady, {
+    editSecret,
+    viewToken,
+  });
   const ready =
-    nameReady && gate.checked && !gate.expired && !gate.needsPassword;
+    nameReady &&
+    gate.checked &&
+    !gate.expired &&
+    !gate.needsPassword &&
+    !gate.needsShareLink;
   const namePickerOpen = needsName || editingName;
 
   const workspace = useWorkspaceController({
@@ -294,6 +342,7 @@ export function StudioShell({
     user,
     collaborationEnabled: true,
     viewToken,
+    editSecret: viewToken ? null : editSecret,
     authToken: gate.authToken,
     emptyRoomSeed: seed,
     onTextChange: setNote,
@@ -325,6 +374,10 @@ export function StudioShell({
     return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;
   }
 
+  if (gate.needsShareLink && roomId) {
+    return <RoomAccessDenied roomId={roomId} />;
+  }
+
   return (
     <WorkspaceProvider value={workspace}>
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
@@ -348,6 +401,7 @@ export function StudioShell({
               roomId={roomId}
               variant="studio"
               readOnly={readOnly}
+              onEditSecret={setEditSecret}
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }
