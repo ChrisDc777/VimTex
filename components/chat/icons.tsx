@@ -41,6 +41,21 @@ export function RefreshIcon() {
   );
 }
 
+export function StopIcon() {
+  return (
+    <SafeSvg width={14} height={14} viewBox="0 0 14 14" fill="none" aria-hidden>
+      <rect
+        x="3.25"
+        y="3.25"
+        width="7.5"
+        height="7.5"
+        rx="1"
+        fill="currentColor"
+      />
+    </SafeSvg>
+  );
+}
+
 export function ChevronIcon({ className }: { className?: string }) {
   return (
     <SafeSvg

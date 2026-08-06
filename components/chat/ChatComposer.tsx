@@ -9,7 +9,7 @@ import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
 import type { AiModelId } from "@/lib/ai-providers";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
-import { SendIcon } from "@/components/chat/icons";
+import { SendIcon, StopIcon } from "@/components/chat/icons";
 
 type ChatComposerProps = {
   input: string;
@@ -149,9 +149,10 @@ export function ChatComposer({
               type="button"
               onClick={onCancel}
               className="vt-chat-send vt-chat-send--active"
-              aria-label="Cancel AI"
+              aria-label="Stop AI"
+              title="Stop"
             >
-              Stop
+              <StopIcon />
             </button>
           ) : (
             <button

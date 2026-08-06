@@ -31,6 +31,7 @@ import {
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
 import type { UiVariant } from "@/lib/ui-variant";
+import { useAiReview } from "@/components/ai/AiReviewProvider";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export type UseRoomChatOptions = {
@@ -46,6 +47,7 @@ export type UseRoomChatOptions = {
 /**
  * Shared room-chat controller for Studio and Forge skins.
  * Owns subscription, composer state, @vimothy AI invoke, and typing heartbeat.
+ * Document proposals go through AiReviewStore (not local React state).
  */
 export function useRoomChat({
   open,
@@ -55,6 +57,7 @@ export function useRoomChat({
   persistModel = true,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
+  const review = useAiReview();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -67,19 +70,14 @@ export function useRoomChat({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [stickBottom, setStickBottom] = useState(true);
   const [currentClientId, setCurrentClientId] = useState<number | null>(null);
-  const [pendingEdit, setPendingEdit] = useState<{
-    messageId: string;
-    before: string;
-    after: string;
-  } | null>(null);
-  const [editOutcomes, setEditOutcomes] = useState<
-    Record<string, "accepted" | "rejected">
-  >({});
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const pendingEdit = review.pending;
+  const editOutcomes = review.outcomes;
 
   useEffect(() => {
     if (!persistModel) return;
@@ -111,7 +109,7 @@ export function useRoomChat({
     const el = listRef.current;
     if (!el || !stickBottom) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, busy, open, stickBottom, error, streamingText]);
+  }, [messages, busy, open, stickBottom, error, streamingText, pendingEdit]);
 
   const onListScroll = useCallback(() => {
     const el = listRef.current;
@@ -211,7 +209,11 @@ export function useRoomChat({
         return;
       }
 
-      if (pendingEdit && aiFeatureEnabled(shell, "diffAcceptReject")) {
+      if (
+        review.pending &&
+        aiFeatureEnabled(shell, "diffAcceptReject") &&
+        review.prefs.applyMode === "confirm"
+      ) {
         setError("Accept or reject the pending AI edit first.");
         setErrorForId(userMsg.id);
         return;
@@ -237,9 +239,10 @@ export function useRoomChat({
               },
               {
                 onToken: (acc) => {
-                  // Hide incomplete @@@DOCUMENT blocks while streaming.
                   const cut = acc.indexOf("@@@DOCUMENT");
-                  setStreamingText(cut === -1 ? acc : acc.slice(0, cut).trimEnd());
+                  setStreamingText(
+                    cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
+                  );
                 },
               },
             )
@@ -266,20 +269,25 @@ export function useRoomChat({
           documentEdit: parsed.documentEdit,
         };
         ws.appendChatMessage(aiMsg);
+
         if (parsed.documentEdit == null || !aiMayMutateDocument(shell)) {
-          // Forge / no edit proposal: chat only.
+          // Forge / Q&A only.
         } else if (aiFeatureEnabled(shell, "diffAcceptReject")) {
-          setPendingEdit({
+          review.proposeDocumentEdit({
             messageId: aiMsg.id,
             before: beforeSnapshot,
             after: parsed.documentEdit,
+            source: "chat",
+            createdAt: Date.now(),
           });
         } else {
           ws.applyAiEdit(parsed.documentEdit);
-          setEditOutcomes((prev) => ({ ...prev, [aiMsg.id]: "accepted" }));
         }
       } catch (err) {
-        if (ac.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
+        if (
+          ac.signal.aborted ||
+          (err instanceof Error && err.name === "AbortError")
+        ) {
           setError("Cancelled.");
           setErrorForId(userMsg.id);
           return;
@@ -293,28 +301,8 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell, pendingEdit, busy],
+    [workspace, model, shell, review, busy],
   );
-
-  const acceptPendingEdit = useCallback(() => {
-    const ws = workspace;
-    if (!ws || !pendingEdit || ws.readOnly) return;
-    ws.applyAiEdit(pendingEdit.after);
-    setEditOutcomes((prev) => ({
-      ...prev,
-      [pendingEdit.messageId]: "accepted",
-    }));
-    setPendingEdit(null);
-  }, [workspace, pendingEdit]);
-
-  const rejectPendingEdit = useCallback(() => {
-    if (!pendingEdit) return;
-    setEditOutcomes((prev) => ({
-      ...prev,
-      [pendingEdit.messageId]: "rejected",
-    }));
-    setPendingEdit(null);
-  }, [pendingEdit]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -377,8 +365,12 @@ export function useRoomChat({
     useDiffReview: aiFeatureEnabled(shell, "diffAcceptReject"),
     pendingEdit,
     editOutcomes,
-    acceptPendingEdit,
-    rejectPendingEdit,
+    acceptPendingEdit: () => {
+      review.acceptPending();
+    },
+    rejectPendingEdit: () => {
+      review.rejectPending();
+    },
     cancelAi,
     streamingText,
     model,

@@ -34,7 +34,7 @@ type ChatMessageListProps = {
     before: string;
     after: string;
   } | null;
-  editOutcomes?: Record<string, "accepted" | "rejected">;
+  editOutcomes?: Record<string, "accepted" | "rejected" | "auto">;
   onAcceptEdit?: () => void;
   onRejectEdit?: () => void;
   readOnly?: boolean;
@@ -143,10 +143,13 @@ export function ChatMessageList({
                           />
                         ) : (
                           <p className="vt-chat-msg__applied">
-                            {editOutcomes[message.id] === "accepted" ? (
+                            {editOutcomes[message.id] === "accepted" ||
+                            editOutcomes[message.id] === "auto" ? (
                               <>
-                                <span aria-hidden>✓</span> Accepted — applied to
-                                note
+                                <span aria-hidden>✓</span>{" "}
+                                {editOutcomes[message.id] === "auto"
+                                  ? "Auto-applied"
+                                  : "Accepted — applied to note"}
                               </>
                             ) : editOutcomes[message.id] === "rejected" ? (
                               <>Rejected — note unchanged</>

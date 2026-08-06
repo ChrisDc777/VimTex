@@ -38,6 +38,8 @@ import {
   WorkspaceProvider,
   useWorkspaceController,
 } from "@/components/workspace/WorkspaceContext";
+import { AiReviewProvider, useAiReview } from "@/components/ai/AiReviewProvider";
+import { AiPreviewReview } from "@/components/ai/AiPreviewReview";
 import {
   createCollabUser,
   createRoomId,
@@ -533,6 +535,7 @@ export function ForgeShell({
 
   return (
     <WorkspaceProvider value={workspace}>
+    <AiReviewProvider>
     <div className="app-shell ui-forge flex h-dvh flex-col text-ink">
       <AppHeader
         ready={ready}
@@ -642,7 +645,7 @@ export function ForgeShell({
                 note={note}
               />
             ) : null}
-            {previewOpen ? <LatexPreview note={note} /> : null}
+            {previewOpen ? <ForgePreviewPane note={note} /> : null}
             {user ? (
               <div
                 className={
@@ -789,6 +792,21 @@ export function ForgeShell({
       ) : null}
       <VtToaster />
     </div>
+    </AiReviewProvider>
     </WorkspaceProvider>
   );
+}
+
+function ForgePreviewPane({ note }: { note: string }) {
+  const review = useAiReview();
+  // Forge cannot mutate; still allow viewing a peer/chat proposal in preview.
+  if (review.prefs.showInPreview && review.pending) {
+    return (
+      <AiPreviewReview
+        before={review.pending.before}
+        after={review.pending.after}
+      />
+    );
+  }
+  return <LatexPreview note={note} />;
 }

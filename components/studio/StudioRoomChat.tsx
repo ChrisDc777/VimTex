@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { useRoomChat } from "@/lib/use-room-chat";
@@ -155,8 +156,11 @@ export function StudioRoomChat({
                   />
                 ) : (
                   <p className="vt-chat-msg__hint">
-                    {chat.editOutcomes[m.id] === "accepted"
-                      ? "Accepted — applied to note"
+                    {chat.editOutcomes[m.id] === "accepted" ||
+                    chat.editOutcomes[m.id] === "auto"
+                      ? chat.editOutcomes[m.id] === "auto"
+                        ? "Auto-applied"
+                        : "Accepted — applied to note"
                       : chat.editOutcomes[m.id] === "rejected"
                         ? "Rejected — note unchanged"
                         : chat.canMutateViaAi
@@ -172,8 +176,10 @@ export function StudioRoomChat({
                     type="button"
                     onClick={() => chat.retryAi(m)}
                     disabled={chat.busy}
-                    className="vt-chat-icon-btn h-auto min-h-0 px-0 text-xs text-accent-breeze"
+                    className="vt-chat-retry"
+                    aria-label="Retry"
                   >
+                    <RefreshIcon />
                     Retry
                   </button>
                 </div>

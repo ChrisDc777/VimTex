@@ -49,8 +49,9 @@ Browser                    Node (server.mjs :3001)
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
 | Classroom mode | ⏸️ | Deferred → M5 (#82) |
 | AI feature gate (Studio vs Forge) | ✅ | `lib/ai-features.ts`, #59 |
-| AI diff accept/reject (Studio) | ✅ | `AiDiffProposal`, #27 |
+| AI diff accept/reject (Studio) | ✅ | `AiReviewStore` + compact diff, #27 |
 | AI streaming + cancel | ✅ | `/api/chat` stream + Stop, #29 |
+| AI review prefs (Confirm/Auto, preview) | ✅ | `lib/ai-review-prefs.ts` |
 | Accounts / claim guest room | ❌ | M5 (#37, #78) |
 
 ## Critical technical debt

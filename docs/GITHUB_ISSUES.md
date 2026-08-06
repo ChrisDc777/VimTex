@@ -89,6 +89,9 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 60 | AI polish |
 | 83 | Equation-scoped rewrite |
 | 84 | Derivation coach (Forge-friendly) |
+| 87 | Ranged AI patch format |
+| 88 | CM line/gutter AI diff (after #87) |
+| 89 | Optional snapshot on AI Accept |
 
 ---
 
