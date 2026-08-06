@@ -183,7 +183,22 @@ export function StudioRoomChat({
         })}
 
         {chat.busy ? (
-          <p className="vt-chat-msg__hint mt-2">Thinking…</p>
+          <div className="vt-chat-msg vt-chat-msg--ai mt-2">
+            <div className="vt-chat-msg__meta">
+              <span
+                className="vt-chat-msg__author"
+                style={{ color: "var(--primary)" }}
+              >
+                Vimothy
+              </span>
+              <span className="vt-chat-msg__time">streaming</span>
+            </div>
+            <div className="vt-chat-msg__body whitespace-pre-wrap">
+              {chat.streamingText?.trim()
+                ? chat.streamingText
+                : "Thinking…"}
+            </div>
+          </div>
         ) : null}
       </div>
 
@@ -203,6 +218,7 @@ export function StudioRoomChat({
         onInputChange={chat.onInputChange}
         onModelChange={chat.setModel}
         onSend={() => void chat.send()}
+        onCancel={chat.cancelAi}
         onMentionSelect={chat.insertMention}
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}

@@ -85,6 +85,7 @@ export function RoomChatSidebar({
         onAcceptEdit={chat.acceptPendingEdit}
         onRejectEdit={chat.rejectPendingEdit}
         readOnly={chat.readOnly}
+        streamingText={chat.streamingText}
       />
 
       <TypingIndicator
@@ -103,6 +104,7 @@ export function RoomChatSidebar({
         onInputChange={chat.onInputChange}
         onModelChange={chat.setModel}
         onSend={() => void chat.send()}
+        onCancel={chat.cancelAi}
         onMentionSelect={chat.insertMention}
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}

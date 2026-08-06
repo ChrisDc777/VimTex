@@ -1,8 +1,8 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Planning (M3 entry)  
+**Status:** Wave A in progress (gate + diff + stream)  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
-**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), destructive apply today (`lib/ai-chat.ts` + `applyAiEdit`)
+**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29)
 
 ## Product stance
 

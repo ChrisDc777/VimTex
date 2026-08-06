@@ -48,13 +48,15 @@ Browser                    Node (server.mjs :3001)
 | Docs-style history side panel | ⏸️ | Deferred → M4 polish (#79) |
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
 | Classroom mode | ⏸️ | Deferred → M5 (#82) |
-| AI diff accept/reject | 🔄 | M3 — see `docs/AI_ROADMAP.md` |
+| AI feature gate (Studio vs Forge) | ✅ | `lib/ai-features.ts`, #59 |
+| AI diff accept/reject (Studio) | ✅ | `AiDiffProposal`, #27 |
+| AI streaming + cancel | ✅ | `/api/chat` stream + Stop, #29 |
 | Accounts / claim guest room | ❌ | M5 (#37, #78) |
 
 ## Critical technical debt
 
 1. ~~**Document format ambiguity**~~ — `docs/FORMAT.md` (#13).
-2. **AI is destructive** — full-buffer `@@@DOCUMENT` apply; no diff accept/reject (#27). Plan: `docs/AI_ROADMAP.md`.
+2. ~~**AI is destructive**~~ — Studio uses accept/reject diffs (#27); Forge is suggest-only (#59). Streaming + cancel (#29).
 3. ~~**Monolithic editor**~~ — `WorkspaceController` + provider (#5).
 4. ~~**No guest ACL**~~ — edit/view capabilities landed (#80).
 5. ~~**Dual chat AI paths**~~ — `lib/use-room-chat.ts`.

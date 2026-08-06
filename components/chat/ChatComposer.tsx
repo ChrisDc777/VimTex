@@ -22,6 +22,7 @@ type ChatComposerProps = {
   onInputChange: (value: string, caret: number) => void;
   onModelChange: (model: AiModelId) => void;
   onSend: () => void;
+  onCancel?: () => void;
   onMentionSelect: (tag: string) => void;
   onMentionIndexChange: (index: number) => void;
   onMentionClose: () => void;
@@ -40,6 +41,7 @@ export function ChatComposer({
   onInputChange,
   onModelChange,
   onSend,
+  onCancel,
   onMentionSelect,
   onMentionIndexChange,
   onMentionClose,
@@ -142,23 +144,36 @@ export function ChatComposer({
             onChange={onModelChange}
             disabled={busy}
           />
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={!canSend}
-            className={
-              canSend
-                ? "vt-chat-send vt-chat-send--active"
-                : "vt-chat-send"
-            }
-            aria-label="Send message"
-          >
-            <SendIcon />
-          </button>
+          {busy && onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="vt-chat-send vt-chat-send--active"
+              aria-label="Cancel AI"
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={!canSend}
+              className={
+                canSend
+                  ? "vt-chat-send vt-chat-send--active"
+                  : "vt-chat-send"
+              }
+              aria-label="Send message"
+            >
+              <SendIcon />
+            </button>
+          )}
         </div>
       </div>
 
-      {mentionsAi(input) ? (
+      {busy ? (
+        <p className="vt-chat-composer__hint">Vimothy is responding…</p>
+      ) : mentionsAi(input) ? (
         <p className="vt-chat-composer__hint">
           Will call AI with this instruction
         </p>

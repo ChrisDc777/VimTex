@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { generateText, streamText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "@/lib/ai-chat";
 import {
@@ -18,6 +18,8 @@ type ChatRequestBody = {
   document?: string;
   model?: string;
   apiKey?: string;
+  /** When true, respond with a plain text token stream (#29). */
+  stream?: boolean;
 };
 
 function appUrl(): string {
@@ -28,6 +30,111 @@ function appUrl(): string {
     return `https://${process.env.VERCEL_URL}`;
   }
   return "https://vimtex.local";
+}
+
+function parseBody(body: ChatRequestBody): {
+  instruction: string;
+  document: string;
+  model: string;
+  apiKey: string;
+  providerLabel: string;
+  stream: boolean;
+  error?: Response;
+} {
+  const instruction =
+    typeof body.instruction === "string" ? body.instruction.trim() : "";
+  if (!instruction) {
+    return {
+      instruction: "",
+      document: "",
+      model: "",
+      apiKey: "",
+      providerLabel: "",
+      stream: false,
+      error: Response.json(
+        { error: "instruction must be a non-empty string." },
+        { status: 400 },
+      ),
+    };
+  }
+  if (instruction.length > MAX_INSTRUCTION_CHARS) {
+    return {
+      instruction: "",
+      document: "",
+      model: "",
+      apiKey: "",
+      providerLabel: "",
+      stream: false,
+      error: Response.json({ error: "instruction too long." }, { status: 400 }),
+    };
+  }
+
+  const document = typeof body.document === "string" ? body.document : "";
+  if (document.length > MAX_DOCUMENT_CHARS) {
+    return {
+      instruction: "",
+      document: "",
+      model: "",
+      apiKey: "",
+      providerLabel: "",
+      stream: false,
+      error: Response.json({ error: "document too long." }, { status: 400 }),
+    };
+  }
+
+  const model =
+    typeof body.model === "string" && CUSTOM_MODEL_PATTERN.test(body.model)
+      ? body.model
+      : DEFAULT_AI_MODEL;
+
+  const userKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
+
+  if (!isFreeModel(model) && !userKey) {
+    return {
+      instruction: "",
+      document: "",
+      model: "",
+      apiKey: "",
+      providerLabel: "",
+      stream: false,
+      error: Response.json(
+        {
+          error:
+            "This model requires your own OpenRouter API key. Add one in the model picker.",
+        },
+        { status: 400 },
+      ),
+    };
+  }
+
+  const serverKey = process.env.OPENROUTER_API_KEY?.trim() ?? "";
+  const apiKey = userKey || serverKey;
+  if (!apiKey) {
+    return {
+      instruction: "",
+      document: "",
+      model: "",
+      apiKey: "",
+      providerLabel: "",
+      stream: false,
+      error: Response.json(
+        {
+          error:
+            "No AI API key configured. Set OPENROUTER_API_KEY or add your own key in the model picker.",
+        },
+        { status: 500 },
+      ),
+    };
+  }
+
+  return {
+    instruction,
+    document,
+    model,
+    apiKey,
+    providerLabel: isFreeModel(model) ? "openrouter" : "byok-openrouter",
+    stream: Boolean(body.stream),
+  };
 }
 
 export async function POST(req: Request) {
@@ -43,51 +150,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const instruction =
-    typeof body.instruction === "string" ? body.instruction.trim() : "";
-  if (!instruction) {
-    return Response.json(
-      { error: "instruction must be a non-empty string." },
-      { status: 400 },
-    );
-  }
-  if (instruction.length > MAX_INSTRUCTION_CHARS) {
-    return Response.json({ error: "instruction too long." }, { status: 400 });
-  }
+  const parsed = parseBody(body);
+  if (parsed.error) return parsed.error;
 
-  const document = typeof body.document === "string" ? body.document : "";
-  if (document.length > MAX_DOCUMENT_CHARS) {
-    return Response.json({ error: "document too long." }, { status: 400 });
-  }
-
-  const model =
-    typeof body.model === "string" && CUSTOM_MODEL_PATTERN.test(body.model)
-      ? body.model
-      : DEFAULT_AI_MODEL;
-
-  const userKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
-
-  if (!isFreeModel(model) && !userKey) {
-    return Response.json(
-      {
-        error:
-          "This model requires your own OpenRouter API key. Add one in the model picker.",
-      },
-      { status: 400 },
-    );
-  }
-
-  const serverKey = process.env.OPENROUTER_API_KEY?.trim() ?? "";
-  const apiKey = userKey || serverKey;
-  if (!apiKey) {
-    return Response.json(
-      {
-        error:
-          "No AI API key configured. Set OPENROUTER_API_KEY or add your own key in the model picker.",
-      },
-      { status: 500 },
-    );
-  }
+  const { instruction, document, model, apiKey, providerLabel, stream } =
+    parsed;
 
   const provider = createOpenRouter({
     apiKey,
@@ -95,24 +162,50 @@ export async function POST(req: Request) {
     appUrl: appUrl(),
   });
 
+  const system = buildSystemPrompt(document);
+
   try {
+    if (stream) {
+      const result = streamText({
+        model: provider.chat(model),
+        system,
+        prompt: instruction,
+        temperature: 0.4,
+        abortSignal: req.signal,
+      });
+
+      return result.toTextStreamResponse({
+        headers: {
+          "X-Vimtex-Model": model,
+          "X-Vimtex-Provider": providerLabel,
+        },
+      });
+    }
+
     const { text } = await generateText({
       model: provider.chat(model),
-      system: buildSystemPrompt(document),
+      system,
       prompt: instruction,
       temperature: 0.4,
+      abortSignal: req.signal,
     });
 
     if (!text || !text.trim()) {
-      return Response.json({ error: "Model returned an empty reply." }, { status: 502 });
+      return Response.json(
+        { error: "Model returned an empty reply." },
+        { status: 502 },
+      );
     }
 
     return Response.json({
       message: text,
       model,
-      provider: isFreeModel(model) ? "openrouter" : "byok-openrouter",
+      provider: providerLabel,
     });
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return new Response(null, { status: 499 });
+    }
     const detail = err instanceof Error ? err.message : "AI request failed";
     return Response.json({ error: detail }, { status: 502 });
   }

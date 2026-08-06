@@ -38,6 +38,7 @@ type ChatMessageListProps = {
   onAcceptEdit?: () => void;
   onRejectEdit?: () => void;
   readOnly?: boolean;
+  streamingText?: string | null;
 };
 
 export function ChatMessageList({
@@ -61,6 +62,7 @@ export function ChatMessageList({
   onAcceptEdit,
   onRejectEdit,
   readOnly = false,
+  streamingText = null,
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -186,14 +188,20 @@ export function ChatMessageList({
             aria-busy="true"
           >
             <div className="vt-chat-block__meta">
-              <span className="vt-chat-block__author">AI</span>
-              <span className="vt-chat-block__time">thinking</span>
+              <span className="vt-chat-block__author">Vimothy</span>
+              <span className="vt-chat-block__time">streaming</span>
             </div>
-            <span className="vt-chat-typing__dots" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </span>
+            {streamingText?.trim() ? (
+              <div className="vt-chat-msg__bubble whitespace-pre-wrap">
+                {streamingText}
+              </div>
+            ) : (
+              <span className="vt-chat-typing__dots" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+            )}
           </div>
         ) : null}
       </div>
