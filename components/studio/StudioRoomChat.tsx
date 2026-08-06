@@ -55,6 +55,7 @@ export function StudioRoomChat({
     open,
     chatReady,
     user,
+    shell: "studio",
     persistModel: false,
   });
 
@@ -143,7 +144,11 @@ export function StudioRoomChat({
                 {highlightMentions(m.text)}
               </div>
               {isAi && m.documentEdit != null ? (
-                <p className="vt-chat-msg__hint">Applied to note</p>
+                <p className="vt-chat-msg__hint">
+                  {chat.canMutateViaAi
+                    ? "Applied to note"
+                    : "Proposed edit (not applied — Studio can accept changes)"}
+                </p>
               ) : null}
               {showError ? (
                 <div className="mt-1 space-y-1">

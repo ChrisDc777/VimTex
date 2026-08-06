@@ -31,6 +31,7 @@ export function RoomChatSidebar({
     open,
     chatReady,
     user,
+    shell: "forge",
     persistModel: true,
   });
 
@@ -78,6 +79,7 @@ export function RoomChatSidebar({
         stickBottom={chat.stickBottom}
         onScrollToBottom={chat.scrollToBottom}
         peerCount={peers.length}
+        canMutateViaAi={chat.canMutateViaAi}
       />
 
       <TypingIndicator

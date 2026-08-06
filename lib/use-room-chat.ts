@@ -11,6 +11,10 @@ import {
 import { parseAssistantReply } from "@/lib/ai-chat";
 import { postAiChat } from "@/lib/ai-client";
 import {
+  aiFeatureEnabled,
+  aiMayMutateDocument,
+} from "@/lib/ai-features";
+import {
   DEFAULT_AI_MODEL,
   type AiModelId,
 } from "@/lib/ai-providers";
@@ -26,12 +30,15 @@ import {
   type RoomChatMessage,
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
+import type { UiVariant } from "@/lib/ui-variant";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export type UseRoomChatOptions = {
   open: boolean;
   chatReady: boolean;
   user: CollabUser;
+  /** Shell that owns this chat — drives AI feature gate (#59). */
+  shell: UiVariant;
   /** Persist model choice (Forge). Studio may leave this false. */
   persistModel?: boolean;
 };
@@ -44,6 +51,7 @@ export function useRoomChat({
   open,
   chatReady,
   user,
+  shell,
   persistModel = true,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
@@ -205,8 +213,13 @@ export function useRoomChat({
           documentEdit: parsed.documentEdit,
         };
         ws.appendChatMessage(aiMsg);
-        if (parsed.documentEdit != null) {
-          // Full-buffer apply until M3 accept/reject (#27).
+        // Forge is suggest-only: never auto-mutate the note (#59).
+        // Studio still applies until #27 accept/reject lands.
+        if (
+          parsed.documentEdit != null &&
+          aiMayMutateDocument(shell) &&
+          !aiFeatureEnabled(shell, "diffAcceptReject")
+        ) {
           ws.applyAiEdit(parsed.documentEdit);
         }
       } catch (err) {
@@ -217,7 +230,7 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model],
+    [workspace, model, shell],
   );
 
   const send = useCallback(async () => {
@@ -276,6 +289,8 @@ export function useRoomChat({
   return {
     workspace,
     readOnly: workspace?.readOnly ?? false,
+    shell,
+    canMutateViaAi: aiMayMutateDocument(shell),
     model,
     setModel,
     input,

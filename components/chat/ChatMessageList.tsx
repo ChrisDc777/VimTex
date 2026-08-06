@@ -26,6 +26,8 @@ type ChatMessageListProps = {
   onScrollToBottom: () => void;
   /** Current room occupancy; used to show a "waiting for peers" empty state. */
   peerCount?: number;
+  /** When false, documentEdit hints say proposed (Forge suggest-only). */
+  canMutateViaAi?: boolean;
 };
 
 export function ChatMessageList({
@@ -43,6 +45,7 @@ export function ChatMessageList({
   stickBottom,
   onScrollToBottom,
   peerCount,
+  canMutateViaAi = true,
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -53,7 +56,9 @@ export function ChatMessageList({
           <div className="vt-chat-empty">
             <p className="vt-chat-empty__title">Message the room</p>
             <p className="vt-chat-empty__subtitle">
-              Mention @vimothy to edit the note
+              {canMutateViaAi
+                ? "Mention @vimothy to edit the note"
+                : "Mention @vimothy for suggestions (Forge won’t change the note)"}
             </p>
             {peerCount != null && peerCount <= 1 ? (
               <p className="vt-chat-empty__waiting">
@@ -110,7 +115,13 @@ export function ChatMessageList({
 
                       {block.isAi && message.documentEdit != null ? (
                         <p className="vt-chat-msg__applied">
-                          <span aria-hidden>✓</span> Applied to note
+                          {canMutateViaAi ? (
+                            <>
+                              <span aria-hidden>✓</span> Applied to note
+                            </>
+                          ) : (
+                            <>Proposed edit (not applied — suggest-only)</>
+                          )}
                         </p>
                       ) : null}
 
