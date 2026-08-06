@@ -3,6 +3,7 @@
 import { groupChatMessages } from "@/lib/chat-message-blocks";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
+import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { RefreshIcon } from "@/components/chat/icons";
 
 const EMPTY_SUGGESTIONS = [
@@ -28,6 +29,15 @@ type ChatMessageListProps = {
   peerCount?: number;
   /** When false, documentEdit hints say proposed (Forge suggest-only). */
   canMutateViaAi?: boolean;
+  pendingEdit?: {
+    messageId: string;
+    before: string;
+    after: string;
+  } | null;
+  editOutcomes?: Record<string, "accepted" | "rejected">;
+  onAcceptEdit?: () => void;
+  onRejectEdit?: () => void;
+  readOnly?: boolean;
 };
 
 export function ChatMessageList({
@@ -46,6 +56,11 @@ export function ChatMessageList({
   onScrollToBottom,
   peerCount,
   canMutateViaAi = true,
+  pendingEdit = null,
+  editOutcomes = {},
+  onAcceptEdit,
+  onRejectEdit,
+  readOnly = false,
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -114,15 +129,32 @@ export function ChatMessageList({
                       </div>
 
                       {block.isAi && message.documentEdit != null ? (
-                        <p className="vt-chat-msg__applied">
-                          {canMutateViaAi ? (
-                            <>
-                              <span aria-hidden>✓</span> Applied to note
-                            </>
-                          ) : (
-                            <>Proposed edit (not applied — suggest-only)</>
-                          )}
-                        </p>
+                        pendingEdit?.messageId === message.id &&
+                        onAcceptEdit &&
+                        onRejectEdit ? (
+                          <AiDiffProposal
+                            before={pendingEdit.before}
+                            after={pendingEdit.after}
+                            onAccept={onAcceptEdit}
+                            onReject={onRejectEdit}
+                            disabled={busy || readOnly}
+                          />
+                        ) : (
+                          <p className="vt-chat-msg__applied">
+                            {editOutcomes[message.id] === "accepted" ? (
+                              <>
+                                <span aria-hidden>✓</span> Accepted — applied to
+                                note
+                              </>
+                            ) : editOutcomes[message.id] === "rejected" ? (
+                              <>Rejected — note unchanged</>
+                            ) : canMutateViaAi ? (
+                              <>Proposed edit</>
+                            ) : (
+                              <>Proposed edit (not applied — suggest-only)</>
+                            )}
+                          </p>
+                        )
                       ) : null}
 
                       {showError ? (

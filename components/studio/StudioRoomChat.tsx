@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
@@ -144,11 +145,25 @@ export function StudioRoomChat({
                 {highlightMentions(m.text)}
               </div>
               {isAi && m.documentEdit != null ? (
-                <p className="vt-chat-msg__hint">
-                  {chat.canMutateViaAi
-                    ? "Applied to note"
-                    : "Proposed edit (not applied — Studio can accept changes)"}
-                </p>
+                chat.pendingEdit?.messageId === m.id ? (
+                  <AiDiffProposal
+                    before={chat.pendingEdit.before}
+                    after={chat.pendingEdit.after}
+                    onAccept={chat.acceptPendingEdit}
+                    onReject={chat.rejectPendingEdit}
+                    disabled={chat.busy || chat.readOnly}
+                  />
+                ) : (
+                  <p className="vt-chat-msg__hint">
+                    {chat.editOutcomes[m.id] === "accepted"
+                      ? "Accepted — applied to note"
+                      : chat.editOutcomes[m.id] === "rejected"
+                        ? "Rejected — note unchanged"
+                        : chat.canMutateViaAi
+                          ? "Proposed edit"
+                          : "Proposed edit (not applied — Studio can accept changes)"}
+                  </p>
+                )
               ) : null}
               {showError ? (
                 <div className="mt-1 space-y-1">

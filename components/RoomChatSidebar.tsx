@@ -80,6 +80,11 @@ export function RoomChatSidebar({
         onScrollToBottom={chat.scrollToBottom}
         peerCount={peers.length}
         canMutateViaAi={chat.canMutateViaAi}
+        pendingEdit={chat.pendingEdit}
+        editOutcomes={chat.editOutcomes}
+        onAcceptEdit={chat.acceptPendingEdit}
+        onRejectEdit={chat.rejectPendingEdit}
+        readOnly={chat.readOnly}
       />
 
       <TypingIndicator

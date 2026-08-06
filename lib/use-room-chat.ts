@@ -67,6 +67,14 @@ export function useRoomChat({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [stickBottom, setStickBottom] = useState(true);
   const [currentClientId, setCurrentClientId] = useState<number | null>(null);
+  const [pendingEdit, setPendingEdit] = useState<{
+    messageId: string;
+    before: string;
+    after: string;
+  } | null>(null);
+  const [editOutcomes, setEditOutcomes] = useState<
+    Record<string, "accepted" | "rejected">
+  >({});
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -188,14 +196,21 @@ export function useRoomChat({
         return;
       }
 
+      if (pendingEdit && aiFeatureEnabled(shell, "diffAcceptReject")) {
+        setError("Accept or reject the pending AI edit first.");
+        setErrorForId(userMsg.id);
+        return;
+      }
+
       setBusy(true);
       setError(null);
       setErrorForId(null);
+      const beforeSnapshot = ws.getText();
 
       try {
         const data = await postAiChat({
           instruction,
-          document: ws.getText(),
+          document: beforeSnapshot,
           model,
         });
 
@@ -213,14 +228,18 @@ export function useRoomChat({
           documentEdit: parsed.documentEdit,
         };
         ws.appendChatMessage(aiMsg);
-        // Forge is suggest-only: never auto-mutate the note (#59).
-        // Studio still applies until #27 accept/reject lands.
-        if (
-          parsed.documentEdit != null &&
-          aiMayMutateDocument(shell) &&
-          !aiFeatureEnabled(shell, "diffAcceptReject")
-        ) {
+        if (parsed.documentEdit == null || !aiMayMutateDocument(shell)) {
+          // Forge / no edit proposal: chat only.
+        } else if (aiFeatureEnabled(shell, "diffAcceptReject")) {
+          setPendingEdit({
+            messageId: aiMsg.id,
+            before: beforeSnapshot,
+            after: parsed.documentEdit,
+          });
+        } else {
+          // Legacy auto-apply (should not run once #27 is on).
           ws.applyAiEdit(parsed.documentEdit);
+          setEditOutcomes((prev) => ({ ...prev, [aiMsg.id]: "accepted" }));
         }
       } catch (err) {
         const detail = err instanceof Error ? err.message : "Unknown error";
@@ -230,8 +249,28 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell],
+    [workspace, model, shell, pendingEdit],
   );
+
+  const acceptPendingEdit = useCallback(() => {
+    const ws = workspace;
+    if (!ws || !pendingEdit || ws.readOnly) return;
+    ws.applyAiEdit(pendingEdit.after);
+    setEditOutcomes((prev) => ({
+      ...prev,
+      [pendingEdit.messageId]: "accepted",
+    }));
+    setPendingEdit(null);
+  }, [workspace, pendingEdit]);
+
+  const rejectPendingEdit = useCallback(() => {
+    if (!pendingEdit) return;
+    setEditOutcomes((prev) => ({
+      ...prev,
+      [pendingEdit.messageId]: "rejected",
+    }));
+    setPendingEdit(null);
+  }, [pendingEdit]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -291,6 +330,11 @@ export function useRoomChat({
     readOnly: workspace?.readOnly ?? false,
     shell,
     canMutateViaAi: aiMayMutateDocument(shell),
+    useDiffReview: aiFeatureEnabled(shell, "diffAcceptReject"),
+    pendingEdit,
+    editOutcomes,
+    acceptPendingEdit,
+    rejectPendingEdit,
     model,
     setModel,
     input,

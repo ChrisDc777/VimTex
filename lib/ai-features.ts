@@ -25,7 +25,7 @@ export type AiFeature =
 const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
   "chat",
   "chatDocumentEdit",
-  // diffAcceptReject enabled when #27 UI ships
+  "diffAcceptReject",
   "selectionActions",
   "ghostText",
   "slashCommands",
