@@ -7,11 +7,11 @@
 
 ## Context
 
-VimTex rooms today are **in-memory Yjs documents** served by `server.mjs` + `scripts/y-ws/utils.js` on the same Node process as Next.js. Empty rooms are garbage-collected after `YROOM_IDLE_MS` (default 30 minutes). Optional `YPERSISTENCE` LevelDB wiring exists in utils but **`y-leveldb` is not a declared dependency**, so the path is effectively dead.
+VimTex rooms today are **in-memory Yjs documents** by default, served by `server.mjs` + `scripts/y-ws/utils.js` on the same Node process as Next.js. Empty rooms are garbage-collected after `YROOM_IDLE_MS` (default 30 minutes). Optional LevelDB persistence is available via `YPERSISTENCE` and the `y-leveldb` dependency.
 
 Studio relies on the live Yjs buffer (no client autosave). Forge additionally debounce-writes `vimtex:note:*` to localStorage as a solo refresh cache.
 
-M2 wants: read-only share links (#23), room TTL / optional password (#24), snapshots / history (#25). Those must sit on a clear source-of-truth and capability model.
+M2 delivered: read-only share links (#23), room TTL / optional password (#24), snapshots / history (#25), guest edit capabilities (#80). Those sit on the capability model below.
 
 ## Goals
 
@@ -84,13 +84,15 @@ ACL and RO flags live on the controller (`readOnly`, WS `params` for `view` / `e
 
 ## Implementation sequence
 
-1. Document this RFC; comment on #20 (done with this file).
-2. Optional LevelDB: add dep + README, or delete dead code.
-3. Lengthen `createRoomId`; honest reconnect copy (Studio vs Forge).
-4. #23 read-only tokens (server enforce).
-5. #24 password + absolute TTL metadata.
-6. #25 snapshot store on the chosen persistence layer.
-7. Guest edit capability tokens (room id ≠ write once ACL enabled).
+1. Document this RFC; comment on #20 — ✅
+2. Optional LevelDB: add dep + README — ✅ `#71`
+3. Lengthen `createRoomId`; honest reconnect copy — ✅
+4. #23 read-only tokens (server enforce) — ✅
+5. #24 password + absolute TTL metadata — ✅
+6. #25 snapshot store — ✅ (modal UI; Docs-style panel deferred `#79` → M4)
+7. Guest edit capability tokens — ✅ `#80`
+
+**M2 near-term (option A) is complete.** Option B (Hocuspocus/Postgres) remains M5 when multi-instance is required.
 
 ## Open questions for product
 

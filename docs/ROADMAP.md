@@ -7,9 +7,9 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | Milestone | Theme | Target | Exit criteria |
 |-----------|-------|--------|---------------|
 | **M0** | Foundation + UI convergence | 2026-Q3 | ✅ Studio default, shared layer, CI, truthful room semantics |
-| **M1** | Editing + activation | 2026-Q4 | 🔄 Non-Vim mode, onboarding, templates, command palette — mostly landed |
-| **M2** | Collab + persistence | 2027-Q1 | Permissions, reconnect, snapshots, history |
-| **M3** | AI workflows | 2027-Q1–Q2 | Diff accept/reject, scoped actions, streaming |
+| **M1** | Editing + activation | 2026-Q4 | ✅ Non-Vim mode, onboarding, templates, command palette |
+| **M2** | Collab + persistence | 2027-Q1 | ✅ Permissions, reconnect, snapshots, guest capabilities |
+| **M3** | AI workflows | 2027-Q1–Q2 | Diff accept/reject, scoped actions, streaming — see `docs/AI_ROADMAP.md` |
 | **M4** | Import/export + polish | 2027-Q2 | PDF, copy equation, import, delight UX |
 | **M5** | Production + SaaS | 2027-H1+ | Auth, observability, billing — gated on retention |
 
@@ -50,55 +50,66 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | P2 | Math error diagnostics (line/col) | M |
 | P2 | Incremental render / debounce tuning | S |
 
-**M1 exit:** Non-Vim invitee can type in 30s; share loop feels complete.
+**M1 exit:** Non-Vim invitee can type in 30s; share loop feels complete. ✅
 
 ---
 
 ## M2 — Collaboration and persistence
 
-| Priority | Issue theme | Size |
-|----------|-------------|------|
-| P0 | Collab/persistence architecture RFC | M |
-| P0 | Reconnect UX + offline banner | S | ✅ landed early |
-| P1 | Named peer list + join/leave events | S | ✅ presence chips / peers |
-| P1 | Selection ranges + typing indicator | M | ✅ typing via awareness |
-| P1 | Read-only share links | M |
-| P1 | Room TTL + optional password | M |
-| P2 | Follow-user / presenter mode | M |
-| P2 | Snapshots + version history UI | L |
-| P3 | Classroom mode discovery | L |
+| Priority | Issue theme | Size | Status |
+|----------|-------------|------|--------|
+| P0 | Collab/persistence architecture RFC | M | ✅ `#20` / `docs/RFC-collab-persistence.md` |
+| P0 | Reconnect UX + offline banner | S | ✅ `#21` |
+| P1 | Named peer list + join/leave events | S | ✅ `#22` |
+| P1 | Selection ranges + typing indicator | M | ✅ `#22` |
+| P1 | Read-only share links | M | ✅ `#23` |
+| P1 | Room TTL + optional password | M | ✅ `#24` |
+| P1 | Guest edit capability tokens | M | ✅ `#80` (mint on create; no view escalation) |
+| P1 | Optional LevelDB (`YPERSISTENCE`) | M | ✅ `#71` |
+| P2 | Snapshots + version history UI | L | ✅ `#25` modal; Docs-style panel → **M4** `#79` |
+| P2 | Follow-user / presenter mode | M | ⏸️ Deferred → `#81` (post-M2) |
+| P3 | Classroom mode discovery | L | ⏸️ Deferred → M5 `#82` |
 
-**M2 exit:** Session survives brief disconnect; owner can share view-only link.
+**M2 exit:** Session survives brief disconnect; owner can share view-only link. ✅
+
+**Explicitly not blocking M2 close:** Docs-style history rail (#79), follow/presenter (#81), classroom (#82), claim-guest (#78 / accounts).
 
 ---
 
 ## M3 — AI mathematical workflows
 
-| Priority | Issue theme | Size |
-|----------|-------------|------|
-| P0 | AI diff preview + accept/reject | L |
-| P0 | @ai concurrency guard / queue | S |
-| P1 | Selection-scoped AI actions | M |
-| P1 | Explain / simplify / fix TeX actions | M |
-| P2 | Streaming responses + cancel | M |
-| P2 | AI edit undo checkpoint | M |
-| P3 | OCR / image-to-LaTeX | L |
-| P3 | Graphing spike | L |
+**Plan of record:** [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) (Studio full AI vs Forge suggest-only).
 
-**M3 exit:** No silent full-document overwrite; users can reject AI patches.
+| Priority | Issue theme | Size | Tracking |
+|----------|-------------|------|----------|
+| P0 | AI feature gate (Forge cannot mutate) | S | `#59` |
+| P0 | AI diff preview + accept/reject | L | `#27` |
+| P0 | @ai concurrency guard / queue | S | with `#29` / `#26` |
+| P1 | Selection-scoped AI actions | M | `#28` |
+| P1 | Explain / simplify / fix TeX actions | M | `#28` / `#53` |
+| P1 | Streaming responses + cancel | M | `#29` (elevated for UX) |
+| P2 | AI edit undo checkpoint / auto-snapshot | M | uses `#25` |
+| P2 | Studio depth (slash, ghost, memory, context…) | L | `#64` checklist |
+| P3 | OCR / image-to-LaTeX | L | — |
+| P3 | Graphing spike | L | — |
+
+**M3 exit:** No silent full-document overwrite; users can reject AI patches; Forge stays suggest-only.
+
+**Tracking:** Milestone epic `#26`; detailed Studio checklist `#64`.
 
 ---
 
 ## M4 — Import, export, and polish
 
-| Priority | Issue theme | Size |
-|----------|-------------|------|
-| P1 | Copy as TeX / Markdown / rendered equation | S |
-| P1 | Import .md / .tex | M |
-| P2 | PNG/SVG/MathML per equation | M |
-| P2 | PDF export (print or server render) | L |
-| P2 | Overleaf handoff RFC | XS |
-| P1 | Toasts, empty states, reconnect polish | S |
+| Priority | Issue theme | Size | Notes |
+|----------|-------------|------|-------|
+| P1 | Copy as TeX / Markdown / rendered equation | S | |
+| P1 | Import .md / .tex | M | |
+| P1 | Toasts, empty states, reconnect polish | S | |
+| P2 | Docs-style version history side panel | M | `#79` (from M2) |
+| P2 | PNG/SVG/MathML per equation | M | |
+| P2 | PDF export (print or server render) | L | |
+| P2 | Overleaf handoff RFC | XS | |
 
 ---
 
@@ -141,6 +152,10 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 
 **Explicitly not in Wave 1:** accounts, billing, Forge default, PDF, full AI diff UI, Redis/Hocuspocus.
 
-**Wave 2 (landed):** Forge toggle, onboarding, standard editing mode, templates, recent rooms, command palette, preferences dialog. **Remaining:** AI accept/reject diff UX.
+**Wave 2 (landed):** Forge toggle, onboarding, standard editing mode, templates, recent rooms, command palette, preferences dialog.
 
-See [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for issue index (populated after GitHub sync).
+**Wave 3 (M2 — landed):** LevelDB optional persistence, read-only + edit capabilities, room TTL/password, snapshots modal, reconnect/presence.
+
+**Next (M3):** AI accept/reject + Studio/Forge gate — [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md).
+
+See [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for issue index.

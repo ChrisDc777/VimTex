@@ -7,20 +7,21 @@
 ```
 Browser                    Node (server.mjs :3001)
 ┌─────────────────┐       ┌──────────────────────────────┐
-│ StudioShell or  │ HTTP  │ Next.js (app router, /api/chat)│
-│ ForgeShell      │◄─────►│                              │
-│ VimEditor+Chat  │ WS    │ y-websocket utils (in-memory)│
-│ LatexPreview    │       │ Room = URL ?room= segment     │
+│ StudioShell or  │ HTTP  │ Next.js (app router, /api/*) │
+│ ForgeShell      │◄─────►│ chat, rooms meta/caps/snaps  │
+│ VimEditor+Chat  │ WS    │ y-websocket + optional LevelDB│
+│ LatexPreview    │       │ Room = ?room= + edit|view    │
 └─────────────────┘       └──────────────────────────────┘
 ```
 
-- **Single route:** `/` + `POST /api/chat`
+- **Single route:** `/` + room APIs under `/api/rooms/...` + `POST /api/chat`
 - **UI default:** Studio (`.ui-studio` + `app/studio-theme.css`)
-- **Optional:** Forge via `localStorage` `vimtex:uiVariant` (legacy `classic`/`quietCraft` values migrate on load)
-- **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets — enabled in both shells
+- **Optional:** Forge via `localStorage` `vimtex:uiVariant`
+- **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets — both shells
+- **Guest ACL:** mint `editSecret` on room **create**; WS requires `edit` or `view` once ACL is on (see `docs/RFC-collab-persistence.md`)
 - **Editor:** CodeMirror 6 + Replit Vim + y-codemirror.next + Y.UndoManager; Vim/Standard modes
-- **Math:** KaTeX via `lib/render-note.ts` (bare math, split preview + realtime widgets)
-- **Request limits:** in-memory rate limit in `proxy.ts` (Next.js 16 proxy convention)
+- **Math:** KaTeX via `lib/render-note.ts`
+- **Request limits:** in-memory rate limit in `proxy.ts`
 
 ## Feature inventory
 
@@ -28,33 +29,39 @@ Browser                    Node (server.mjs :3001)
 |------|--------|-----------|
 | Room URL sync + Studio name gate | ✅ | `lib/collab.ts`, `NamePicker.tsx` |
 | Live Yjs collab + carets | ✅ | `VimEditor.tsx`, `server.mjs` |
+| Guest edit/view capabilities | ✅ | `lib/room-auth.ts`, `scripts/y-ws/*`, Share menu |
+| Read-only `?view=` (server-enforced) | ✅ | `scripts/y-ws/utils.js`, #23 |
+| Room TTL + optional password | ✅ | room meta + gate dialogs, #24 |
+| Snapshots / version history modal | ✅ | `/api/rooms/.../snapshots`, #25 |
+| Optional LevelDB persistence | ✅ | `YPERSISTENCE` + `y-leveldb`, #71 |
+| Reconnect / offline banner | ✅ | `ReconnectBanner.tsx`, #21 |
+| Presence / typing | ✅ | awareness, #22 |
 | Studio Split / Live preview | ✅ | `ViewToggle.tsx`, `lib/studio-layout.ts` |
-| Forge editor tabs + unified right panel | ✅ | `EditorTabBar.tsx`, `lib/use-editor-tabs.ts`, `SidePanel.tsx` |
-| Room chat + @vimothy | ✅ | `useRoomChat`, `StudioRoomChat.tsx`, `RoomChatSidebar.tsx`, `api/chat/route.ts` |
-| Share copy + fallback | ✅ | `ShareRoom.tsx` |
+| Forge editor tabs + panels | ✅ | `EditorTabBar.tsx`, `SidePanel.tsx` |
+| Room chat + @vimothy | ✅ | `useRoomChat`, `api/chat/route.ts` |
+| Share copy + capability links | ✅ | `ShareRoom.tsx` |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
-| Onboarding + Vim cheatsheet | ✅ | `OnboardingDialog.tsx`, `VimCheatsheetDialog.tsx` |
+| Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |
 | Templates + recent rooms | ✅ | `lib/templates.ts`, `lib/recent-rooms.ts` |
-| Studio command palette | ✅ | `StudioCommandPalette.tsx` |
-| Preferences dialog (both shells) | ✅ | `components/PreferencesDialog.tsx` |
-| LaTeX highlighting + relative line numbers | ✅ | `lib/cm-line-numbers.ts`, `lib/cm-latex-highlight.ts` |
-| Idle room GC | ✅ | `YROOM_IDLE_MS` (default 30 min) |
-| CI / typecheck / API limits | ✅ | `.github/workflows/ci.yml`, `proxy.ts` |
-| Problem reference image | ✅ | `ProblemReferencePanel.tsx` |
-| Two-client collab E2E | ✅ | `e2e/studio-collab.spec.ts` |
-| Canonical document format | ✅ | `docs/FORMAT.md`, `lib/render-note.ts` |
-| Auth / room ACL | ❌ | — |
-| AI diff accept/reject | 🔄 | — |
+| Command palette | ✅ | Studio / shared palette |
+| CI / E2E | ✅ | `.github/workflows/ci.yml`, `e2e/` |
+| Docs-style history side panel | ⏸️ | Deferred → M4 polish (#79) |
+| Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
+| Classroom mode | ⏸️ | Deferred → M5 (#82) |
+| AI diff accept/reject | 🔄 | M3 — see `docs/AI_ROADMAP.md` |
+| Accounts / claim guest room | ❌ | M5 (#37, #78) |
 
 ## Critical technical debt
 
-1. ~~**Document format ambiguity**~~ — resolved by `docs/FORMAT.md` (#13); `%` comments and `$`-as-literal aligned across highlighter and renderer.
-2. **AI is destructive** — full-buffer replace; no diff accept/reject (#M3 / #27).
-3. ~~**Monolithic editor**~~ — `WorkspaceController` + `WorkspaceProvider` landed (#5); shells still hold orchestration React state.
-4. **Security** — room URLs are capabilities; no ACL yet — see `docs/RFC-collab-persistence.md` (#20).
-5. ~~**Dual chat AI paths**~~ — unified via `lib/use-room-chat.ts`.
-6. **Persistence** — in-memory Yjs by default; set `YPERSISTENCE` for LevelDB (`y-leveldb`). See `docs/RFC-collab-persistence.md` (#20, #71).
+1. ~~**Document format ambiguity**~~ — `docs/FORMAT.md` (#13).
+2. **AI is destructive** — full-buffer `@@@DOCUMENT` apply; no diff accept/reject (#27). Plan: `docs/AI_ROADMAP.md`.
+3. ~~**Monolithic editor**~~ — `WorkspaceController` + provider (#5).
+4. ~~**No guest ACL**~~ — edit/view capabilities landed (#80).
+5. ~~**Dual chat AI paths**~~ — `lib/use-room-chat.ts`.
+6. **Persistence** — in-memory by default; set `YPERSISTENCE` for LevelDB. Multi-node = M5 (RFC option B).
 
 ## Convergence status
 
-Studio is default with live collab. Forge is optional and also collaborates. Both shells share the editor, chat, storage, and preferences; Premium gating for Share/Chat was removed.
+Studio is default with live collab and guest capabilities. Forge is optional (tabs, suggest-oriented AI going forward). Both share editor, chat, storage, and preferences.
+
+**M2 exit met:** brief disconnect survives with honest reconnect UX; owner can share view-only and edit links without view→edit escalation.

@@ -103,7 +103,10 @@ Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/Vi
 | Doc | Description |
 |-----|-------------|
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phased milestones M0–M5 |
-| [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index and execution order |
+| [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md) | M3+ AI plan (Studio full vs Forge suggest-only) |
+| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | What is shipped today |
+| [docs/RFC-collab-persistence.md](docs/RFC-collab-persistence.md) | Guest ACL / persistence (M2) |
+| [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index |
 | [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) | Positioning and personas |
 | [docs/UI_VARIANTS.md](docs/UI_VARIANTS.md) | Studio vs Forge shells |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Fork/upstream workflow |
