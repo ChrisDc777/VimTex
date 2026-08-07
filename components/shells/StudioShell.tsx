@@ -31,6 +31,9 @@ import {
   WorkspaceProvider,
   useWorkspaceController,
 } from "@/components/workspace/WorkspaceContext";
+import { AiReviewProvider } from "@/components/ai/AiReviewProvider";
+import { AiPreviewReview } from "@/components/ai/AiPreviewReview";
+import { useAiReview } from "@/components/ai/AiReviewProvider";
 import {
   createCollabUser,
   createRoomId,
@@ -380,6 +383,7 @@ export function StudioShell({
 
   return (
     <WorkspaceProvider value={workspace}>
+    <AiReviewProvider>
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
       <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
@@ -506,7 +510,7 @@ export function StudioShell({
                 className="vt-studio-preview-pane min-h-0 bg-transparent"
                 style={previewPaneStyle}
               >
-                <LatexPreview note={note} />
+                <StudioPreviewPane note={note} />
               </section>
             </>
           ) : null}
@@ -628,8 +632,22 @@ export function StudioShell({
       ) : null}
       <VtToaster />
     </div>
+    </AiReviewProvider>
     </WorkspaceProvider>
   );
+}
+
+function StudioPreviewPane({ note }: { note: string }) {
+  const review = useAiReview();
+  if (review.prefs.showInPreview && review.pending) {
+    return (
+      <AiPreviewReview
+        before={review.pending.before}
+        after={review.pending.after}
+      />
+    );
+  }
+  return <LatexPreview note={note} />;
 }
 
 function vimModeLabel(mode: VimMode): string {

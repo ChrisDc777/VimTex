@@ -3,6 +3,7 @@
 import { groupChatMessages } from "@/lib/chat-message-blocks";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
+import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { RefreshIcon } from "@/components/chat/icons";
 
 const EMPTY_SUGGESTIONS = [
@@ -26,6 +27,18 @@ type ChatMessageListProps = {
   onScrollToBottom: () => void;
   /** Current room occupancy; used to show a "waiting for peers" empty state. */
   peerCount?: number;
+  /** When false, documentEdit hints say proposed (Forge suggest-only). */
+  canMutateViaAi?: boolean;
+  pendingEdit?: {
+    messageId: string;
+    before: string;
+    after: string;
+  } | null;
+  editOutcomes?: Record<string, "accepted" | "rejected" | "auto">;
+  onAcceptEdit?: () => void;
+  onRejectEdit?: () => void;
+  readOnly?: boolean;
+  streamingText?: string | null;
 };
 
 export function ChatMessageList({
@@ -43,6 +56,13 @@ export function ChatMessageList({
   stickBottom,
   onScrollToBottom,
   peerCount,
+  canMutateViaAi = true,
+  pendingEdit = null,
+  editOutcomes = {},
+  onAcceptEdit,
+  onRejectEdit,
+  readOnly = false,
+  streamingText = null,
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -53,7 +73,9 @@ export function ChatMessageList({
           <div className="vt-chat-empty">
             <p className="vt-chat-empty__title">Message the room</p>
             <p className="vt-chat-empty__subtitle">
-              Mention @vimothy to edit the note
+              {canMutateViaAi
+                ? "Mention @vimothy to edit the note"
+                : "Mention @vimothy for suggestions (Forge won’t change the note)"}
             </p>
             {peerCount != null && peerCount <= 1 ? (
               <p className="vt-chat-empty__waiting">
@@ -109,9 +131,35 @@ export function ChatMessageList({
                       </div>
 
                       {block.isAi && message.documentEdit != null ? (
-                        <p className="vt-chat-msg__applied">
-                          <span aria-hidden>✓</span> Applied to note
-                        </p>
+                        pendingEdit?.messageId === message.id &&
+                        onAcceptEdit &&
+                        onRejectEdit ? (
+                          <AiDiffProposal
+                            before={pendingEdit.before}
+                            after={pendingEdit.after}
+                            onAccept={onAcceptEdit}
+                            onReject={onRejectEdit}
+                            disabled={busy || readOnly}
+                          />
+                        ) : (
+                          <p className="vt-chat-msg__applied">
+                            {editOutcomes[message.id] === "accepted" ||
+                            editOutcomes[message.id] === "auto" ? (
+                              <>
+                                <span aria-hidden>✓</span>{" "}
+                                {editOutcomes[message.id] === "auto"
+                                  ? "Auto-applied"
+                                  : "Accepted — applied to note"}
+                              </>
+                            ) : editOutcomes[message.id] === "rejected" ? (
+                              <>Rejected — note unchanged</>
+                            ) : canMutateViaAi ? (
+                              <>Proposed edit</>
+                            ) : (
+                              <>Proposed edit (not applied — suggest-only)</>
+                            )}
+                          </p>
+                        )
                       ) : null}
 
                       {showError ? (
@@ -143,14 +191,20 @@ export function ChatMessageList({
             aria-busy="true"
           >
             <div className="vt-chat-block__meta">
-              <span className="vt-chat-block__author">AI</span>
-              <span className="vt-chat-block__time">thinking</span>
+              <span className="vt-chat-block__author">Vimothy</span>
+              <span className="vt-chat-block__time">streaming</span>
             </div>
-            <span className="vt-chat-typing__dots" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </span>
+            {streamingText?.trim() ? (
+              <div className="vt-chat-msg__bubble whitespace-pre-wrap">
+                {formatChatMessageBody(streamingText)}
+              </div>
+            ) : (
+              <span className="vt-chat-typing__dots" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+            )}
           </div>
         ) : null}
       </div>

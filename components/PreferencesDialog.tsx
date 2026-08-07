@@ -8,6 +8,8 @@ import {
   uiVariantLabel,
   type UiVariant,
 } from "@/lib/ui-variant";
+import type { AiApplyMode } from "@/lib/ai-review-prefs";
+import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
 
 type PreferencesDialogProps = {
   open: boolean;
@@ -18,6 +20,8 @@ type PreferencesDialogProps = {
   onRelativeLineNumbersChange: (enabled: boolean) => void;
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
+  /** Show AI review prefs (Studio). Forge stays suggest-only. */
+  showAiReviewPrefs?: boolean;
 };
 
 function Segment<T extends string>({
@@ -61,8 +65,10 @@ export function PreferencesDialog({
   onRelativeLineNumbersChange,
   uiVariant,
   onUiVariantChange,
+  showAiReviewPrefs = false,
 }: PreferencesDialogProps) {
   const titleId = useId();
+  const review = useAiReviewOptional();
 
   useEffect(() => {
     if (!open) return;
@@ -87,6 +93,47 @@ export function PreferencesDialog({
     saveUiVariant(variant);
     onUiVariantChange(variant);
   };
+
+  const aiSection =
+    showAiReviewPrefs && review ? (
+      <>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-ink">AI apply</p>
+            <p className="mt-0.5 text-xs text-mute">
+              Confirm each edit, or auto-apply with Undo
+            </p>
+          </div>
+          <Segment
+            label="AI apply"
+            options={[
+              { value: "confirm", label: "Confirm" },
+              { value: "auto", label: "Auto" },
+            ]}
+            value={review.prefs.applyMode}
+            onChange={(value) => review.setApplyMode(value as AiApplyMode)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-ink">AI in preview</p>
+            <p className="mt-0.5 text-xs text-mute">
+              Show Before/After in Split preview while reviewing
+            </p>
+          </div>
+          <Segment
+            label="AI in preview"
+            options={[
+              { value: "on", label: "On" },
+              { value: "off", label: "Off" },
+            ]}
+            value={review.prefs.showInPreview ? "on" : "off"}
+            onChange={(value) => review.setShowInPreview(value === "on")}
+          />
+        </div>
+      </>
+    ) : null;
 
   return (
     <div
@@ -162,6 +209,8 @@ export function PreferencesDialog({
               onChange={applyUiVariant}
             />
           </div>
+
+          {aiSection}
         </div>
 
         <div className="mt-6">

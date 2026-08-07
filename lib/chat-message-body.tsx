@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+import { normalizeChatMathDelimiters } from "@/lib/chat-math";
+import { parseNote, renderMathToHtml } from "@/lib/render-note";
 
 function highlightMentions(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
-  const re = /@(?:ai|vimtex)\b/gi;
+  const re = /@(?:ai|vimtex|vimothy)\b/gi;
   let last = 0;
   let match: RegExpExecArray | null;
   let key = 0;
@@ -45,6 +47,39 @@ function formatInlineCode(text: string, keyBase: number): ReactNode[] {
   return parts.length > 0 ? parts : [text];
 }
 
+function formatProseWithMath(text: string, keyBase: number): ReactNode[] {
+  const normalized = normalizeChatMathDelimiters(text);
+  const segments = parseNote(normalized);
+  const parts: ReactNode[] = [];
+  let key = keyBase;
+
+  for (const seg of segments) {
+    if (seg.type === "text") {
+      if (!seg.content) continue;
+      parts.push(
+        <span key={key++}>{highlightMentions(seg.content)}</span>,
+      );
+      continue;
+    }
+    const { html, error } = renderMathToHtml(seg.content, seg.display);
+    parts.push(
+      <span
+        key={key++}
+        className={[
+          "vt-chat-math",
+          seg.display ? "vt-chat-math--display" : "",
+          error ? "vt-chat-math--error" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />,
+    );
+  }
+
+  return parts.length > 0 ? parts : highlightMentions(text);
+}
+
 const FENCE_RE = /```(\w*)\n?([\s\S]*?)```/g;
 
 export function formatChatMessageBody(text: string): ReactNode[] {
@@ -56,7 +91,9 @@ export function formatChatMessageBody(text: string): ReactNode[] {
   while ((match = FENCE_RE.exec(text)) !== null) {
     if (match.index > last) {
       parts.push(
-        <span key={key++}>{highlightMentions(text.slice(last, match.index))}</span>,
+        <span key={key++}>
+          {formatProseWithMath(text.slice(last, match.index), key * 1000)}
+        </span>,
       );
     }
     parts.push(
@@ -69,9 +106,11 @@ export function formatChatMessageBody(text: string): ReactNode[] {
 
   if (last < text.length) {
     parts.push(
-      <span key={key++}>{highlightMentions(text.slice(last))}</span>,
+      <span key={key++}>
+        {formatProseWithMath(text.slice(last), key * 1000)}
+      </span>,
     );
   }
 
-  return parts.length > 0 ? parts : highlightMentions(text);
+  return parts.length > 0 ? parts : formatProseWithMath(text, 0);
 }

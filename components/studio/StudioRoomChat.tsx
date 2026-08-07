@@ -1,9 +1,11 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
+import { formatChatMessageBody } from "@/lib/chat-message-body";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
@@ -21,27 +23,6 @@ export type StudioRoomChatProps = {
   chatReady: boolean;
 };
 
-function highlightMentions(text: string): ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  const re = /@(?:vimothy|ai|vimtex)\b/gi;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > last) {
-      parts.push(text.slice(last, match.index));
-    }
-    parts.push(
-      <span key={key++} className="font-semibold text-primary">
-        {match[0]}
-      </span>,
-    );
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts.length > 0 ? parts : [text];
-}
-
 export function StudioRoomChat({
   open = true,
   embedded = false,
@@ -55,6 +36,7 @@ export function StudioRoomChat({
     open,
     chatReady,
     user,
+    shell: "studio",
     persistModel: false,
   });
 
@@ -140,10 +122,31 @@ export function StudioRoomChat({
                 </div>
               ) : null}
               <div className="vt-chat-msg__body">
-                {highlightMentions(m.text)}
+                {formatChatMessageBody(m.text)}
               </div>
               {isAi && m.documentEdit != null ? (
-                <p className="vt-chat-msg__hint">Applied to note</p>
+                chat.pendingEdit?.messageId === m.id ? (
+                  <AiDiffProposal
+                    before={chat.pendingEdit.before}
+                    after={chat.pendingEdit.after}
+                    onAccept={chat.acceptPendingEdit}
+                    onReject={chat.rejectPendingEdit}
+                    disabled={chat.busy || chat.readOnly}
+                  />
+                ) : (
+                  <p className="vt-chat-msg__hint">
+                    {chat.editOutcomes[m.id] === "accepted" ||
+                    chat.editOutcomes[m.id] === "auto"
+                      ? chat.editOutcomes[m.id] === "auto"
+                        ? "Auto-applied"
+                        : "Accepted — applied to note"
+                      : chat.editOutcomes[m.id] === "rejected"
+                        ? "Rejected — note unchanged"
+                        : chat.canMutateViaAi
+                          ? "Proposed edit"
+                          : "Proposed edit (not applied — Studio can accept changes)"}
+                  </p>
+                )
               ) : null}
               {showError ? (
                 <div className="mt-1 space-y-1">
@@ -152,8 +155,10 @@ export function StudioRoomChat({
                     type="button"
                     onClick={() => chat.retryAi(m)}
                     disabled={chat.busy}
-                    className="vt-chat-icon-btn h-auto min-h-0 px-0 text-xs text-accent-breeze"
+                    className="vt-chat-retry"
+                    aria-label="Retry"
                   >
+                    <RefreshIcon />
                     Retry
                   </button>
                 </div>
@@ -163,7 +168,22 @@ export function StudioRoomChat({
         })}
 
         {chat.busy ? (
-          <p className="vt-chat-msg__hint mt-2">Thinking…</p>
+          <div className="vt-chat-msg vt-chat-msg--ai mt-2">
+            <div className="vt-chat-msg__meta">
+              <span
+                className="vt-chat-msg__author"
+                style={{ color: "var(--primary)" }}
+              >
+                Vimothy
+              </span>
+              <span className="vt-chat-msg__time">streaming</span>
+            </div>
+            <div className="vt-chat-msg__body whitespace-pre-wrap">
+              {chat.streamingText?.trim()
+                ? formatChatMessageBody(chat.streamingText)
+                : "Thinking…"}
+            </div>
+          </div>
         ) : null}
       </div>
 
@@ -183,6 +203,7 @@ export function StudioRoomChat({
         onInputChange={chat.onInputChange}
         onModelChange={chat.setModel}
         onSend={() => void chat.send()}
+        onCancel={chat.cancelAi}
         onMentionSelect={chat.insertMention}
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}

@@ -507,6 +507,21 @@ test.describe("Inline scratchpad contract", () => {
     await expect(display.first()).toBeAttached({ timeout: 5_000 });
   });
 
+  test("multi-line display math renders in Live", async ({ page }) => {
+    await openSheet(page);
+    await insertMode(page);
+    await page.keyboard.type("\\[");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("E = mc^{2}");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("\\]");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("o");
+
+    const display = page.locator(".cm-math-widget.cm-math-display");
+    await expect(display.first()).toBeAttached({ timeout: 5_000 });
+  });
+
   test("invalid TeX shows non-destructive error styling", async ({ page }) => {
     await openSheet(page);
     await insertMode(page);

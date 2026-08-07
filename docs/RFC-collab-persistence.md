@@ -78,9 +78,12 @@ Already landed and should remain the seam:
 
 ACL and RO flags live on the controller (`readOnly`, WS `params` for `view` / `edit` / `auth`), not duplicated in both shells.
 
-## AI edits (related risk)
-
-`applyAiEdit` still full-buffer replaces. M2 does not block on M3 diffs, but production demos should treat concurrent @vimothy applies as **best-effort** until #27.
+/**
+ * AI edits (related risk)
+ *
+ * Studio: document proposals go through accept/reject diffs (`docs/AI_ROADMAP.md`).
+ * Forge: suggest-only — never auto-mutates the note.
+ */
 
 ## Implementation sequence
 

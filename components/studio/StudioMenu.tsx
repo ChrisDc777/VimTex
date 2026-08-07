@@ -266,6 +266,7 @@ export function StudioMenu({
         onRelativeLineNumbersChange={onRelativeLineNumbersChange}
         uiVariant={uiVariant}
         onUiVariantChange={onUiVariantChange}
+        showAiReviewPrefs
       />
     </div>
   );

@@ -9,7 +9,11 @@ import {
   type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
-import { postAiChat } from "@/lib/ai-client";
+import { postAiChat, streamAiChat } from "@/lib/ai-client";
+import {
+  aiFeatureEnabled,
+  aiMayMutateDocument,
+} from "@/lib/ai-features";
 import {
   DEFAULT_AI_MODEL,
   type AiModelId,
@@ -26,12 +30,16 @@ import {
   type RoomChatMessage,
 } from "@/lib/room-chat";
 import type { CollabUser } from "@/lib/types";
+import type { UiVariant } from "@/lib/ui-variant";
+import { useAiReview } from "@/components/ai/AiReviewProvider";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export type UseRoomChatOptions = {
   open: boolean;
   chatReady: boolean;
   user: CollabUser;
+  /** Shell that owns this chat — drives AI feature gate (#59). */
+  shell: UiVariant;
   /** Persist model choice (Forge). Studio may leave this false. */
   persistModel?: boolean;
 };
@@ -39,14 +47,17 @@ export type UseRoomChatOptions = {
 /**
  * Shared room-chat controller for Studio and Forge skins.
  * Owns subscription, composer state, @vimothy AI invoke, and typing heartbeat.
+ * Document proposals go through AiReviewStore (not local React state).
  */
 export function useRoomChat({
   open,
   chatReady,
   user,
+  shell,
   persistModel = true,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
+  const review = useAiReview();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -59,9 +70,14 @@ export function useRoomChat({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [stickBottom, setStickBottom] = useState(true);
   const [currentClientId, setCurrentClientId] = useState<number | null>(null);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const pendingEdit = review.pending;
+  const editOutcomes = review.outcomes;
 
   useEffect(() => {
     if (!persistModel) return;
@@ -93,7 +109,7 @@ export function useRoomChat({
     const el = listRef.current;
     if (!el || !stickBottom) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, busy, open, stickBottom, error]);
+  }, [messages, busy, open, stickBottom, error, streamingText, pendingEdit]);
 
   const onListScroll = useCallback(() => {
     const el = listRef.current;
@@ -168,6 +184,13 @@ export function useRoomChat({
     [persistModel],
   );
 
+  const cancelAi = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStreamingText(null);
+    setBusy(false);
+  }, []);
+
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
       const ws = workspace;
@@ -180,16 +203,57 @@ export function useRoomChat({
         return;
       }
 
+      if (busy) {
+        setError("AI is already running — cancel it or wait.");
+        setErrorForId(userMsg.id);
+        return;
+      }
+
+      if (
+        review.pending &&
+        aiFeatureEnabled(shell, "diffAcceptReject") &&
+        review.prefs.applyMode === "confirm"
+      ) {
+        setError("Accept or reject the pending AI edit first.");
+        setErrorForId(userMsg.id);
+        return;
+      }
+
       setBusy(true);
       setError(null);
       setErrorForId(null);
+      setStreamingText(null);
+      const beforeSnapshot = ws.getText();
+      const ac = new AbortController();
+      abortRef.current = ac;
 
       try {
-        const data = await postAiChat({
-          instruction,
-          document: ws.getText(),
-          model,
-        });
+        const useStream = aiFeatureEnabled(shell, "chatStreaming");
+        const data = useStream
+          ? await streamAiChat(
+              {
+                instruction,
+                document: beforeSnapshot,
+                model,
+                signal: ac.signal,
+              },
+              {
+                onToken: (acc) => {
+                  const cut = acc.indexOf("@@@DOCUMENT");
+                  setStreamingText(
+                    cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
+                  );
+                },
+              },
+            )
+          : await postAiChat({
+              instruction,
+              document: beforeSnapshot,
+              model,
+              signal: ac.signal,
+            });
+
+        if (ac.signal.aborted) return;
 
         const parsed = parseAssistantReply(data.message ?? "");
         const clientId = ws.getClientId() ?? userMsg.clientId;
@@ -205,19 +269,39 @@ export function useRoomChat({
           documentEdit: parsed.documentEdit,
         };
         ws.appendChatMessage(aiMsg);
-        if (parsed.documentEdit != null) {
-          // Full-buffer apply until M3 accept/reject (#27).
+
+        if (parsed.documentEdit == null || !aiMayMutateDocument(shell)) {
+          // Forge / Q&A only.
+        } else if (aiFeatureEnabled(shell, "diffAcceptReject")) {
+          review.proposeDocumentEdit({
+            messageId: aiMsg.id,
+            before: beforeSnapshot,
+            after: parsed.documentEdit,
+            source: "chat",
+            createdAt: Date.now(),
+          });
+        } else {
           ws.applyAiEdit(parsed.documentEdit);
         }
       } catch (err) {
+        if (
+          ac.signal.aborted ||
+          (err instanceof Error && err.name === "AbortError")
+        ) {
+          setError("Cancelled.");
+          setErrorForId(userMsg.id);
+          return;
+        }
         const detail = err instanceof Error ? err.message : "Unknown error";
         setError(detail);
         setErrorForId(userMsg.id);
       } finally {
+        if (abortRef.current === ac) abortRef.current = null;
+        setStreamingText(null);
         setBusy(false);
       }
     },
-    [workspace, model],
+    [workspace, model, shell, review, busy],
   );
 
   const send = useCallback(async () => {
@@ -276,6 +360,19 @@ export function useRoomChat({
   return {
     workspace,
     readOnly: workspace?.readOnly ?? false,
+    shell,
+    canMutateViaAi: aiMayMutateDocument(shell),
+    useDiffReview: aiFeatureEnabled(shell, "diffAcceptReject"),
+    pendingEdit,
+    editOutcomes,
+    acceptPendingEdit: () => {
+      review.acceptPending();
+    },
+    rejectPendingEdit: () => {
+      review.rejectPending();
+    },
+    cancelAi,
+    streamingText,
     model,
     setModel,
     input,
