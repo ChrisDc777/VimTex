@@ -76,9 +76,49 @@ export function normalizeChatMathDelimiters(text: string): string {
   return out;
 }
 
+/**
+ * Models also wrap math in **bold** / *italic*. If we leave the markers,
+ * parseNote extracts the TeX and the user sees orphaned ** around KaTeX.
+ */
+export function unwrapTexEmphasis(text: string): string {
+  let out = text.replace(/\*\*([^*]+)\*\*/g, (full, inner: string) => {
+    if (!looksLikeTexSnippet(inner) && !/\\[(\[]/.test(inner) && !/\$/.test(inner)) {
+      return full;
+    }
+    return promoteTexInner(inner);
+  });
+  out = out.replace(/__([^_]+)__/g, (full, inner: string) => {
+    if (!looksLikeTexSnippet(inner) && !/\\[(\[]/.test(inner) && !/\$/.test(inner)) {
+      return full;
+    }
+    return promoteTexInner(inner);
+  });
+  // Single *italic* only when the whole span looks like TeX (avoid *lists*).
+  out = out.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, (full, lead: string, inner: string) => {
+    if (!looksLikeTexSnippet(inner) && !/\\[(\[]/.test(inner)) return full;
+    return `${lead}${promoteTexInner(inner)}`;
+  });
+  return out;
+}
+
+function promoteTexInner(inner: string): string {
+  const t = inner.trim();
+  if (
+    t.startsWith("\\(") ||
+    t.startsWith("\\[") ||
+    t.startsWith("$") ||
+    t.startsWith("$$")
+  ) {
+    return t;
+  }
+  return `\\(${t}\\)`;
+}
+
 /** Full display-side prep before parseNote. */
 export function prepareChatMathText(text: string): string {
-  return normalizeChatMathDelimiters(unwrapTexBackticks(text));
+  return normalizeChatMathDelimiters(
+    unwrapTexBackticks(unwrapTexEmphasis(text)),
+  );
 }
 
 export function isMathFenceLang(lang: string): boolean {
