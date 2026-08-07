@@ -102,7 +102,7 @@ export function ChatComposer({
 
   return (
     <div className="vt-chat-composer-wrap">
-      {selectionPreview ? (
+      {selectionPreview && mentionsAi(input) ? (
         <ChatContextChip
           preview={selectionPreview}
           onClear={onHideSelectionChip}
@@ -188,16 +188,6 @@ export function ChatComposer({
 
       {busy ? (
         <p className="vt-chat-composer__hint">Vimothy is responding…</p>
-      ) : mentionsAi(input) ? (
-        <p className="vt-chat-composer__hint">
-          {selectionPreview
-            ? `Will call AI with ${selectionPreview.label} selected`
-            : "Will call AI with this instruction"}
-        </p>
-      ) : selectionPreview ? (
-        <p className="vt-chat-composer__hint">
-          Selection {selectionPreview.label} will be sent with @vimothy
-        </p>
       ) : null}
     </div>
   );

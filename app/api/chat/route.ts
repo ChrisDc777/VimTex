@@ -281,3 +281,5 @@ export async function POST(req: Request) {
       { error: formatAiError(detail, { model, modelLabel }) },
       { status: 502 },
     );
+  }
+}

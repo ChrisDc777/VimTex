@@ -9,7 +9,7 @@ type ChatContextChipProps = {
 };
 
 /**
- * Compact “attached selection” chip (VS Code–style) above the composer.
+ * Compact attached-selection chip above the composer (line range + snippet).
  */
 export function ChatContextChip({ preview, onClear }: ChatContextChipProps) {
   return (
@@ -18,9 +18,6 @@ export function ChatContextChip({ preview, onClear }: ChatContextChipProps) {
       title={preview.preview}
       aria-label={`Selection ${preview.label}: ${preview.preview}`}
     >
-      <span className="vt-chat-context-chip__badge" aria-hidden>
-        Sel
-      </span>
       <span className="vt-chat-context-chip__label">{preview.label}</span>
       <span className="vt-chat-context-chip__preview">{preview.preview}</span>
       {onClear ? (
