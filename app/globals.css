@@ -2837,6 +2837,91 @@ body[data-pane-resizing] * {
   color: color-mix(in srgb, var(--focus) 70%, var(--mute));
 }
 
+.vt-studio-diag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 4;
+  max-width: min(420px, calc(100% - 16px));
+  padding: 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--canvas) 94%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.vt-studio-diag__title {
+  margin: 0 0 6px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.vt-studio-diag__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vt-studio-diag__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.vt-studio-diag__loc {
+  flex-shrink: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--mute);
+}
+
+.vt-studio-diag__msg {
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.vt-studio-diag__actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.vt-studio-diag__btn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--focus);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+}
+
+.vt-studio-diag__btn:hover {
+  background: color-mix(in srgb, var(--focus) 12%, transparent);
+}
+
+.vt-studio-diag__more {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--mute);
+}
+
 .vt-sel-actions {
   position: absolute;
   left: 50%;

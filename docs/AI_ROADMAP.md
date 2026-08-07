@@ -71,7 +71,7 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 **#57 Level A+B:** caret pack + Studio selection context + Sel chip + math unwrap for LLM backticks/fences.  
 **#28:** Studio selection bar (Explain / Simplify / Fix TeX) — editor-anchored, not more chat chrome.  
-Levels C–D (diagnostics / RAG) still deferred.
+/** #53:** Studio diagnostics strip with Explain / Fix → chat + surrounding lines. Forge Problem panel stays list-only.
 
 ### Wave C — Studio depth
 

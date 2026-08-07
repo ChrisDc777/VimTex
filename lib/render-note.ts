@@ -555,6 +555,9 @@ export type MathDiagnostic = {
   message: string;
   line: number;
   column: number;
+  /** Absolute offsets into the note (math body). */
+  from: number;
+  to: number;
 };
 
 function offsetToLineCol(text: string, offset: number): { line: number; column: number } {
@@ -577,7 +580,13 @@ export function renderNoteDiagnostics(text: string): MathDiagnostic[] {
     const { error } = renderMathToHtml(seg.content, seg.display);
     if (!error) continue;
     const { line, column } = offsetToLineCol(text, seg.bodyFrom);
-    diagnostics.push({ message: error, line, column });
+    diagnostics.push({
+      message: error,
+      line,
+      column,
+      from: seg.bodyFrom,
+      to: seg.bodyTo,
+    });
   }
   return diagnostics;
 }
