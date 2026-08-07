@@ -50,12 +50,14 @@ export type PackAiContextOptions = {
 };
 
 export type SelectionContextPreview = {
-  /** e.g. "L12" or "L12–14" */
+  /** e.g. "L12" or "L12–14" or "L12:3" */
   label: string;
-  /** One-line snippet of the selection */
+  /** One-line snippet (selection text or error message) */
   preview: string;
   lineFrom: number;
   lineTo: number;
+  /** Visual tone for chat attachment chips. */
+  tone?: "default" | "error";
 };
 
 /** 1-based line number for a document offset. */

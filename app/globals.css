@@ -2837,6 +2837,21 @@ body[data-pane-resizing] * {
   color: color-mix(in srgb, var(--focus) 70%, var(--mute));
 }
 
+.vt-chat-context-attach__preview {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vt-chat-context-attach--error .vt-chat-context-attach__label {
+  color: color-mix(in srgb, #b91c1c 70%, var(--mute));
+}
+
+.vt-chat-context-attach--error .vt-chat-context-attach__preview {
+  color: color-mix(in srgb, #b91c1c 55%, var(--mute));
+}
+
 .vt-studio-diag {
   position: absolute;
   top: 8px;

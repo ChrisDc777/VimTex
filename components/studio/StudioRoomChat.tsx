@@ -14,7 +14,13 @@ import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
 
 export type StudioAiRunner = {
-  runInstruction: (instruction: string) => Promise<void>;
+  runInstruction: (
+    instruction: string,
+    opts?: {
+      chatText?: string;
+      attachment?: import("@/lib/ai-chat-context").SelectionContextPreview;
+    },
+  ) => Promise<void>;
   busy: boolean;
 };
 

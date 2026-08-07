@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import {
-  buildDiagnosticExplainInstruction,
-  buildDiagnosticFixInstruction,
+  buildDiagnosticExplainRequest,
+  buildDiagnosticFixRequest,
+  type DiagnosticAiRequest,
 } from "@/lib/diagnostics-ai-actions";
 import {
   renderNoteDiagnostics,
@@ -12,10 +13,9 @@ import {
 
 type StudioDiagnosticsBarProps = {
   note: string;
-  /** Studio-only AI entry points (#53). */
   canExplain?: boolean;
   canFix?: boolean;
-  onRun: (instruction: string) => void;
+  onRun: (request: DiagnosticAiRequest) => void;
 };
 
 /**
@@ -70,7 +70,7 @@ function DiagnosticRow({
   canExplain: boolean;
   canFix: boolean;
   showAi: boolean;
-  onRun: (instruction: string) => void;
+  onRun: (request: DiagnosticAiRequest) => void;
 }) {
   return (
     <li className="vt-studio-diag__item">
@@ -86,9 +86,7 @@ function DiagnosticRow({
             <button
               type="button"
               className="vt-studio-diag__btn"
-              onClick={() =>
-                onRun(buildDiagnosticExplainInstruction(note, diag))
-              }
+              onClick={() => onRun(buildDiagnosticExplainRequest(note, diag))}
             >
               Explain
             </button>
@@ -97,7 +95,7 @@ function DiagnosticRow({
             <button
               type="button"
               className="vt-studio-diag__btn"
-              onClick={() => onRun(buildDiagnosticFixInstruction(note, diag))}
+              onClick={() => onRun(buildDiagnosticFixRequest(note, diag))}
             >
               Fix
             </button>

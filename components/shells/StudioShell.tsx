@@ -499,9 +499,12 @@ export function StudioShell({
                 note={note}
                 canExplain={aiFeatureEnabled("studio", "diagnosticsExplain")}
                 canFix={aiFeatureEnabled("studio", "diagnosticsFix")}
-                onRun={(instruction) => {
+                onRun={(request) => {
                   setChatOpen(true);
-                  void aiRunnerRef.current?.runInstruction(instruction);
+                  void aiRunnerRef.current?.runInstruction(request.instruction, {
+                    chatText: request.chatText,
+                    attachment: request.attachment,
+                  });
                 }}
               />
             ) : null}
