@@ -29,6 +29,12 @@ export class AiReviewStore {
   private outcomes: Record<string, AiEditOutcome> = {};
   private lastAuto: PendingAiEdit | null = null;
   private listeners = new Set<Listener>();
+  /** Cached for useSyncExternalStore — must be referentially stable between emits. */
+  private snapshot: AiReviewSnapshot = {
+    pending: null,
+    outcomes: {},
+    lastAuto: null,
+  };
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
@@ -38,11 +44,7 @@ export class AiReviewStore {
   }
 
   getSnapshot(): AiReviewSnapshot {
-    return {
-      pending: this.pending,
-      outcomes: this.outcomes,
-      lastAuto: this.lastAuto,
-    };
+    return this.snapshot;
   }
 
   getPending(): PendingAiEdit | null {
@@ -107,6 +109,13 @@ export class AiReviewStore {
 
   /** Reset when room / workspace changes. */
   reset(): void {
+    if (
+      this.pending == null &&
+      this.lastAuto == null &&
+      Object.keys(this.outcomes).length === 0
+    ) {
+      return;
+    }
     this.pending = null;
     this.outcomes = {};
     this.lastAuto = null;
@@ -114,6 +123,11 @@ export class AiReviewStore {
   }
 
   private emit(): void {
+    this.snapshot = {
+      pending: this.pending,
+      outcomes: this.outcomes,
+      lastAuto: this.lastAuto,
+    };
     for (const listener of this.listeners) listener();
   }
 }
