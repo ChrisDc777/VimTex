@@ -660,6 +660,9 @@ export function ForgeShell({
                   selfClientId={selfClientId}
                   user={user}
                   chatReady={ready}
+                  getEditorContext={() =>
+                    editorRef.current?.getEditorContext() ?? null
+                  }
                 />
               </div>
             ) : null}

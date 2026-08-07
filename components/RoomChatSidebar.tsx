@@ -6,6 +6,7 @@ import { CloseIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
+import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { useRoomChat } from "@/lib/use-room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
 
@@ -17,6 +18,8 @@ export type RoomChatSidebarProps = {
   user: CollabUser;
   /** Bumps when the room is ready so chat can resubscribe. */
   chatReady: boolean;
+  /** Live editor snapshot for AI context (#57). Forge omits selection. */
+  getEditorContext?: () => EditorContextSnapshot | null;
 };
 
 export function RoomChatSidebar({
@@ -26,6 +29,7 @@ export function RoomChatSidebar({
   selfClientId,
   user,
   chatReady,
+  getEditorContext,
 }: RoomChatSidebarProps) {
   const chat = useRoomChat({
     open,
@@ -33,6 +37,7 @@ export function RoomChatSidebar({
     user,
     shell: "forge",
     persistModel: true,
+    getEditorContext,
   });
 
   if (!open) return null;

@@ -33,6 +33,10 @@ import {
 } from "@/lib/snippets";
 import { EDITOR_PLACEHOLDER } from "@/lib/starter-content";
 import type { VimMode } from "@/lib/types";
+import {
+  extractSurroundingLines,
+  type EditorContextSnapshot,
+} from "@/lib/ai-chat-context";
 
 export type VimEditorHandle = {
   focus: () => void;
@@ -41,6 +45,8 @@ export type VimEditorHandle = {
    * SNIPPET_SEL_* markers from lib/snippets.
    */
   insertSnippet: (template: string) => void;
+  /** Snapshot for AI chat context (#57). Null if the editor is not mounted. */
+  getEditorContext: () => EditorContextSnapshot | null;
 };
 
 type VimEditorProps = {
@@ -157,6 +163,28 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     useImperativeHandle(ref, () => ({
       focus: () => {
         viewRef.current?.focus();
+      },
+      getEditorContext: () => {
+        const view = viewRef.current;
+        if (!view) return null;
+        const text = view.state.doc.toString();
+        const sel = view.state.selection.main;
+        const caretOffset = sel.head;
+        const line = view.state.doc.lineAt(caretOffset);
+        const from = Math.min(sel.from, sel.to);
+        const to = Math.max(sel.from, sel.to);
+        return {
+          text,
+          selection: from !== to ? text.slice(from, to) : "",
+          selectionFrom: from,
+          selectionTo: to,
+          caret: {
+            offset: caretOffset,
+            line: line.number,
+            column: caretOffset - line.from + 1,
+          },
+          surrounding: extractSurroundingLines(text, from, to),
+        };
       },
       insertSnippet: (template) => {
         const view = viewRef.current;

@@ -16,17 +16,65 @@ export type ParsedAssistantReply = {
   documentEdit: string | null;
 };
 
-export function buildSystemPrompt(document: string): string {
-  return `You are the VimTex assistant (Vimothy). Collaborators tag you in room chat with @vimothy (aliases @ai / @vimtex); you receive only that single instruction plus the current document — no prior chat history.
+export type SystemPromptContext = {
+  document: string;
+  selection?: string;
+  surrounding?: string;
+  caret?: { line: number; column: number; offset: number };
+  truncated?: boolean;
+};
 
-Current document buffer:
------
-${document}
------
+export function buildSystemPrompt(
+  documentOrContext: string | SystemPromptContext,
+): string {
+  const ctx: SystemPromptContext =
+    typeof documentOrContext === "string"
+      ? { document: documentOrContext }
+      : documentOrContext;
 
-Rules:
+  const sections: string[] = [
+    `You are the VimTex assistant (Vimothy). Collaborators tag you in room chat with @vimothy (aliases @ai / @vimtex); you receive only that single instruction plus the current document context — no prior chat history.`,
+  ];
+
+  if (ctx.selection?.trim()) {
+    sections.push(
+      `Primary selection (highest priority — ground answers and edits here first):
+-----
+${ctx.selection}
+-----`,
+    );
+  }
+
+  if (ctx.surrounding?.trim()) {
+    sections.push(
+      `Surrounding lines around the caret/selection:
+-----
+${ctx.surrounding}
+-----`,
+    );
+  }
+
+  if (ctx.caret) {
+    sections.push(
+      `Caret position: line ${ctx.caret.line}, column ${ctx.caret.column} (offset ${ctx.caret.offset}).`,
+    );
+  }
+
+  const truncNote = ctx.truncated
+    ? "\n(Note: the buffer below was truncated around the caret to fit size limits.)"
+    : "";
+
+  sections.push(
+    `Current document buffer:${truncNote}
+-----
+${ctx.document}
+-----`,
+  );
+
+  sections.push(`Rules:
 - Help with math, LaTeX, and editing the note.
 - Keep chat replies concise.
+- When a primary selection is provided, prefer editing or explaining that region unless the instruction clearly targets the whole note.
 - When the instruction asks you to change the note (add formulas, rewrite, fix TeX, etc.), propose the FULL updated document by ending your reply with exactly:
 
 ${DOC_EDIT_START}
@@ -35,7 +83,9 @@ ${DOC_EDIT_END}
 
 - The content between the markers must be the complete note (not a diff). Preserve unrelated parts unless asked to rewrite everything.
 - If you are only answering a question and not changing the note, do not include the markers.
-- Prefer KaTeX-friendly TeX. Do not wrap the whole document in a LaTeX documentclass.`;
+- Prefer KaTeX-friendly TeX. Do not wrap the whole document in a LaTeX documentclass.`);
+
+  return sections.join("\n\n");
 }
 
 export function parseAssistantReply(raw: string): ParsedAssistantReply {

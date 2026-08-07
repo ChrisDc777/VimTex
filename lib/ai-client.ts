@@ -1,10 +1,15 @@
 import { loadUserAiKey } from "@/lib/ai-keys";
+import type { EditorCaret } from "@/lib/ai-chat-context";
 
 export type AiChatRequest = {
   instruction: string;
   document: string;
   model: string;
   signal?: AbortSignal;
+  selection?: string;
+  surrounding?: string;
+  caret?: EditorCaret;
+  truncated?: boolean;
 };
 
 export type AiChatResult = {
@@ -17,26 +22,38 @@ export type AiChatStreamHandlers = {
   onToken?: (accumulated: string) => void;
 };
 
-/**
- * Non-streaming chat (JSON). Kept for callers that do not need tokens.
- */
-export async function postAiChat({
+function requestBody({
   instruction,
   document,
   model,
-  signal,
-}: AiChatRequest): Promise<AiChatResult> {
-  const userKey = loadUserAiKey();
+  selection,
+  surrounding,
+  caret,
+  truncated,
+  stream,
+}: AiChatRequest & { stream?: boolean }) {
+  return {
+    instruction,
+    document,
+    model,
+    apiKey: loadUserAiKey() || undefined,
+    ...(selection ? { selection } : {}),
+    ...(surrounding ? { surrounding } : {}),
+    ...(caret ? { caret } : {}),
+    ...(truncated ? { truncated: true } : {}),
+    ...(stream ? { stream: true } : {}),
+  };
+}
+
+/**
+ * Non-streaming chat (JSON). Kept for callers that do not need tokens.
+ */
+export async function postAiChat(req: AiChatRequest): Promise<AiChatResult> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      instruction,
-      document,
-      model,
-      apiKey: userKey || undefined,
-    }),
-    signal,
+    body: JSON.stringify(requestBody(req)),
+    signal: req.signal,
   });
 
   let data: AiChatResult & { error?: string };
@@ -61,21 +78,14 @@ export async function postAiChat({
  * Streaming chat (#29). Reads a plain text token stream from `/api/chat`.
  */
 export async function streamAiChat(
-  { instruction, document, model, signal }: AiChatRequest,
+  req: AiChatRequest,
   handlers: AiChatStreamHandlers = {},
 ): Promise<AiChatResult> {
-  const userKey = loadUserAiKey();
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      instruction,
-      document,
-      model,
-      apiKey: userKey || undefined,
-      stream: true,
-    }),
-    signal,
+    body: JSON.stringify(requestBody({ ...req, stream: true })),
+    signal: req.signal,
   });
 
   if (!res.ok) {
@@ -111,7 +121,7 @@ export async function streamAiChat(
 
   return {
     message: accumulated,
-    model: res.headers.get("X-Vimtex-Model") || model,
+    model: res.headers.get("X-Vimtex-Model") || req.model,
     provider: res.headers.get("X-Vimtex-Provider") || "openrouter",
   };
 }

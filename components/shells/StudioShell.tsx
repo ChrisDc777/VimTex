@@ -536,6 +536,9 @@ export function StudioShell({
               selfClientId={selfClientId}
               user={user}
               chatReady={ready}
+              getEditorContext={() =>
+                editorRef.current?.getEditorContext() ?? null
+              }
             />
           </SidePanel>
         ) : null}

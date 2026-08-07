@@ -12,6 +12,8 @@ export const runtime = "nodejs";
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_INSTRUCTION_CHARS = 4_000;
 const MAX_DOCUMENT_CHARS = 100_000;
+const MAX_SELECTION_CHARS = 8_000;
+const MAX_SURROUNDING_CHARS = 4_000;
 
 type ChatRequestBody = {
   instruction?: string;
@@ -20,6 +22,10 @@ type ChatRequestBody = {
   apiKey?: string;
   /** When true, respond with a plain text token stream (#29). */
   stream?: boolean;
+  selection?: string;
+  surrounding?: string;
+  caret?: { line?: number; column?: number; offset?: number };
+  truncated?: boolean;
 };
 
 function appUrl(): string {
@@ -32,6 +38,35 @@ function appUrl(): string {
   return "https://vimtex.local";
 }
 
+function parseOptionalString(
+  value: unknown,
+  max: number,
+): string | undefined {
+  if (typeof value !== "string" || !value) return undefined;
+  return value.length > max ? value.slice(0, max) : value;
+}
+
+function parseCaret(
+  value: ChatRequestBody["caret"],
+): { line: number; column: number; offset: number } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const line = Number(value.line);
+  const column = Number(value.column);
+  const offset = Number(value.offset);
+  if (
+    !Number.isFinite(line) ||
+    !Number.isFinite(column) ||
+    !Number.isFinite(offset)
+  ) {
+    return undefined;
+  }
+  return {
+    line: Math.max(1, Math.floor(line)),
+    column: Math.max(1, Math.floor(column)),
+    offset: Math.max(0, Math.floor(offset)),
+  };
+}
+
 function parseBody(body: ChatRequestBody): {
   instruction: string;
   document: string;
@@ -39,6 +74,10 @@ function parseBody(body: ChatRequestBody): {
   apiKey: string;
   providerLabel: string;
   stream: boolean;
+  selection?: string;
+  surrounding?: string;
+  caret?: { line: number; column: number; offset: number };
+  truncated: boolean;
   error?: Response;
 } {
   const instruction =
@@ -51,6 +90,7 @@ function parseBody(body: ChatRequestBody): {
       apiKey: "",
       providerLabel: "",
       stream: false,
+      truncated: false,
       error: Response.json(
         { error: "instruction must be a non-empty string." },
         { status: 400 },
@@ -65,6 +105,7 @@ function parseBody(body: ChatRequestBody): {
       apiKey: "",
       providerLabel: "",
       stream: false,
+      truncated: false,
       error: Response.json({ error: "instruction too long." }, { status: 400 }),
     };
   }
@@ -78,6 +119,7 @@ function parseBody(body: ChatRequestBody): {
       apiKey: "",
       providerLabel: "",
       stream: false,
+      truncated: false,
       error: Response.json({ error: "document too long." }, { status: 400 }),
     };
   }
@@ -97,6 +139,7 @@ function parseBody(body: ChatRequestBody): {
       apiKey: "",
       providerLabel: "",
       stream: false,
+      truncated: false,
       error: Response.json(
         {
           error:
@@ -117,6 +160,7 @@ function parseBody(body: ChatRequestBody): {
       apiKey: "",
       providerLabel: "",
       stream: false,
+      truncated: false,
       error: Response.json(
         {
           error:
@@ -134,6 +178,10 @@ function parseBody(body: ChatRequestBody): {
     apiKey,
     providerLabel: isFreeModel(model) ? "openrouter" : "byok-openrouter",
     stream: Boolean(body.stream),
+    selection: parseOptionalString(body.selection, MAX_SELECTION_CHARS),
+    surrounding: parseOptionalString(body.surrounding, MAX_SURROUNDING_CHARS),
+    caret: parseCaret(body.caret),
+    truncated: Boolean(body.truncated),
   };
 }
 
@@ -153,8 +201,18 @@ export async function POST(req: Request) {
   const parsed = parseBody(body);
   if (parsed.error) return parsed.error;
 
-  const { instruction, document, model, apiKey, providerLabel, stream } =
-    parsed;
+  const {
+    instruction,
+    document,
+    model,
+    apiKey,
+    providerLabel,
+    stream,
+    selection,
+    surrounding,
+    caret,
+    truncated,
+  } = parsed;
 
   const provider = createOpenRouter({
     apiKey,
@@ -162,7 +220,13 @@ export async function POST(req: Request) {
     appUrl: appUrl(),
   });
 
-  const system = buildSystemPrompt(document);
+  const system = buildSystemPrompt({
+    document,
+    selection,
+    surrounding,
+    caret,
+    truncated,
+  });
 
   try {
     if (stream) {

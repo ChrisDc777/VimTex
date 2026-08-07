@@ -9,6 +9,10 @@ import {
   type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
+import {
+  packAiChatContext,
+  type EditorContextSnapshot,
+} from "@/lib/ai-chat-context";
 import { postAiChat, streamAiChat } from "@/lib/ai-client";
 import {
   aiFeatureEnabled,
@@ -42,6 +46,8 @@ export type UseRoomChatOptions = {
   shell: UiVariant;
   /** Persist model choice (Forge). Studio may leave this false. */
   persistModel?: boolean;
+  /** Live editor snapshot for context packing (#57). */
+  getEditorContext?: () => EditorContextSnapshot | null;
 };
 
 /**
@@ -55,6 +61,7 @@ export function useRoomChat({
   user,
   shell,
   persistModel = true,
+  getEditorContext,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
   const review = useAiReview();
@@ -224,34 +231,40 @@ export function useRoomChat({
       setErrorForId(null);
       setStreamingText(null);
       const beforeSnapshot = ws.getText();
+      const snap = getEditorContext?.() ?? null;
+      const packed = packAiChatContext({
+        text: snap?.text ?? beforeSnapshot,
+        caretOffset: snap?.caret.offset,
+        selection: snap?.selection,
+        surrounding: snap?.surrounding,
+        caret: snap?.caret,
+        includeSelectionContext: aiFeatureEnabled(shell, "selectionActions"),
+      });
       const ac = new AbortController();
       abortRef.current = ac;
 
       try {
         const useStream = aiFeatureEnabled(shell, "chatStreaming");
+        const req = {
+          instruction,
+          document: packed.document,
+          model,
+          signal: ac.signal,
+          selection: packed.selection,
+          surrounding: packed.surrounding,
+          caret: packed.caret,
+          truncated: packed.truncated,
+        };
         const data = useStream
-          ? await streamAiChat(
-              {
-                instruction,
-                document: beforeSnapshot,
-                model,
-                signal: ac.signal,
+          ? await streamAiChat(req, {
+              onToken: (acc) => {
+                const cut = acc.indexOf("@@@DOCUMENT");
+                setStreamingText(
+                  cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
+                );
               },
-              {
-                onToken: (acc) => {
-                  const cut = acc.indexOf("@@@DOCUMENT");
-                  setStreamingText(
-                    cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
-                  );
-                },
-              },
-            )
-          : await postAiChat({
-              instruction,
-              document: beforeSnapshot,
-              model,
-              signal: ac.signal,
-            });
+            })
+          : await postAiChat(req);
 
         if (ac.signal.aborted) return;
 
@@ -301,7 +314,7 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell, review, busy],
+    [workspace, model, shell, review, busy, getEditorContext],
   );
 
   const send = useCallback(async () => {

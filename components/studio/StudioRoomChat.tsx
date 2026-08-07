@@ -6,6 +6,7 @@ import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
+import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
@@ -21,6 +22,8 @@ export type StudioRoomChatProps = {
   user: CollabUser;
   /** Bumps when the room is ready so chat can resubscribe. */
   chatReady: boolean;
+  /** Live editor snapshot for AI context (#57). */
+  getEditorContext?: () => EditorContextSnapshot | null;
 };
 
 export function StudioRoomChat({
@@ -31,6 +34,7 @@ export function StudioRoomChat({
   selfClientId,
   user,
   chatReady,
+  getEditorContext,
 }: StudioRoomChatProps) {
   const chat = useRoomChat({
     open,
@@ -38,6 +42,7 @@ export function StudioRoomChat({
     user,
     shell: "studio",
     persistModel: false,
+    getEditorContext,
   });
 
   if (!open) return null;
