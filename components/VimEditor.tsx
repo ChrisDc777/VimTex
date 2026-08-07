@@ -33,6 +33,10 @@ import {
 } from "@/lib/snippets";
 import { EDITOR_PLACEHOLDER } from "@/lib/starter-content";
 import type { VimMode } from "@/lib/types";
+import {
+  extractSurroundingLines,
+  type EditorContextSnapshot,
+} from "@/lib/ai-chat-context";
 
 export type VimEditorHandle = {
   focus: () => void;
@@ -41,6 +45,8 @@ export type VimEditorHandle = {
    * SNIPPET_SEL_* markers from lib/snippets.
    */
   insertSnippet: (template: string) => void;
+  /** Snapshot for AI chat context (#57). Null if the editor is not mounted. */
+  getEditorContext: () => EditorContextSnapshot | null;
 };
 
 type VimEditorProps = {
@@ -53,6 +59,8 @@ type VimEditorProps = {
   /** Show empty-editor placeholder. Default true. */
   showPlaceholder?: boolean;
   onVimModeChange: (mode: VimMode) => void;
+  /** Fires when the main selection collapses or expands (#28). */
+  onSelectionRangeChange?: (hasRange: boolean) => void;
 };
 
 const vimTexTheme = EditorView.theme(
@@ -142,6 +150,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       relativeLineNumbers = true,
       showPlaceholder = true,
       onVimModeChange,
+      onSelectionRangeChange,
     },
     ref,
   ) {
@@ -151,12 +160,36 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     const inlineMathRef = useRef(new Compartment());
     const lineNumberCompartmentRef = useRef(createLineNumberCompartment());
     const onVimModeChangeRef = useRef(onVimModeChange);
+    const onSelectionRangeChangeRef = useRef(onSelectionRangeChange);
 
     onVimModeChangeRef.current = onVimModeChange;
+    onSelectionRangeChangeRef.current = onSelectionRangeChange;
 
     useImperativeHandle(ref, () => ({
       focus: () => {
         viewRef.current?.focus();
+      },
+      getEditorContext: () => {
+        const view = viewRef.current;
+        if (!view) return null;
+        const text = view.state.doc.toString();
+        const sel = view.state.selection.main;
+        const caretOffset = sel.head;
+        const line = view.state.doc.lineAt(caretOffset);
+        const from = Math.min(sel.from, sel.to);
+        const to = Math.max(sel.from, sel.to);
+        return {
+          text,
+          selection: from !== to ? text.slice(from, to) : "",
+          selectionFrom: from,
+          selectionTo: to,
+          caret: {
+            offset: caretOffset,
+            line: line.number,
+            column: caretOffset - line.from + 1,
+          },
+          surrounding: extractSurroundingLines(text, from, to),
+        };
       },
       insertSnippet: (template) => {
         const view = viewRef.current;
@@ -258,6 +291,11 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
             : []),
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
+          EditorView.updateListener.of((update) => {
+            if (!update.selectionSet) return;
+            const sel = update.state.selection.main;
+            onSelectionRangeChangeRef.current?.(sel.from !== sel.to);
+          }),
         ],
       });
 

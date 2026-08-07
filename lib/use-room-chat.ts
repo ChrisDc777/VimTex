@@ -9,13 +9,21 @@ import {
   type RefObject,
 } from "react";
 import { parseAssistantReply } from "@/lib/ai-chat";
+import {
+  packAiChatContext,
+  selectionContextPreview,
+  type EditorContextSnapshot,
+  type SelectionContextPreview,
+} from "@/lib/ai-chat-context";
 import { postAiChat, streamAiChat } from "@/lib/ai-client";
+import { formatAiError } from "@/lib/ai-errors";
 import {
   aiFeatureEnabled,
   aiMayMutateDocument,
 } from "@/lib/ai-features";
 import {
   DEFAULT_AI_MODEL,
+  providerForModel,
   type AiModelId,
 } from "@/lib/ai-providers";
 import {
@@ -29,6 +37,7 @@ import {
   newChatMessageId,
   type RoomChatMessage,
 } from "@/lib/room-chat";
+import { notify } from "@/lib/toasts";
 import type { CollabUser } from "@/lib/types";
 import type { UiVariant } from "@/lib/ui-variant";
 import { useAiReview } from "@/components/ai/AiReviewProvider";
@@ -42,6 +51,8 @@ export type UseRoomChatOptions = {
   shell: UiVariant;
   /** Persist model choice (Forge). Studio may leave this false. */
   persistModel?: boolean;
+  /** Live editor snapshot for context packing (#57). */
+  getEditorContext?: () => EditorContextSnapshot | null;
 };
 
 /**
@@ -55,6 +66,7 @@ export function useRoomChat({
   user,
   shell,
   persistModel = true,
+  getEditorContext,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
   const review = useAiReview();
@@ -71,7 +83,15 @@ export function useRoomChat({
   const [stickBottom, setStickBottom] = useState(true);
   const [currentClientId, setCurrentClientId] = useState<number | null>(null);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [selectionPreview, setSelectionPreview] =
+    useState<SelectionContextPreview | null>(null);
+  const [selectionChipHidden, setSelectionChipHidden] = useState(false);
+  const [messageContexts, setMessageContexts] = useState<
+    Record<string, SelectionContextPreview>
+  >({});
   const abortRef = useRef<AbortController | null>(null);
+  const prevSelectionRef = useRef<SelectionContextPreview | null>(null);
+  const selectionChipHiddenRef = useRef(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -110,6 +130,36 @@ export function useRoomChat({
     if (!el || !stickBottom) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, busy, open, stickBottom, error, streamingText, pendingEdit]);
+
+  /** Live selection chip for Studio when the editor has a non-empty range. */
+  useEffect(() => {
+    if (!open || !getEditorContext) {
+      setSelectionPreview(null);
+      return;
+    }
+    if (!aiFeatureEnabled(shell, "selectionActions")) {
+      setSelectionPreview(null);
+      return;
+    }
+
+    const tick = () => {
+      const snap = getEditorContext();
+      const next = snap ? selectionContextPreview(snap) : null;
+      const prev = prevSelectionRef.current;
+      const changed =
+        prev?.label !== next?.label || prev?.preview !== next?.preview;
+      if (!next || changed) {
+        selectionChipHiddenRef.current = false;
+      }
+      prevSelectionRef.current = next;
+      setSelectionPreview(next);
+      setSelectionChipHidden(selectionChipHiddenRef.current);
+    };
+
+    tick();
+    const id = window.setInterval(tick, 350);
+    return () => window.clearInterval(id);
+  }, [open, getEditorContext, shell]);
 
   const onListScroll = useCallback(() => {
     const el = listRef.current;
@@ -224,34 +274,53 @@ export function useRoomChat({
       setErrorForId(null);
       setStreamingText(null);
       const beforeSnapshot = ws.getText();
+      const snap = getEditorContext?.() ?? null;
+      const packed = packAiChatContext({
+        text: snap?.text ?? beforeSnapshot,
+        caretOffset: snap?.caret.offset,
+        selection: snap?.selection,
+        surrounding: snap?.surrounding,
+        caret: snap?.caret,
+        includeSelectionContext: aiFeatureEnabled(shell, "selectionActions"),
+      });
+      const usedSelection =
+        packed.selection && snap
+          ? selectionContextPreview({
+              ...snap,
+              selection: packed.selection,
+            })
+          : null;
+      if (usedSelection) {
+        setMessageContexts((prev) => ({
+          ...prev,
+          [userMsg.id]: usedSelection,
+        }));
+      }
       const ac = new AbortController();
       abortRef.current = ac;
 
       try {
         const useStream = aiFeatureEnabled(shell, "chatStreaming");
+        const req = {
+          instruction,
+          document: packed.document,
+          model,
+          signal: ac.signal,
+          selection: packed.selection,
+          surrounding: packed.surrounding,
+          caret: packed.caret,
+          truncated: packed.truncated,
+        };
         const data = useStream
-          ? await streamAiChat(
-              {
-                instruction,
-                document: beforeSnapshot,
-                model,
-                signal: ac.signal,
+          ? await streamAiChat(req, {
+              onToken: (acc) => {
+                const cut = acc.indexOf("@@@DOCUMENT");
+                setStreamingText(
+                  cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
+                );
               },
-              {
-                onToken: (acc) => {
-                  const cut = acc.indexOf("@@@DOCUMENT");
-                  setStreamingText(
-                    cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
-                  );
-                },
-              },
-            )
-          : await postAiChat({
-              instruction,
-              document: beforeSnapshot,
-              model,
-              signal: ac.signal,
-            });
+            })
+          : await postAiChat(req);
 
         if (ac.signal.aborted) return;
 
@@ -292,16 +361,21 @@ export function useRoomChat({
           setErrorForId(userMsg.id);
           return;
         }
-        const detail = err instanceof Error ? err.message : "Unknown error";
+        const raw = err instanceof Error ? err.message : "Unknown error";
+        const modelLabel =
+          providerForModel(model).models.find((m) => m.id === model)?.label ??
+          model;
+        const detail = formatAiError(raw, { model, modelLabel });
         setError(detail);
         setErrorForId(userMsg.id);
+        notify.error(detail);
       } finally {
         if (abortRef.current === ac) abortRef.current = null;
         setStreamingText(null);
         setBusy(false);
       }
     },
-    [workspace, model, shell, review, busy],
+    [workspace, model, shell, review, busy, getEditorContext],
   );
 
   const send = useCallback(async () => {
@@ -340,6 +414,36 @@ export function useRoomChat({
     }
   }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
+  /** Programmatic @vimothy turn (selection actions #28). */
+  const runAiInstruction = useCallback(
+    async (instruction: string) => {
+      const ws = workspace;
+      const trimmed = instruction.trim();
+      if (!trimmed || busy || !ws || ws.readOnly) return;
+      const clientId = ws.getClientId();
+      if (clientId == null) return;
+
+      const text = `@${AI_MENTION_TAG} ${trimmed}`;
+      const userMsg: RoomChatMessage = {
+        id: newChatMessageId(),
+        clientId,
+        authorName: user.name,
+        authorColor: user.color,
+        role: "user",
+        text,
+        mentionAi: true,
+        createdAt: Date.now(),
+      };
+
+      setError(null);
+      setErrorForId(null);
+      setStickBottom(true);
+      ws.appendChatMessage(userMsg);
+      await invokeAi(userMsg);
+    },
+    [busy, workspace, invokeAi, user.color, user.name],
+  );
+
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
       if (busy || !msg.mentionAi) return;
@@ -373,6 +477,13 @@ export function useRoomChat({
     },
     cancelAi,
     streamingText,
+    selectionPreview:
+      selectionPreview && !selectionChipHidden ? selectionPreview : null,
+    hideSelectionChip: () => {
+      selectionChipHiddenRef.current = true;
+      setSelectionChipHidden(true);
+    },
+    messageContexts,
     model,
     setModel,
     input,
@@ -396,6 +507,7 @@ export function useRoomChat({
     insertSuggestion,
     onInputChange,
     send,
+    runAiInstruction,
     retryAi,
     defaultMentionTag: AI_MENTION_TAG,
   };

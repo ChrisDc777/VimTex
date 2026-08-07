@@ -2,8 +2,10 @@
 
 import { groupChatMessages } from "@/lib/chat-message-blocks";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
+import type { SelectionContextPreview } from "@/lib/ai-chat-context";
 import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
+import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
 import { RefreshIcon } from "@/components/chat/icons";
 
 const EMPTY_SUGGESTIONS = [
@@ -39,6 +41,7 @@ type ChatMessageListProps = {
   onRejectEdit?: () => void;
   readOnly?: boolean;
   streamingText?: string | null;
+  messageContexts?: Record<string, SelectionContextPreview>;
 };
 
 export function ChatMessageList({
@@ -63,6 +66,7 @@ export function ChatMessageList({
   onRejectEdit,
   readOnly = false,
   streamingText = null,
+  messageContexts = {},
 }: ChatMessageListProps) {
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
@@ -129,6 +133,11 @@ export function ChatMessageList({
                       <div className="vt-chat-msg__bubble">
                         {formatChatMessageBody(message.text)}
                       </div>
+                      {messageContexts[message.id] ? (
+                        <ChatContextAttachment
+                          preview={messageContexts[message.id]!}
+                        />
+                      ) : null}
 
                       {block.isAi && message.documentEdit != null ? (
                         pendingEdit?.messageId === message.id &&
