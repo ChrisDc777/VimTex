@@ -2837,11 +2837,67 @@ body[data-pane-resizing] * {
   color: color-mix(in srgb, var(--focus) 70%, var(--mute));
 }
 
-.vt-chat-context-attach__preview {
+.vt-sel-actions {
+  position: absolute;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 8%, transparent);
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.vt-sel-actions__hint {
+  flex-shrink: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.vt-sel-actions__btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.vt-sel-actions__btn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 6px 10px;
   white-space: nowrap;
+}
+
+.vt-sel-actions__btn:hover {
+  background: color-mix(in srgb, var(--focus) 12%, transparent);
+}
+
+.vt-sel-actions__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.vt-sel-actions__btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
 }
 
 .vt-chat-icon-btn {

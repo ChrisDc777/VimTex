@@ -59,6 +59,8 @@ type VimEditorProps = {
   /** Show empty-editor placeholder. Default true. */
   showPlaceholder?: boolean;
   onVimModeChange: (mode: VimMode) => void;
+  /** Fires when the main selection collapses or expands (#28). */
+  onSelectionRangeChange?: (hasRange: boolean) => void;
 };
 
 const vimTexTheme = EditorView.theme(
@@ -148,6 +150,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       relativeLineNumbers = true,
       showPlaceholder = true,
       onVimModeChange,
+      onSelectionRangeChange,
     },
     ref,
   ) {
@@ -157,8 +160,10 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     const inlineMathRef = useRef(new Compartment());
     const lineNumberCompartmentRef = useRef(createLineNumberCompartment());
     const onVimModeChangeRef = useRef(onVimModeChange);
+    const onSelectionRangeChangeRef = useRef(onSelectionRangeChange);
 
     onVimModeChangeRef.current = onVimModeChange;
+    onSelectionRangeChangeRef.current = onSelectionRangeChange;
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -286,6 +291,11 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
             : []),
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
+          EditorView.updateListener.of((update) => {
+            if (!update.selectionSet) return;
+            const sel = update.state.selection.main;
+            onSelectionRangeChangeRef.current?.(sel.from !== sel.to);
+          }),
         ],
       });
 

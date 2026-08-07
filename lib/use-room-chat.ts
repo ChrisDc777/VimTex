@@ -414,6 +414,36 @@ export function useRoomChat({
     }
   }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
+  /** Programmatic @vimothy turn (selection actions #28). */
+  const runAiInstruction = useCallback(
+    async (instruction: string) => {
+      const ws = workspace;
+      const trimmed = instruction.trim();
+      if (!trimmed || busy || !ws || ws.readOnly) return;
+      const clientId = ws.getClientId();
+      if (clientId == null) return;
+
+      const text = `@${AI_MENTION_TAG} ${trimmed}`;
+      const userMsg: RoomChatMessage = {
+        id: newChatMessageId(),
+        clientId,
+        authorName: user.name,
+        authorColor: user.color,
+        role: "user",
+        text,
+        mentionAi: true,
+        createdAt: Date.now(),
+      };
+
+      setError(null);
+      setErrorForId(null);
+      setStickBottom(true);
+      ws.appendChatMessage(userMsg);
+      await invokeAi(userMsg);
+    },
+    [busy, workspace, invokeAi, user.color, user.name],
+  );
+
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
       if (busy || !msg.mentionAi) return;
@@ -477,6 +507,7 @@ export function useRoomChat({
     insertSuggestion,
     onInputChange,
     send,
+    runAiInstruction,
     retryAi,
     defaultMentionTag: AI_MENTION_TAG,
   };

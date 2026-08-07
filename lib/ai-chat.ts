@@ -83,7 +83,8 @@ ${DOC_EDIT_END}
 
 - The content between the markers must be the complete note (not a diff). Preserve unrelated parts unless asked to rewrite everything.
 - If you are only answering a question and not changing the note, do not include the markers.
-- Prefer KaTeX-friendly TeX. Do not wrap the whole document in a LaTeX documentclass.`);
+- Prefer KaTeX-friendly TeX. Do not wrap the whole document in a LaTeX documentclass.
+- Math in chat replies: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks or markdown code fences — that breaks rendering.`);
 
   return sections.join("\n\n");
 }

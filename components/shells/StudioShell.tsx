@@ -24,7 +24,8 @@ import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
-import { StudioRoomChat } from "@/components/studio/StudioRoomChat";
+import { StudioRoomChat, type StudioAiRunner } from "@/components/studio/StudioRoomChat";
+import { SelectionActionBar } from "@/components/editor/SelectionActionBar";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -34,6 +35,7 @@ import {
 import { AiReviewProvider } from "@/components/ai/AiReviewProvider";
 import { AiPreviewReview } from "@/components/ai/AiPreviewReview";
 import { useAiReview } from "@/components/ai/AiReviewProvider";
+import { aiFeatureEnabled } from "@/lib/ai-features";
 import {
   createCollabUser,
   createRoomId,
@@ -131,7 +133,9 @@ export function StudioShell({
   const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
+  const [hasSelectionRange, setHasSelectionRange] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
+  const aiRunnerRef = useRef<StudioAiRunner | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -469,8 +473,8 @@ export function StudioShell({
           <section
             className={
               isSplit
-                ? "min-h-0 min-w-0 flex-1 border-b border-hairline md:border-b-0 md:border-r"
-                : "h-full min-h-0"
+                ? "relative min-h-0 min-w-0 flex-1 border-b border-hairline md:border-b-0 md:border-r"
+                : "relative h-full min-h-0"
             }
           >
             {ready && roomId && user ? (
@@ -482,12 +486,24 @@ export function StudioShell({
                 relativeLineNumbers={relativeLineNumbers}
                 showPlaceholder={false}
                 onVimModeChange={setVimMode}
+                onSelectionRangeChange={setHasSelectionRange}
               />
             ) : (
               <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
                 {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
               </div>
             )}
+            {aiFeatureEnabled("studio", "selectionActions") &&
+            !readOnly &&
+            ready ? (
+              <SelectionActionBar
+                visible={hasSelectionRange}
+                onAction={(instruction) => {
+                  setChatOpen(true);
+                  void aiRunnerRef.current?.runInstruction(instruction);
+                }}
+              />
+            ) : null}
           </section>
 
           {isSplit ? (
@@ -520,6 +536,7 @@ export function StudioShell({
           <SidePanel
             side="right"
             open={chatOpen}
+            keepMounted
             width={paneLayout.right}
             mobileHeight={paneLayout.mobileBottomHeight}
             ariaLabel="Room chat"
@@ -530,6 +547,7 @@ export function StudioShell({
             onResetMobile={() => resetPane("mobileBottomHeight")}
           >
             <StudioRoomChat
+              open
               embedded
               onClose={() => setChatOpen(false)}
               peers={peers}
@@ -539,6 +557,7 @@ export function StudioShell({
               getEditorContext={() =>
                 editorRef.current?.getEditorContext() ?? null
               }
+              aiRunnerRef={aiRunnerRef}
             />
           </SidePanel>
         ) : null}

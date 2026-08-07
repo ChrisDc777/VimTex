@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, type MutableRefObject } from "react";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
@@ -11,6 +12,11 @@ import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
+
+export type StudioAiRunner = {
+  runInstruction: (instruction: string) => Promise<void>;
+  busy: boolean;
+};
 
 export type StudioRoomChatProps = {
   /** When false, render nothing (legacy standalone aside). */
@@ -25,6 +31,8 @@ export type StudioRoomChatProps = {
   chatReady: boolean;
   /** Live editor snapshot for AI context (#57). */
   getEditorContext?: () => EditorContextSnapshot | null;
+  /** Shell binds selection actions (#28) without lifting chat state. */
+  aiRunnerRef?: MutableRefObject<StudioAiRunner | null>;
 };
 
 export function StudioRoomChat({
@@ -36,6 +44,7 @@ export function StudioRoomChat({
   user,
   chatReady,
   getEditorContext,
+  aiRunnerRef,
 }: StudioRoomChatProps) {
   const chat = useRoomChat({
     open,
@@ -45,6 +54,19 @@ export function StudioRoomChat({
     persistModel: false,
     getEditorContext,
   });
+
+  useEffect(() => {
+    if (!aiRunnerRef) return;
+    aiRunnerRef.current = {
+      runInstruction: chat.runAiInstruction,
+      busy: chat.busy,
+    };
+    return () => {
+      if (aiRunnerRef.current?.runInstruction === chat.runAiInstruction) {
+        aiRunnerRef.current = null;
+      }
+    };
+  }, [aiRunnerRef, chat.runAiInstruction, chat.busy]);
 
   if (!open) return null;
 

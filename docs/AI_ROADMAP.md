@@ -67,9 +67,11 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 ### Wave B — Scoped power
 
-#57 context (A+B: caret truncation + Studio selection) → #28 selection actions → #53 diagnostics → #54 memory
+#57 context (A+B) → #28 selection actions → #53 diagnostics → #54 memory
 
-**#57 Level A+B:** `lib/ai-chat-context.ts` packs document around caret; Studio sends selection + surrounding via `selectionActions` gate; Forge stays file-only. Levels C–D (diagnostics / RAG) deferred.
+**#57 Level A+B:** caret pack + Studio selection context + Sel chip + math unwrap for LLM backticks/fences.  
+**#28:** Studio selection bar (Explain / Simplify / Fix TeX) — editor-anchored, not more chat chrome.  
+Levels C–D (diagnostics / RAG) still deferred.
 
 ### Wave C — Studio depth
 

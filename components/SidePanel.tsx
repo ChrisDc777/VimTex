@@ -15,6 +15,11 @@ export type SidePanelProps = {
   onReset: () => void;
   onResetMobile?: () => void;
   children: ReactNode;
+  /**
+   * Keep children mounted while closed (hidden). Needed so Studio chat can
+   * still run selection AI actions (#28) without remounting Yjs chat state.
+   */
+  keepMounted?: boolean;
 };
 
 export function SidePanel({
@@ -29,8 +34,9 @@ export function SidePanel({
   onReset,
   onResetMobile,
   children,
+  keepMounted = false,
 }: SidePanelProps) {
-  if (!open) return null;
+  if (!open && !keepMounted) return null;
 
   const borderClass =
     side === "left"
@@ -39,7 +45,9 @@ export function SidePanel({
 
   const aside = (
     <aside
-      className={`vt-side-panel vt-side-panel--${side} vt-pane-sized flex min-h-0 w-full shrink-0 flex-col ${borderClass} ${surfaceClassName}`}
+      className={`vt-side-panel vt-side-panel--${side} vt-pane-sized flex min-h-0 w-full shrink-0 flex-col ${borderClass} ${surfaceClassName}${
+        open ? "" : " hidden"
+      }`}
       style={
         {
           "--pane-width": `${width}px`,
@@ -49,6 +57,8 @@ export function SidePanel({
         } as CSSProperties
       }
       aria-label={ariaLabel}
+      aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       {children}
     </aside>

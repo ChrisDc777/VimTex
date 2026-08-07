@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { normalizeChatMathDelimiters } from "@/lib/chat-math";
+import {
+  isMathFenceLang,
+  prepareChatMathText,
+} from "@/lib/chat-math";
 import { parseNote, renderMathToHtml } from "@/lib/render-note";
 
 /**
@@ -104,8 +107,31 @@ function formatInlineCode(text: string, keyBase: number): ReactNode[] {
   return parts.length > 0 ? parts : formatEmphasis(text, keyBase);
 }
 
+function renderMathNode(
+  content: string,
+  display: boolean,
+  key: number,
+  error?: string,
+): ReactNode {
+  const { html, error: err } = renderMathToHtml(content, display);
+  const hasError = Boolean(error || err);
+  return (
+    <span
+      key={key}
+      className={[
+        "vt-chat-math",
+        display ? "vt-chat-math--display" : "",
+        hasError ? "vt-chat-math--error" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 function formatProseWithMath(text: string, keyBase: number): ReactNode[] {
-  const normalized = normalizeChatMathDelimiters(text);
+  const normalized = prepareChatMathText(text);
   const segments = parseNote(normalized);
   const parts: ReactNode[] = [];
   let key = keyBase;
@@ -118,20 +144,7 @@ function formatProseWithMath(text: string, keyBase: number): ReactNode[] {
       );
       continue;
     }
-    const { html, error } = renderMathToHtml(seg.content, seg.display);
-    parts.push(
-      <span
-        key={key++}
-        className={[
-          "vt-chat-math",
-          seg.display ? "vt-chat-math--display" : "",
-          error ? "vt-chat-math--error" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />,
-    );
+    parts.push(renderMathNode(seg.content, seg.display, key++));
   }
 
   return parts.length > 0 ? parts : highlightMentions(text);
@@ -153,11 +166,18 @@ export function formatChatMessageBody(text: string): ReactNode[] {
         </span>,
       );
     }
-    parts.push(
-      <pre key={key++} className="vt-chat-code">
-        <code>{match[2]?.replace(/\n$/, "") ?? ""}</code>
-      </pre>,
-    );
+    const lang = match[1] ?? "";
+    const body = match[2]?.replace(/\n$/, "") ?? "";
+    // ```latex / ```tex / unlabeled TeX fences → KaTeX, not a code block.
+    if (isMathFenceLang(lang) && /\\[a-zA-Z([{]|\$/.test(body)) {
+      parts.push(renderMathNode(body.trim(), true, key++));
+    } else {
+      parts.push(
+        <pre key={key++} className="vt-chat-code">
+          <code>{body}</code>
+        </pre>,
+      );
+    }
     last = match.index + match[0].length;
   }
 
