@@ -1,12 +1,14 @@
 import {
   Decoration,
   type DecorationSet,
-  type EditorView,
-  ViewPlugin,
-  type ViewUpdate,
+  EditorView,
   WidgetType,
 } from "@codemirror/view";
-import { RangeSetBuilder } from "@codemirror/state";
+import {
+  type EditorState,
+  RangeSetBuilder,
+  StateField,
+} from "@codemirror/state";
 import { findMathAtCursor, parseNote, renderMathToHtml } from "./render-note";
 
 class MathWidget extends WidgetType {
@@ -42,10 +44,10 @@ class MathWidget extends WidgetType {
   }
 }
 
-function buildDecorations(view: EditorView): DecorationSet {
+function buildDecorations(state: EditorState): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
-  const text = view.state.doc.toString();
-  const cursor = view.state.selection.main.head;
+  const text = state.doc.toString();
+  const cursor = state.selection.main.head;
   const active = findMathAtCursor(text, cursor);
 
   const mathSegs = parseNote(text)
@@ -61,9 +63,11 @@ function buildDecorations(view: EditorView): DecorationSet {
       continue;
     }
 
-    // Only inline-replace single-line math. Multi-line block replaces are
-    // easy to get wrong in CodeMirror and were crashing Realtime mode.
-    if (text.slice(seg.from, seg.to).includes("\n")) {
+    const multiline = text.slice(seg.from, seg.to).includes("\n");
+    // Multi-line *inline* `\(...\)` replaces are fragile in CM; skip those.
+    // Multi-line *display* `\[...\]` uses a block widget (must come from a
+    // StateField — ViewPlugin cannot provide block decorations).
+    if (multiline && !seg.display) {
       continue;
     }
     if (seg.from < lastTo) continue;
@@ -83,7 +87,7 @@ function buildDecorations(view: EditorView): DecorationSet {
           Boolean(error),
         ),
         inclusive: false,
-        block: false,
+        block: multiline && seg.display,
       }),
     );
     lastTo = seg.to;
@@ -92,25 +96,19 @@ function buildDecorations(view: EditorView): DecorationSet {
   return builder.finish();
 }
 
-export const mathInlineWidgets = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-
-    constructor(view: EditorView) {
-      this.decorations = buildDecorations(view);
-    }
-
-    update(update: ViewUpdate) {
-      if (
-        update.docChanged ||
-        update.selectionSet ||
-        update.viewportChanged
-      ) {
-        this.decorations = buildDecorations(update.view);
-      }
-    }
+/**
+ * Live/Realtime math widgets. StateField (not ViewPlugin) so multi-line
+ * display `\[...\]` can use block decorations without crashing CM/Yjs updates.
+ */
+export const mathInlineWidgets = StateField.define<DecorationSet>({
+  create(state) {
+    return buildDecorations(state);
   },
-  {
-    decorations: (v) => v.decorations,
+  update(deco, tr) {
+    if (tr.docChanged || tr.selection) {
+      return buildDecorations(tr.state);
+    }
+    return deco;
   },
-);
+  provide: (field) => EditorView.decorations.from(field),
+});

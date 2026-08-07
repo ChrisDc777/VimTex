@@ -196,7 +196,7 @@ export function ChatMessageList({
             </div>
             {streamingText?.trim() ? (
               <div className="vt-chat-msg__bubble whitespace-pre-wrap">
-                {streamingText}
+                {formatChatMessageBody(streamingText)}
               </div>
             ) : (
               <span className="vt-chat-typing__dots" aria-hidden>

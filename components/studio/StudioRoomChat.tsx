@@ -1,11 +1,11 @@
 "use client";
 
-import { type ReactNode } from "react";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
+import { formatChatMessageBody } from "@/lib/chat-message-body";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
@@ -22,27 +22,6 @@ export type StudioRoomChatProps = {
   /** Bumps when the room is ready so chat can resubscribe. */
   chatReady: boolean;
 };
-
-function highlightMentions(text: string): ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  const re = /@(?:vimothy|ai|vimtex)\b/gi;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > last) {
-      parts.push(text.slice(last, match.index));
-    }
-    parts.push(
-      <span key={key++} className="font-semibold text-primary">
-        {match[0]}
-      </span>,
-    );
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts.length > 0 ? parts : [text];
-}
 
 export function StudioRoomChat({
   open = true,
@@ -143,7 +122,7 @@ export function StudioRoomChat({
                 </div>
               ) : null}
               <div className="vt-chat-msg__body">
-                {highlightMentions(m.text)}
+                {formatChatMessageBody(m.text)}
               </div>
               {isAi && m.documentEdit != null ? (
                 chat.pendingEdit?.messageId === m.id ? (
@@ -201,7 +180,7 @@ export function StudioRoomChat({
             </div>
             <div className="vt-chat-msg__body whitespace-pre-wrap">
               {chat.streamingText?.trim()
-                ? chat.streamingText
+                ? formatChatMessageBody(chat.streamingText)
                 : "Thinking…"}
             </div>
           </div>

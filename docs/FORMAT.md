@@ -81,8 +81,12 @@ the source and render literally.
 - Invalid math renders the raw source with an inline error style — the user can
   always see and fix the TeX.
 - The caret never loses its mapping: math under the cursor shows raw source for
-  editing (Realtime mode), and empty instructional delimiters (`\( \)`, `\[ \]`)
+  editing (Realtime / Live mode), and empty instructional delimiters (`\( \)`, `\[ \]`)
   are left as literal text so they don't confuse beginners.
+- **Live / Realtime widgets:** single-line math is always eligible; multi-line
+  `\[ ... \]` uses a block widget. Multi-line `\(...\)` is not widget-replaced
+  (use Split preview, or keep display math on one line / with `\[ \]`).
+  Studio Live is required for editor widgets; Split shows KaTeX in the preview pane.
 
 ## 5. Exports
 

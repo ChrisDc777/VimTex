@@ -2129,6 +2129,50 @@ body[data-pane-resizing] * {
   white-space: pre;
 }
 
+/* AI document proposal — independent scroll inside the chat bubble */
+.vt-ai-diff {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.vt-ai-diff__body {
+  margin: 0;
+  max-height: min(40vh, 16rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.vt-ai-diff__body--peek {
+  max-height: 5.5rem;
+}
+
+.vt-chat-math {
+  display: inline;
+  line-height: 1.35;
+}
+
+.vt-chat-math--display {
+  display: block;
+  margin: 0.55em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.vt-chat-math--display .katex-display {
+  margin: 0;
+}
+
+.vt-chat-math--error {
+  color: var(--danger, #b91c1c);
+}
+
 .vt-chat-inline-code {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 0.9em;
