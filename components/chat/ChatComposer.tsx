@@ -1,12 +1,14 @@
 "use client";
 
 import {
-  useState,
   type KeyboardEvent,
   type RefObject,
+  useState,
 } from "react";
 import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
 import type { AiModelId } from "@/lib/ai-providers";
+import type { SelectionContextPreview } from "@/lib/ai-chat-context";
+import { ChatContextChip } from "@/components/chat/ChatContextChip";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
@@ -28,6 +30,9 @@ type ChatComposerProps = {
   onMentionClose: () => void;
   /** View-only rooms: hide send UI, show explanation. */
   readOnly?: boolean;
+  /** Active editor selection attached to the next @vimothy turn. */
+  selectionPreview?: SelectionContextPreview | null;
+  onHideSelectionChip?: () => void;
 };
 
 export function ChatComposer({
@@ -46,6 +51,8 @@ export function ChatComposer({
   onMentionIndexChange,
   onMentionClose,
   readOnly = false,
+  selectionPreview = null,
+  onHideSelectionChip,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
 
@@ -95,6 +102,13 @@ export function ChatComposer({
 
   return (
     <div className="vt-chat-composer-wrap">
+      {selectionPreview ? (
+        <ChatContextChip
+          preview={selectionPreview}
+          onClear={onHideSelectionChip}
+        />
+      ) : null}
+
       {mentionOpen ? (
         <MentionMenu
           suggestions={filteredMentions}
@@ -176,7 +190,13 @@ export function ChatComposer({
         <p className="vt-chat-composer__hint">Vimothy is responding…</p>
       ) : mentionsAi(input) ? (
         <p className="vt-chat-composer__hint">
-          Will call AI with this instruction
+          {selectionPreview
+            ? `Will call AI with ${selectionPreview.label} selected`
+            : "Will call AI with this instruction"}
+        </p>
+      ) : selectionPreview ? (
+        <p className="vt-chat-composer__hint">
+          Selection {selectionPreview.label} will be sent with @vimothy
         </p>
       ) : null}
     </div>

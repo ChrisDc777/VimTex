@@ -2,6 +2,7 @@
 
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
 import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
@@ -129,6 +130,9 @@ export function StudioRoomChat({
               <div className="vt-chat-msg__body">
                 {formatChatMessageBody(m.text)}
               </div>
+              {chat.messageContexts[m.id] ? (
+                <ChatContextAttachment preview={chat.messageContexts[m.id]!} />
+              ) : null}
               {isAi && m.documentEdit != null ? (
                 chat.pendingEdit?.messageId === m.id ? (
                   <AiDiffProposal
@@ -213,6 +217,8 @@ export function StudioRoomChat({
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}
         readOnly={chat.readOnly}
+        selectionPreview={chat.selectionPreview}
+        onHideSelectionChip={chat.hideSelectionChip}
       />
     </>
   );

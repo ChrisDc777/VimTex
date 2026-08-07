@@ -1,6 +1,7 @@
 import { generateText, streamText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "@/lib/ai-chat";
+import { formatAiError } from "@/lib/ai-errors";
 import {
   CUSTOM_MODEL_PATTERN,
   DEFAULT_AI_MODEL,
@@ -271,6 +272,12 @@ export async function POST(req: Request) {
       return new Response(null, { status: 499 });
     }
     const detail = err instanceof Error ? err.message : "AI request failed";
-    return Response.json({ error: detail }, { status: 502 });
-  }
-}
+    const modelLabel =
+      // Avoid circular UI imports — label is best-effort from the slug.
+      model.includes("/")
+        ? model.split("/").pop()?.split(":")[0] || model
+        : model;
+    return Response.json(
+      { error: formatAiError(detail, { model, modelLabel }) },
+      { status: 502 },
+    );

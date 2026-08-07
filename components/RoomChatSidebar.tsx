@@ -91,6 +91,7 @@ export function RoomChatSidebar({
         onRejectEdit={chat.rejectPendingEdit}
         readOnly={chat.readOnly}
         streamingText={chat.streamingText}
+        messageContexts={chat.messageContexts}
       />
 
       <TypingIndicator
@@ -114,6 +115,8 @@ export function RoomChatSidebar({
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}
         readOnly={chat.readOnly}
+        selectionPreview={chat.selectionPreview}
+        onHideSelectionChip={chat.hideSelectionChip}
       />
     </div>
   );

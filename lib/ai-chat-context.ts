@@ -49,6 +49,43 @@ export type PackAiContextOptions = {
   documentBudget?: number;
 };
 
+export type SelectionContextPreview = {
+  /** e.g. "L12" or "L12–14" */
+  label: string;
+  /** One-line snippet of the selection */
+  preview: string;
+  lineFrom: number;
+  lineTo: number;
+};
+
+/** 1-based line number for a document offset. */
+export function lineNumberAt(text: string, pos: number): number {
+  const clamped = Math.max(0, Math.min(pos, text.length));
+  let line = 1;
+  for (let i = 0; i < clamped; i++) {
+    if (text[i] === "\n") line += 1;
+  }
+  return line;
+}
+
+/**
+ * VS Code–style chip summary for the active editor selection.
+ * Returns null when nothing is selected.
+ */
+export function selectionContextPreview(
+  snap: EditorContextSnapshot,
+): SelectionContextPreview | null {
+  if (!snap.selection.trim()) return null;
+  const from = snap.selectionFrom;
+  const to = Math.max(from, snap.selectionTo - (snap.selectionTo > from ? 1 : 0));
+  const lineFrom = lineNumberAt(snap.text, from);
+  const lineTo = lineNumberAt(snap.text, to);
+  const label =
+    lineFrom === lineTo ? `L${lineFrom}` : `L${lineFrom}–${lineTo}`;
+  const preview = snap.selection.replace(/\s+/g, " ").trim().slice(0, 56);
+  return { label, preview, lineFrom, lineTo };
+}
+
 const OMIT_MARK = "\n…\n";
 
 /**
