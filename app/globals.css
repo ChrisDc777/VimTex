@@ -2182,6 +2182,15 @@ body[data-pane-resizing] * {
   color: var(--ink);
 }
 
+.vt-chat-strong {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.vt-chat-em {
+  font-style: italic;
+}
+
 .vt-chat-typing {
   margin-bottom: 0;
 }

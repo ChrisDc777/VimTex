@@ -2,6 +2,60 @@ import type { ReactNode } from "react";
 import { normalizeChatMathDelimiters } from "@/lib/chat-math";
 import { parseNote, renderMathToHtml } from "@/lib/render-note";
 
+/**
+ * Inline emphasis for AI replies: **bold** / __bold__.
+ * Runs after inline code so backticks win; math is already extracted.
+ */
+function formatEmphasis(text: string, keyBase: number): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /\*\*(.+?)\*\*|__(.+?)__/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = keyBase;
+
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      parts.push(...formatItalic(text.slice(last, match.index), key));
+      key += 40;
+    }
+    parts.push(
+      <strong key={key++} className="vt-chat-strong">
+        {match[1] ?? match[2]}
+      </strong>,
+    );
+    last = match.index + match[0].length;
+  }
+
+  if (last < text.length) {
+    parts.push(...formatItalic(text.slice(last), key));
+  }
+  return parts.length > 0 ? parts : formatItalic(text, keyBase);
+}
+
+/** Single-asterisk italic; skip bare underscores (TeX / snake_case). */
+function formatItalic(text: string, keyBase: number): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /\*([^*\n]+)\*/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = keyBase;
+
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      parts.push(text.slice(last, match.index));
+    }
+    parts.push(
+      <em key={key++} className="vt-chat-em">
+        {match[1]}
+      </em>,
+    );
+    last = match.index + match[0].length;
+  }
+
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length > 0 ? parts : [text];
+}
+
 function highlightMentions(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
   const re = /@(?:ai|vimtex|vimothy)\b/gi;
@@ -34,7 +88,8 @@ function formatInlineCode(text: string, keyBase: number): ReactNode[] {
   let key = keyBase;
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) {
-      parts.push(text.slice(last, match.index));
+      parts.push(...formatEmphasis(text.slice(last, match.index), key));
+      key += 50;
     }
     parts.push(
       <code key={key++} className="vt-chat-inline-code">
@@ -43,8 +98,10 @@ function formatInlineCode(text: string, keyBase: number): ReactNode[] {
     );
     last = match.index + match[0].length;
   }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts.length > 0 ? parts : [text];
+  if (last < text.length) {
+    parts.push(...formatEmphasis(text.slice(last), key));
+  }
+  return parts.length > 0 ? parts : formatEmphasis(text, keyBase);
 }
 
 function formatProseWithMath(text: string, keyBase: number): ReactNode[] {
