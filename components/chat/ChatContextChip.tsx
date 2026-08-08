@@ -39,13 +39,18 @@ type ChatContextAttachmentProps = {
   preview: SelectionContextPreview;
 };
 
-/** Shown under a sent user message that carried selection context. */
+/** Shown under a sent user message that carried selection / diagnostic context. */
 export function ChatContextAttachment({ preview }: ChatContextAttachmentProps) {
+  const tone = preview.tone === "error" ? " vt-chat-context-attach--error" : "";
   return (
     <div
-      className="vt-chat-context-attach"
+      className={`vt-chat-context-attach${tone}`}
       title={preview.preview}
-      aria-label={`Used selection ${preview.label}`}
+      aria-label={
+        preview.tone === "error"
+          ? `Error ${preview.label}`
+          : `Used selection ${preview.label}`
+      }
     >
       <span className="vt-chat-context-attach__label">{preview.label}</span>
       <span className="vt-chat-context-attach__preview">{preview.preview}</span>

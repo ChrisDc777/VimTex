@@ -26,6 +26,7 @@ import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { StudioRoomChat, type StudioAiRunner } from "@/components/studio/StudioRoomChat";
 import { SelectionActionBar } from "@/components/editor/SelectionActionBar";
+import { StudioDiagnosticsBar } from "@/components/diagnostics/StudioDiagnosticsBar";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -493,6 +494,20 @@ export function StudioShell({
                 {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
               </div>
             )}
+            {ready && !readOnly ? (
+              <StudioDiagnosticsBar
+                note={note}
+                canExplain={aiFeatureEnabled("studio", "diagnosticsExplain")}
+                canFix={aiFeatureEnabled("studio", "diagnosticsFix")}
+                onRun={(request) => {
+                  setChatOpen(true);
+                  void aiRunnerRef.current?.runInstruction(request.instruction, {
+                    chatText: request.chatText,
+                    attachment: request.attachment,
+                  });
+                }}
+              />
+            ) : null}
             {aiFeatureEnabled("studio", "selectionActions") &&
             !readOnly &&
             ready ? (

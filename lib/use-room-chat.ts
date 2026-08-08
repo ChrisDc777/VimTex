@@ -241,12 +241,16 @@ export function useRoomChat({
     setBusy(false);
   }, []);
 
+  const instructionOverridesRef = useRef<Record<string, string>>({});
+
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
       const ws = workspace;
       if (!ws) return;
 
-      const instruction = stripAiMention(userMsg.text);
+      const instruction =
+        instructionOverridesRef.current[userMsg.id] ??
+        stripAiMention(userMsg.text);
       if (!instruction) {
         setError(`Add an instruction after @${AI_MENTION_TAG}.`);
         setErrorForId(userMsg.id);
@@ -414,16 +418,23 @@ export function useRoomChat({
     }
   }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
-  /** Programmatic @vimothy turn (selection actions #28). */
+  /** Programmatic @vimothy turn (#28 / #53). */
   const runAiInstruction = useCallback(
-    async (instruction: string) => {
+    async (
+      instruction: string,
+      opts?: {
+        chatText?: string;
+        attachment?: SelectionContextPreview;
+      },
+    ) => {
       const ws = workspace;
       const trimmed = instruction.trim();
       if (!trimmed || busy || !ws || ws.readOnly) return;
       const clientId = ws.getClientId();
       if (clientId == null) return;
 
-      const text = `@${AI_MENTION_TAG} ${trimmed}`;
+      const visible = (opts?.chatText ?? trimmed).trim();
+      const text = `@${AI_MENTION_TAG} ${visible}`;
       const userMsg: RoomChatMessage = {
         id: newChatMessageId(),
         clientId,
@@ -434,6 +445,14 @@ export function useRoomChat({
         mentionAi: true,
         createdAt: Date.now(),
       };
+
+      instructionOverridesRef.current[userMsg.id] = trimmed;
+      if (opts?.attachment) {
+        setMessageContexts((prev) => ({
+          ...prev,
+          [userMsg.id]: opts.attachment!,
+        }));
+      }
 
       setError(null);
       setErrorForId(null);
