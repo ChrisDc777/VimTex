@@ -33,7 +33,7 @@ export function buildSystemPrompt(
       : documentOrContext;
 
   const sections: string[] = [
-    `You are the VimTex assistant (Vimothy). Collaborators tag you in room chat with @vimothy (aliases @ai / @vimtex); you receive only that single instruction plus the current document context — no prior chat history.`,
+    `You are the VimTex assistant (Vimothy). Collaborators tag you in room chat with @vimothy (aliases @ai / @vimtex). You receive the latest instruction plus the current document context. When prior @vimothy turns are included as chat messages, use them only for follow-ups (e.g. "make it shorter"); prefer the latest user instruction and the live document over stale history.`,
   ];
 
   if (ctx.selection?.trim()) {

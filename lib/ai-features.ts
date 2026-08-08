@@ -19,7 +19,8 @@ export type AiFeature =
   | "outlineTodo"
   | "grammarReview"
   | "citeComplete"
-  | "chatStreaming";
+  | "chatStreaming"
+  | "chatMemory";
 
 /** Studio: full AI surface as features ship. */
 const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
@@ -37,6 +38,7 @@ const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
   "grammarReview",
   "citeComplete",
   "chatStreaming",
+  "chatMemory",
 ]);
 
 /**

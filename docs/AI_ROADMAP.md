@@ -47,7 +47,8 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 | Selection / inline actions | 🔄 | ❌ | #28 |
 | Ghost text | 🔄 | ❌ | #55 |
 | Streaming + cancel | ✅ | ✅ | #29 |
-| Diagnostics explain | 🔄 | ✅ | #53 |
+| Diagnostics explain | ✅ | ✅ | #53 |
+| Chat memory (last N) | 🔄 | ❌ | #54 |
 | Grammar / critique review | 🔄 | ❌ | #62 |
 
 ## Delivery waves
@@ -71,7 +72,8 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 **#57 Level A+B:** caret pack + Studio selection context + Sel chip + math unwrap for LLM backticks/fences.  
 **#28:** Studio selection bar (Explain / Simplify / Fix TeX) — editor-anchored, not more chat chrome.  
-**#53:** Studio diagnostics strip with Explain / Fix → chat + surrounding lines. Forge Problem panel stays list-only.
+**#53:** Studio diagnostics strip with Explain / Fix → chat + surrounding lines. Forge Problem panel stays list-only.  
+**#54 Level A:** Studio sends last N @vimothy turns with each request (trimmed); route stays stateless. Forge stays single-shot.
 
 ### Wave C — Studio depth
 

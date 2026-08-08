@@ -1,5 +1,6 @@
 import { loadUserAiKey } from "@/lib/ai-keys";
 import type { EditorCaret } from "@/lib/ai-chat-context";
+import type { AiHistoryMessage } from "@/lib/ai-chat-history";
 
 export type AiChatRequest = {
   instruction: string;
@@ -10,6 +11,8 @@ export type AiChatRequest = {
   surrounding?: string;
   caret?: EditorCaret;
   truncated?: boolean;
+  /** Prior @vimothy turns (#54). */
+  history?: AiHistoryMessage[];
 };
 
 export type AiChatResult = {
@@ -30,6 +33,7 @@ function requestBody({
   surrounding,
   caret,
   truncated,
+  history,
   stream,
 }: AiChatRequest & { stream?: boolean }) {
   return {
@@ -41,6 +45,7 @@ function requestBody({
     ...(surrounding ? { surrounding } : {}),
     ...(caret ? { caret } : {}),
     ...(truncated ? { truncated: true } : {}),
+    ...(history && history.length > 0 ? { history } : {}),
     ...(stream ? { stream: true } : {}),
   };
 }

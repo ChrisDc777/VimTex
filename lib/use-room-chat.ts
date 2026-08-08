@@ -15,6 +15,7 @@ import {
   type EditorContextSnapshot,
   type SelectionContextPreview,
 } from "@/lib/ai-chat-context";
+import { buildAiHistoryFromRoomChat } from "@/lib/ai-chat-history";
 import { postAiChat, streamAiChat } from "@/lib/ai-client";
 import { formatAiError } from "@/lib/ai-errors";
 import {
@@ -305,6 +306,11 @@ export function useRoomChat({
 
       try {
         const useStream = aiFeatureEnabled(shell, "chatStreaming");
+        const history = aiFeatureEnabled(shell, "chatMemory")
+          ? buildAiHistoryFromRoomChat(messages, {
+              beforeMessageId: userMsg.id,
+            })
+          : undefined;
         const req = {
           instruction,
           document: packed.document,
@@ -314,6 +320,7 @@ export function useRoomChat({
           surrounding: packed.surrounding,
           caret: packed.caret,
           truncated: packed.truncated,
+          ...(history && history.length > 0 ? { history } : {}),
         };
         const data = useStream
           ? await streamAiChat(req, {
@@ -379,7 +386,7 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell, review, busy, getEditorContext],
+    [workspace, model, shell, review, busy, getEditorContext, messages],
   );
 
   const send = useCallback(async () => {
