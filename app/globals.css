@@ -1825,6 +1825,39 @@ body[data-pane-resizing] * {
   padding: 0;
 }
 
+.vt-prefs-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: min(85dvh, 36rem);
+  overflow: hidden;
+  padding: 0;
+}
+
+.vt-prefs-dialog__header {
+  flex-shrink: 0;
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.vt-prefs-dialog__nav {
+  margin-top: var(--space-md);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.vt-prefs-dialog__body {
+  flex: 1 1 auto;
+  min-height: 12rem;
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+.vt-prefs-dialog__footer {
+  flex-shrink: 0;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  border-top: 1px solid var(--hairline);
+}
+
 .vt-pricing-dialog__header {
   display: flex;
   flex-shrink: 0;
@@ -2671,6 +2704,34 @@ body[data-pane-resizing] * {
 
 .vt-chat-model-menu__key-link:hover {
   color: var(--ink-hover);
+}
+
+.vt-chat-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px 0;
+}
+
+.vt-chat-doc-actions__pill {
+  padding: 4px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.vt-chat-doc-actions__pill:hover:not(:disabled) {
+  background: var(--canvas-mid);
+}
+
+.vt-chat-doc-actions__pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .vt-chat-mention-menu {

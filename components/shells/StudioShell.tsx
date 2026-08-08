@@ -37,6 +37,7 @@ import { AiReviewProvider } from "@/components/ai/AiReviewProvider";
 import { AiPreviewReview } from "@/components/ai/AiPreviewReview";
 import { useAiReview } from "@/components/ai/AiReviewProvider";
 import { aiFeatureEnabled } from "@/lib/ai-features";
+import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import {
   createCollabUser,
   createRoomId,
@@ -360,6 +361,7 @@ export function StudioShell({
 
   const selfClientId = workspace?.getClientId() ?? null;
   const readOnly = Boolean(viewToken);
+  const { prefs: chromePrefs } = useAiChromePrefs();
 
   const { layout: paneLayout, resizePane, resizeMobileBottom, resetPane } =
     usePaneLayout({
@@ -487,7 +489,9 @@ export function StudioShell({
                 relativeLineNumbers={relativeLineNumbers}
                 showPlaceholder={false}
                 ghostText={
-                  !readOnly && aiFeatureEnabled("studio", "ghostText")
+                  !readOnly &&
+                  aiFeatureEnabled("studio", "ghostText") &&
+                  chromePrefs.ghostText
                 }
                 onVimModeChange={setVimMode}
                 onSelectionRangeChange={setHasSelectionRange}

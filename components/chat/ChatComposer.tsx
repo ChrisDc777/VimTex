@@ -12,6 +12,7 @@ import type { SlashCommand } from "@/lib/slash-commands";
 import { ChatContextChip } from "@/components/chat/ChatContextChip";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
+import { SlashCommandChip } from "@/components/chat/SlashCommandChip";
 import { SlashMenu } from "@/components/chat/SlashMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
 
@@ -38,6 +39,9 @@ type ChatComposerProps = {
   onSlashClose?: () => void;
   /** Studio-only: show / hint in placeholder. */
   slashCommandsEnabled?: boolean;
+  /** Attached slash command (chip); cleared via onClearPendingSlash. */
+  pendingSlash?: SlashCommand | null;
+  onClearPendingSlash?: () => void;
   /** View-only rooms: hide send UI, show explanation. */
   readOnly?: boolean;
   /** Active editor selection attached to the next @vimothy turn. */
@@ -67,6 +71,8 @@ export function ChatComposer({
   onSlashIndexChange,
   onSlashClose,
   slashCommandsEnabled = false,
+  pendingSlash = null,
+  onClearPendingSlash,
   readOnly = false,
   selectionPreview = null,
   onHideSelectionChip,
@@ -143,17 +149,31 @@ export function ChatComposer({
       }
     }
 
+    if (e.key === "Escape" && pendingSlash && onClearPendingSlash) {
+      e.preventDefault();
+      onClearPendingSlash();
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
   };
 
-  const canSend = !busy && input.trim().length > 0;
+  const canSend =
+    !busy && (Boolean(pendingSlash) || input.trim().length > 0);
 
   return (
     <div className="vt-chat-composer-wrap">
-      {selectionPreview && mentionsAi(input) ? (
+      {pendingSlash && onClearPendingSlash ? (
+        <SlashCommandChip
+          command={pendingSlash}
+          onClear={onClearPendingSlash}
+        />
+      ) : null}
+
+      {selectionPreview && (mentionsAi(input) || pendingSlash) ? (
         <ChatContextChip
           preview={selectionPreview}
           onClear={onHideSelectionChip}
@@ -207,7 +227,11 @@ export function ChatComposer({
           onKeyDown={onKeyDown}
           rows={1}
           placeholder={
-            slashCommandsEnabled ? "Message…  (/ for commands)" : "Message…"
+            pendingSlash
+              ? "Add context… (optional)"
+              : slashCommandsEnabled
+                ? "Message…  (/ for commands)"
+                : "Message…"
           }
           enterKeyHint="send"
           disabled={busy}

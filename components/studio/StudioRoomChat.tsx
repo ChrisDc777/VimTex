@@ -4,11 +4,16 @@ import { useEffect, type MutableRefObject } from "react";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
+import { DocActionPills } from "@/components/chat/DocActionPills";
 import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
+import { aiFeatureEnabled } from "@/lib/ai-features";
+import { DOC_AI_ACTIONS, type DocAiAction } from "@/lib/doc-ai-actions";
+import { renderNoteDiagnostics } from "@/lib/render-note";
+import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
@@ -53,6 +58,7 @@ export function StudioRoomChat({
   getEditorContext,
   aiRunnerRef,
 }: StudioRoomChatProps) {
+  const { prefs: chromePrefs } = useAiChromePrefs();
   const chat = useRoomChat({
     open,
     chatReady,
@@ -230,6 +236,34 @@ export function StudioRoomChat({
         selfClientId={selfClientId}
       />
 
+      {aiFeatureEnabled("studio", "chatDocActions") &&
+      chromePrefs.docActionPills &&
+      !chat.readOnly ? (
+        <DocActionPills
+          actions={DOC_AI_ACTIONS}
+          disabled={chat.busy}
+          onRun={(action: DocAiAction) => {
+            const note =
+              getEditorContext?.()?.text ?? chat.workspace?.getText() ?? "";
+            let instruction = action.buildInstruction(note);
+            if (action.id === "fix-errors") {
+              const diags = renderNoteDiagnostics(note).slice(0, 20);
+              if (diags.length > 0) {
+                instruction +=
+                  "\n\nKnown diagnostics:\n" +
+                  diags
+                    .map((d) => `- L${d.line}:${d.column} ${d.message}`)
+                    .join("\n");
+              }
+            }
+            void chat.runAiInstruction(instruction, {
+              chatText: action.chatText,
+              source: "chat",
+            });
+          }}
+        />
+      ) : null}
+
       <ChatComposer
         input={chat.input}
         busy={chat.busy}
@@ -251,7 +285,11 @@ export function StudioRoomChat({
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.setSlashOpen(false)}
-        slashCommandsEnabled={chat.shell === "studio"}
+        slashCommandsEnabled={
+          chat.shell === "studio" && chromePrefs.slashMenu
+        }
+        pendingSlash={chat.pendingSlash}
+        onClearPendingSlash={chat.clearPendingSlash}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

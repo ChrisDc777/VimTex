@@ -121,6 +121,8 @@ export function RoomChatSidebar({
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.setSlashOpen(false)}
         slashCommandsEnabled={chat.shell === "studio"}
+        pendingSlash={chat.pendingSlash}
+        onClearPendingSlash={chat.clearPendingSlash}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

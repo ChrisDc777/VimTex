@@ -43,6 +43,7 @@ import {
   type SlashCommand,
 } from "@/lib/slash-commands";
 import type { AiEditSource } from "@/lib/ai-review-store";
+import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { notify } from "@/lib/toasts";
 import type { CollabUser } from "@/lib/types";
 import type { UiVariant } from "@/lib/ui-variant";
@@ -76,6 +77,7 @@ export function useRoomChat({
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
   const review = useAiReview();
+  const { prefs: chromePrefs } = useAiChromePrefs();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
@@ -194,8 +196,11 @@ export function useRoomChat({
 
   const filteredSlashCommands = useMemo(() => {
     if (!aiFeatureEnabled(shell, "slashCommands")) return [];
-    return filterSlashCommands(slashFilter);
-  }, [shell, slashFilter]);
+    if (!chromePrefs.slashMenu) return [];
+    return filterSlashCommands(slashFilter, undefined, {
+      includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
+    });
+  }, [shell, slashFilter, chromePrefs.slashMenu]);
 
   const updateComposerMenus = useCallback(
     (value: string, caret: number) => {
@@ -216,7 +221,10 @@ export function useRoomChat({
       setMentionOpen(false);
       setMentionFilter("");
 
-      if (!aiFeatureEnabled(shell, "slashCommands")) {
+      if (
+        !aiFeatureEnabled(shell, "slashCommands") ||
+        !chromePrefs.slashMenu
+      ) {
         setSlashOpen(false);
         setSlashFilter("");
         return;
@@ -237,7 +245,7 @@ export function useRoomChat({
         setSlashFilter("");
       }
     },
-    [shell],
+    [shell, chromePrefs.slashMenu],
   );
 
   const insertMention = useCallback(
@@ -288,6 +296,12 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
+  /** Pending slash command — shown as a chip; runs on Enter with optional context. */
+  const [pendingSlash, setPendingSlash] = useState<SlashCommand | null>(null);
+
+  const clearPendingSlash = useCallback(() => {
+    setPendingSlash(null);
+  }, []);
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
@@ -297,6 +311,7 @@ export function useRoomChat({
       const instruction =
         instructionOverridesRef.current[userMsg.id] ??
         stripAiMention(userMsg.text);
+
       if (!instruction) {
         setError(`Add an instruction after @${AI_MENTION_TAG}.`);
         setErrorForId(userMsg.id);
@@ -341,10 +356,11 @@ export function useRoomChat({
             })
           : null;
       if (usedSelection) {
-        setMessageContexts((prev) => ({
-          ...prev,
-          [userMsg.id]: usedSelection,
-        }));
+        setMessageContexts((prev) =>
+          prev[userMsg.id]
+            ? prev
+            : { ...prev, [userMsg.id]: usedSelection },
+        );
       }
       const ac = new AbortController();
       abortRef.current = ac;
@@ -437,14 +453,31 @@ export function useRoomChat({
   );
 
   const send = useCallback(async () => {
-    const text = input.trim();
     const ws = workspace;
-    if (!text || busy || !ws || ws.readOnly) return;
+    if (busy || !ws || ws.readOnly) return;
+
+    const slash = pendingSlash;
+    const trimmed = input.trim();
+    if (!trimmed && !slash) return;
 
     const clientId = ws.getClientId();
     if (clientId == null) return;
 
-    const mention = mentionsAi(text);
+    let text = trimmed;
+    let mention = mentionsAi(text);
+    let slashInstruction: string | null = null;
+
+    if (slash) {
+      const extra = stripAiMention(trimmed).trim();
+      text = extra
+        ? `@${AI_MENTION_TAG} ${extra}`
+        : `@${AI_MENTION_TAG} ${slash.title}`;
+      mention = true;
+      slashInstruction = extra
+        ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
+        : slash.instruction;
+    }
+
     const userMsg: RoomChatMessage = {
       id: newChatMessageId(),
       clientId,
@@ -456,7 +489,22 @@ export function useRoomChat({
       createdAt: Date.now(),
     };
 
+    if (slash && slashInstruction) {
+      instructionOverridesRef.current[userMsg.id] = slashInstruction;
+      editSourceOverridesRef.current[userMsg.id] = "slash";
+      setMessageContexts((prev) => ({
+        ...prev,
+        [userMsg.id]: {
+          label: `/${slash.id}`,
+          preview: slash.title,
+          lineFrom: 0,
+          lineTo: 0,
+        },
+      }));
+    }
+
     setInput("");
+    setPendingSlash(null);
     setMentionOpen(false);
     setSlashOpen(false);
     setError(null);
@@ -471,7 +519,7 @@ export function useRoomChat({
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, workspace, input, invokeAi, user.color, user.name]);
+  }, [busy, workspace, input, pendingSlash, invokeAi, user.color, user.name]);
 
   /** Programmatic @vimothy turn (#28 / #53 / #63). */
   const runAiInstruction = useCallback(
@@ -522,6 +570,7 @@ export function useRoomChat({
     [busy, workspace, invokeAi, user.color, user.name],
   );
 
+  /** Attach slash command as a chip; optional context + Enter runs it. */
   const runSlashCommand = useCallback(
     (cmd: SlashCommand) => {
       if (!aiFeatureEnabled(shell, "slashCommands")) return;
@@ -530,17 +579,26 @@ export function useRoomChat({
       const caret = el?.selectionStart ?? value.length;
       const before = value.slice(0, caret);
       const after = value.slice(caret);
-      const replaced = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1");
-      const next = (replaced + after).trim();
+      // Drop the `/partial` token that opened the menu.
+      const withoutToken = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1") + after;
+      const rest = stripAiMention(withoutToken)
+        .replace(new RegExp(`^/${cmd.id}\\b\\s*`, "i"), "")
+        .trim();
+      const next = rest
+        ? `@${AI_MENTION_TAG} ${rest} `
+        : `@${AI_MENTION_TAG} `;
       setInput(next);
+      setPendingSlash(cmd);
       setSlashOpen(false);
       setSlashFilter("");
-      void runAiInstruction(cmd.instruction, {
-        chatText: `/${cmd.id}`,
-        source: "slash",
+      requestAnimationFrame(() => {
+        const field = inputRef.current;
+        const pos = next.length;
+        field?.focus();
+        field?.setSelectionRange(pos, pos);
       });
     },
-    [input, runAiInstruction, shell],
+    [input, shell],
   );
 
   const retryAi = useCallback(
@@ -582,6 +640,8 @@ export function useRoomChat({
       selectionChipHiddenRef.current = true;
       setSelectionChipHidden(true);
     },
+    pendingSlash,
+    clearPendingSlash,
     messageContexts,
     model,
     setModel,
