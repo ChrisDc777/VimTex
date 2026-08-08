@@ -110,7 +110,7 @@ export function truncateAroundCaret(
   const windowSize = Math.floor(budget * 0.55);
   const half = Math.floor(windowSize / 2);
   let winStart = Math.max(0, focus - half);
-  let winEnd = Math.min(text.length, winStart + windowSize);
+  const winEnd = Math.min(text.length, winStart + windowSize);
   winStart = Math.max(0, winEnd - windowSize);
 
   const remainder = budget - (winEnd - winStart) - OMIT_MARK.length * 2;
