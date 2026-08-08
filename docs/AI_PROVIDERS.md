@@ -26,28 +26,22 @@ packages. OpenRouter is supported via `@openrouter/ai-sdk-provider`. This gives
 ### Registry (`lib/ai-providers.ts`)
 
 ```ts
-type AiProviderId = "openrouter" | "byok-openrouter";
-
-type AiModel = {
-  id: string;          // provider model id (e.g. OpenRouter slug)
-  label: string;
-  description?: string;
-};
+type AiProviderId = "openrouter" | "opencode" | "byok-openrouter";
 
 type AiProvider = {
   id: AiProviderId;
   label: string;
   keySource: "server" | "user";
+  backend: "openrouter" | "opencode";
   models: AiModel[];
 };
 ```
 
-- `openrouter` — `keySource: "server"`, free-tier models, always available.
-- `byok-openrouter` — `keySource: "user"`, heavier models, only when a user key
-  is present.
+- `openrouter` — free OpenRouter `:free` models via `OPENROUTER_API_KEY`.
+- `opencode` — free [OpenCode Zen](https://opencode.ai/docs/zen/) models via `OPENCODE_API_KEY` (or a browser OpenCode key).
+- `byok-openrouter` — heavier OpenRouter models; requires a user key in the picker.
 
-Default provider/model: `openrouter` + the current free default, so the chat
-flow is unchanged for existing users.
+Default: `google/gemma-4-26b-a4b-it:free`. Dead slugs such as `tencent/hy3:free` are removed.
 
 ### Key resolution (server)
 

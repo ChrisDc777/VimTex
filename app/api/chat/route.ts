@@ -1,5 +1,4 @@
 import { generateText, streamText } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "@/lib/ai-chat";
 import {
   type AiHistoryMessage,
@@ -8,11 +7,14 @@ import {
   MAX_HISTORY_MESSAGE_CHARS,
   trimAiHistory,
 } from "@/lib/ai-chat-history";
+import { createOpenCodeModel, createOpenRouterModel } from "@/lib/ai-backend";
 import { formatAiError } from "@/lib/ai-errors";
 import {
   CUSTOM_MODEL_PATTERN,
   DEFAULT_AI_MODEL,
-  isFreeModel,
+  backendForModel,
+  isServerKeyedModel,
+  providerForModel,
 } from "@/lib/ai-providers";
 
 export const runtime = "nodejs";
@@ -164,8 +166,11 @@ function parseBody(body: ChatRequestBody): {
       : DEFAULT_AI_MODEL;
 
   const userKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
+  const meta = providerForModel(model);
+  const backend = backendForModel(model);
+  const serverKeyed = isServerKeyedModel(model);
 
-  if (!isFreeModel(model) && !userKey) {
+  if (!serverKeyed && !userKey) {
     return {
       instruction: "",
       document: "",
@@ -178,16 +183,27 @@ function parseBody(body: ChatRequestBody): {
       error: Response.json(
         {
           error:
-            "This model requires your own OpenRouter API key. Add one in the model picker.",
+            backend === "opencode"
+              ? "This model requires an OpenCode API key. Add one in the model picker."
+              : "This model requires your own OpenRouter API key. Add one in the model picker.",
         },
         { status: 400 },
       ),
     };
   }
 
-  const serverKey = process.env.OPENROUTER_API_KEY?.trim() ?? "";
-  const apiKey = userKey || serverKey;
+  const serverKey =
+    backend === "opencode"
+      ? (process.env.OPENCODE_API_KEY?.trim() ?? "")
+      : (process.env.OPENROUTER_API_KEY?.trim() ?? "");
+
+  // Prefer the matching backend key. Never cross-wire OpenRouter ↔ OpenCode keys.
+  const apiKey = serverKeyed ? serverKey || userKey : userKey;
   if (!apiKey) {
+    const hint =
+      backend === "opencode"
+        ? "No OpenCode API key configured. Set OPENCODE_API_KEY or add your key in the model picker."
+        : "No AI API key configured. Set OPENROUTER_API_KEY or add your own key in the model picker.";
     return {
       instruction: "",
       document: "",
@@ -197,13 +213,7 @@ function parseBody(body: ChatRequestBody): {
       stream: false,
       truncated: false,
       history: [],
-      error: Response.json(
-        {
-          error:
-            "No AI API key configured. Set OPENROUTER_API_KEY or add your own key in the model picker.",
-        },
-        { status: 500 },
-      ),
+      error: Response.json({ error: hint }, { status: 500 }),
     };
   }
 
@@ -212,7 +222,7 @@ function parseBody(body: ChatRequestBody): {
     document,
     model,
     apiKey,
-    providerLabel: isFreeModel(model) ? "openrouter" : "byok-openrouter",
+    providerLabel: meta.id,
     stream: Boolean(body.stream),
     selection: parseOptionalString(body.selection, MAX_SELECTION_CHARS),
     surrounding: parseOptionalString(body.surrounding, MAX_SURROUNDING_CHARS),
@@ -252,11 +262,13 @@ export async function POST(req: Request) {
     history,
   } = parsed;
 
-  const provider = createOpenRouter({
-    apiKey,
-    appName: "VimTex",
-    appUrl: appUrl(),
-  });
+  const lm =
+    backendForModel(model) === "opencode"
+      ? createOpenCodeModel(model, apiKey)
+      : createOpenRouterModel(model, apiKey, {
+          appName: "VimTex",
+          appUrl: appUrl(),
+        });
 
   const system = buildSystemPrompt({
     document,
@@ -274,7 +286,7 @@ export async function POST(req: Request) {
   try {
     if (stream) {
       const result = streamText({
-        model: provider.chat(model),
+        model: lm,
         system,
         messages,
         temperature: 0.4,
@@ -290,7 +302,7 @@ export async function POST(req: Request) {
     }
 
     const { text } = await generateText({
-      model: provider.chat(model),
+      model: lm,
       system,
       messages,
       temperature: 0.4,
