@@ -82,10 +82,10 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 #63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline, #62 review, #61 cite, #60 polish
 
-**#63:** Studio chat `/` menu — pick command → fill composer → optional context → Enter runs (not auto-fire).  
+**#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
 **#58 / #52:** Chat doc-action pills (fix errors, abstract, …) + `/letter` `/paper` `/cv` `/notes` scaffolds via diff.  
-**Chrome prefs:** Settings toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).
+**Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).
 
 ### Wave D / triage
 

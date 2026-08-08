@@ -288,6 +288,8 @@ export function StudioRoomChat({
         slashCommandsEnabled={
           chat.shell === "studio" && chromePrefs.slashMenu
         }
+        pendingSlash={chat.pendingSlash}
+        onClearPendingSlash={chat.clearPendingSlash}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

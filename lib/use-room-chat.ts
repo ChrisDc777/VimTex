@@ -296,37 +296,21 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
-  /** Pending slash command waiting for user context + Enter (Claude/Cursor style). */
-  const pendingSlashRef = useRef<SlashCommand | null>(null);
+  /** Pending slash command — shown as a chip; runs on Enter with optional context. */
+  const [pendingSlash, setPendingSlash] = useState<SlashCommand | null>(null);
+
+  const clearPendingSlash = useCallback(() => {
+    setPendingSlash(null);
+  }, []);
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
       const ws = workspace;
       if (!ws) return;
 
-      const instructionBase =
+      const instruction =
         instructionOverridesRef.current[userMsg.id] ??
         stripAiMention(userMsg.text);
-
-      const pendingSlash = pendingSlashRef.current;
-      let instruction = instructionBase;
-      if (pendingSlash && !instructionOverridesRef.current[userMsg.id]) {
-        const stripped = stripAiMention(userMsg.text);
-        const hasSlashToken = new RegExp(
-          `^/${pendingSlash.id}\\b`,
-          "i",
-        ).test(stripped);
-        if (hasSlashToken) {
-          const extra = stripped
-            .replace(new RegExp(`^/${pendingSlash.id}\\b`, "i"), "")
-            .trim();
-          instruction = extra
-            ? `${pendingSlash.instruction}\n\nAdditional instructions from the user:\n${extra}`
-            : pendingSlash.instruction;
-          editSourceOverridesRef.current[userMsg.id] = "slash";
-        }
-        pendingSlashRef.current = null;
-      }
 
       if (!instruction) {
         setError(`Add an instruction after @${AI_MENTION_TAG}.`);
@@ -372,10 +356,11 @@ export function useRoomChat({
             })
           : null;
       if (usedSelection) {
-        setMessageContexts((prev) => ({
-          ...prev,
-          [userMsg.id]: usedSelection,
-        }));
+        setMessageContexts((prev) =>
+          prev[userMsg.id]
+            ? prev
+            : { ...prev, [userMsg.id]: usedSelection },
+        );
       }
       const ac = new AbortController();
       abortRef.current = ac;
@@ -468,14 +453,31 @@ export function useRoomChat({
   );
 
   const send = useCallback(async () => {
-    const text = input.trim();
     const ws = workspace;
-    if (!text || busy || !ws || ws.readOnly) return;
+    if (busy || !ws || ws.readOnly) return;
+
+    const slash = pendingSlash;
+    const trimmed = input.trim();
+    if (!trimmed && !slash) return;
 
     const clientId = ws.getClientId();
     if (clientId == null) return;
 
-    const mention = mentionsAi(text);
+    let text = trimmed;
+    let mention = mentionsAi(text);
+    let slashInstruction: string | null = null;
+
+    if (slash) {
+      const extra = stripAiMention(trimmed).trim();
+      text = extra
+        ? `@${AI_MENTION_TAG} ${extra}`
+        : `@${AI_MENTION_TAG} ${slash.title}`;
+      mention = true;
+      slashInstruction = extra
+        ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
+        : slash.instruction;
+    }
+
     const userMsg: RoomChatMessage = {
       id: newChatMessageId(),
       clientId,
@@ -487,7 +489,22 @@ export function useRoomChat({
       createdAt: Date.now(),
     };
 
+    if (slash && slashInstruction) {
+      instructionOverridesRef.current[userMsg.id] = slashInstruction;
+      editSourceOverridesRef.current[userMsg.id] = "slash";
+      setMessageContexts((prev) => ({
+        ...prev,
+        [userMsg.id]: {
+          label: `/${slash.id}`,
+          preview: slash.title,
+          lineFrom: 0,
+          lineTo: 0,
+        },
+      }));
+    }
+
     setInput("");
+    setPendingSlash(null);
     setMentionOpen(false);
     setSlashOpen(false);
     setError(null);
@@ -502,7 +519,7 @@ export function useRoomChat({
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, workspace, input, invokeAi, user.color, user.name]);
+  }, [busy, workspace, input, pendingSlash, invokeAi, user.color, user.name]);
 
   /** Programmatic @vimothy turn (#28 / #53 / #63). */
   const runAiInstruction = useCallback(
@@ -553,7 +570,7 @@ export function useRoomChat({
     [busy, workspace, invokeAi, user.color, user.name],
   );
 
-  /** Insert `/cmd` into the composer; run on Enter after optional context. */
+  /** Attach slash command as a chip; optional context + Enter runs it. */
   const runSlashCommand = useCallback(
     (cmd: SlashCommand) => {
       if (!aiFeatureEnabled(shell, "slashCommands")) return;
@@ -564,16 +581,16 @@ export function useRoomChat({
       const after = value.slice(caret);
       // Drop the `/partial` token that opened the menu.
       const withoutToken = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1") + after;
-      const rest = stripAiMention(withoutToken).replace(
-        new RegExp(`^/${cmd.id}\\b\\s*`, "i"),
-        "",
-      );
-      const prefix = `@${AI_MENTION_TAG} /${cmd.id} `;
-      const next = rest.trim() ? `${prefix}${rest.trim()} ` : prefix;
+      const rest = stripAiMention(withoutToken)
+        .replace(new RegExp(`^/${cmd.id}\\b\\s*`, "i"), "")
+        .trim();
+      const next = rest
+        ? `@${AI_MENTION_TAG} ${rest} `
+        : `@${AI_MENTION_TAG} `;
       setInput(next);
+      setPendingSlash(cmd);
       setSlashOpen(false);
       setSlashFilter("");
-      pendingSlashRef.current = cmd;
       requestAnimationFrame(() => {
         const field = inputRef.current;
         const pos = next.length;
@@ -597,13 +614,6 @@ export function useRoomChat({
       setInput(value);
       updateComposerMenus(value, caret);
       workspace?.publishTyping(value.trim().length > 0);
-      const pending = pendingSlashRef.current;
-      if (pending) {
-        const stripped = stripAiMention(value);
-        if (!new RegExp(`^/${pending.id}\\b`, "i").test(stripped.trim())) {
-          pendingSlashRef.current = null;
-        }
-      }
     },
     [updateComposerMenus, workspace],
   );
@@ -630,6 +640,8 @@ export function useRoomChat({
       selectionChipHiddenRef.current = true;
       setSelectionChipHidden(true);
     },
+    pendingSlash,
+    clearPendingSlash,
     messageContexts,
     model,
     setModel,

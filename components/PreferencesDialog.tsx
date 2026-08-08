@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { saveEditorMode, type EditorMode } from "@/lib/editor-mode";
 import {
   saveUiVariant,
@@ -11,6 +11,8 @@ import {
 import type { AiApplyMode } from "@/lib/ai-review-prefs";
 import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
+
+type PrefSection = "editor" | "workspace" | "ai";
 
 type PreferencesDialogProps = {
   open: boolean;
@@ -57,6 +59,26 @@ function Segment<T extends string>({
   );
 }
 
+function PrefRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-ink">{title}</p>
+        <p className="mt-0.5 text-xs text-mute">{description}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function PreferencesDialog({
   open,
   onClose,
@@ -71,6 +93,7 @@ export function PreferencesDialog({
   const titleId = useId();
   const review = useAiReviewOptional();
   const chrome = useAiChromePrefs();
+  const [section, setSection] = useState<PrefSection>("editor");
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +107,11 @@ export function PreferencesDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (section === "ai" && !showAiReviewPrefs) setSection("editor");
+  }, [open, section, showAiReviewPrefs]);
+
   if (!open) return null;
 
   const applyEditorMode = (mode: EditorMode) => {
@@ -96,46 +124,16 @@ export function PreferencesDialog({
     onUiVariantChange(variant);
   };
 
-  const aiSection =
-    showAiReviewPrefs && review ? (
-      <>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-ink">AI apply</p>
-            <p className="mt-0.5 text-xs text-mute">
-              Confirm each edit, or auto-apply with Undo
-            </p>
-          </div>
-          <Segment
-            label="AI apply"
-            options={[
-              { value: "confirm", label: "Confirm" },
-              { value: "auto", label: "Auto" },
-            ]}
-            value={review.prefs.applyMode}
-            onChange={(value) => review.setApplyMode(value as AiApplyMode)}
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-ink">AI in preview</p>
-            <p className="mt-0.5 text-xs text-mute">
-              Show Before/After in Split preview while reviewing
-            </p>
-          </div>
-          <Segment
-            label="AI in preview"
-            options={[
-              { value: "on", label: "On" },
-              { value: "off", label: "Off" },
-            ]}
-            value={review.prefs.showInPreview ? "on" : "off"}
-            onChange={(value) => review.setShowInPreview(value === "on")}
-          />
-        </div>
-      </>
-    ) : null;
+  const sections: { id: PrefSection; label: string }[] = showAiReviewPrefs
+    ? [
+        { id: "editor", label: "Editor" },
+        { id: "workspace", label: "Workspace" },
+        { id: "ai", label: "AI" },
+      ]
+    : [
+        { id: "editor", label: "Editor" },
+        { id: "workspace", label: "Workspace" },
+      ];
 
   return (
     <div
@@ -148,81 +146,133 @@ export function PreferencesDialog({
       }}
     >
       <div
-        className="vt-dialog vt-elevated w-full max-w-md rounded-[var(--radius-sm)] p-6"
+        className="vt-dialog vt-elevated vt-prefs-dialog w-full max-w-lg rounded-[var(--radius-sm)]"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <p id={titleId} className="vt-caption text-ink">
-          Preferences
-        </p>
-
-        <div className="mt-5 space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-ink">Editor keys</p>
-              <p className="mt-0.5 text-xs text-mute">
-                Vim motions or plain editing
-              </p>
-            </div>
-            <Segment
-              label="Editor keys"
-              options={[
-                { value: "vim", label: "Vim" },
-                { value: "standard", label: "Standard" },
-              ]}
-              value={editorMode}
-              onChange={applyEditorMode}
-            />
+        <div className="vt-prefs-dialog__header">
+          <p id={titleId} className="vt-caption text-ink">
+            Preferences
+          </p>
+          <div className="vt-segment vt-prefs-dialog__nav" role="tablist" aria-label="Preference sections">
+            {sections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={section === s.id}
+                onClick={() => setSection(s.id)}
+                className={
+                  section === s.id
+                    ? "vt-segment__btn vt-segment__btn--active"
+                    : "vt-segment__btn"
+                }
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-ink">
-                Relative line numbers
-              </p>
-              <p className="mt-0.5 text-xs text-mute">
-                Show distance from the cursor
-              </p>
+        <div className="vt-prefs-dialog__body" role="tabpanel">
+          {section === "editor" ? (
+            <div className="space-y-5">
+              <PrefRow
+                title="Editor keys"
+                description="Vim motions or plain editing"
+              >
+                <Segment
+                  label="Editor keys"
+                  options={[
+                    { value: "vim", label: "Vim" },
+                    { value: "standard", label: "Standard" },
+                  ]}
+                  value={editorMode}
+                  onChange={applyEditorMode}
+                />
+              </PrefRow>
+
+              <PrefRow
+                title="Relative line numbers"
+                description="Show distance from the cursor"
+              >
+                <Segment
+                  label="Relative line numbers"
+                  options={[
+                    { value: "on", label: "On" },
+                    { value: "off", label: "Off" },
+                  ]}
+                  value={relativeLineNumbers ? "on" : "off"}
+                  onChange={(value) =>
+                    onRelativeLineNumbersChange(value === "on")
+                  }
+                />
+              </PrefRow>
             </div>
-            <Segment
-              label="Relative line numbers"
-              options={[
-                { value: "on", label: "On" },
-                { value: "off", label: "Off" },
-              ]}
-              value={relativeLineNumbers ? "on" : "off"}
-              onChange={(value) => onRelativeLineNumbersChange(value === "on")}
-            />
-          </div>
+          ) : null}
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-ink">Workspace style</p>
-              <p className="mt-0.5 text-xs text-mute">
-                Studio or Forge shell
-              </p>
+          {section === "workspace" ? (
+            <div className="space-y-5">
+              <PrefRow
+                title="Workspace style"
+                description="Studio or Forge shell"
+              >
+                <Segment
+                  label="Workspace style"
+                  options={UI_VARIANTS.map((variant) => ({
+                    value: variant,
+                    label: uiVariantLabel(variant),
+                  }))}
+                  value={uiVariant}
+                  onChange={applyUiVariant}
+                />
+              </PrefRow>
             </div>
-            <Segment
-              label="Workspace style"
-              options={UI_VARIANTS.map((variant) => ({
-                value: variant,
-                label: uiVariantLabel(variant),
-              }))}
-              value={uiVariant}
-              onChange={applyUiVariant}
-            />
-          </div>
+          ) : null}
 
-          {aiSection}
+          {section === "ai" && showAiReviewPrefs ? (
+            <div className="space-y-5">
+              {review ? (
+                <>
+                  <PrefRow
+                    title="AI apply"
+                    description="Confirm each edit, or auto-apply with Undo"
+                  >
+                    <Segment
+                      label="AI apply"
+                      options={[
+                        { value: "confirm", label: "Confirm" },
+                        { value: "auto", label: "Auto" },
+                      ]}
+                      value={review.prefs.applyMode}
+                      onChange={(value) =>
+                        review.setApplyMode(value as AiApplyMode)
+                      }
+                    />
+                  </PrefRow>
 
-          {showAiReviewPrefs ? (
-            <>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">Slash menu</p>
-                  <p className="mt-0.5 text-xs text-mute">
-                    Type / in chat, add context, Enter to run
-                  </p>
-                </div>
+                  <PrefRow
+                    title="AI in preview"
+                    description="Show Before/After in Split preview while reviewing"
+                  >
+                    <Segment
+                      label="AI in preview"
+                      options={[
+                        { value: "on", label: "On" },
+                        { value: "off", label: "Off" },
+                      ]}
+                      value={review.prefs.showInPreview ? "on" : "off"}
+                      onChange={(value) =>
+                        review.setShowInPreview(value === "on")
+                      }
+                    />
+                  </PrefRow>
+                </>
+              ) : null}
+
+              <PrefRow
+                title="Slash menu"
+                description="Type / in chat, then Enter to run"
+              >
                 <Segment
                   label="Slash menu"
                   options={[
@@ -234,17 +284,12 @@ export function PreferencesDialog({
                     chrome.setPref("slashMenu", value === "on")
                   }
                 />
-              </div>
+              </PrefRow>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">
-                    Document action pills
-                  </p>
-                  <p className="mt-0.5 text-xs text-mute">
-                    Fix errors / abstract shortcuts above chat
-                  </p>
-                </div>
+              <PrefRow
+                title="Document action pills"
+                description="Fix errors / abstract shortcuts above chat"
+              >
                 <Segment
                   label="Document action pills"
                   options={[
@@ -256,15 +301,12 @@ export function PreferencesDialog({
                     chrome.setPref("docActionPills", value === "on")
                   }
                 />
-              </div>
+              </PrefRow>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">Ghost text</p>
-                  <p className="mt-0.5 text-xs text-mute">
-                    Suggest \end and math closers while typing
-                  </p>
-                </div>
+              <PrefRow
+                title="Ghost text"
+                description="Suggest \end and math closers while typing"
+              >
                 <Segment
                   label="Ghost text"
                   options={[
@@ -276,12 +318,12 @@ export function PreferencesDialog({
                     chrome.setPref("ghostText", value === "on")
                   }
                 />
-              </div>
-            </>
+              </PrefRow>
+            </div>
           ) : null}
         </div>
 
-        <div className="mt-6">
+        <div className="vt-prefs-dialog__footer">
           <button
             type="button"
             onClick={onClose}
