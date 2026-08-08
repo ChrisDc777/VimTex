@@ -21,6 +21,7 @@ import { mathInlineWidgets } from "@/lib/cm-math-widgets";
 import { editorPlaceholder } from "@/lib/cm-placeholder";
 import { latexCompletionExtension } from "@/lib/cm-latex-completion";
 import { latexHighlightExtension } from "@/lib/cm-latex-highlight";
+import { ghostTextExtension } from "@/lib/cm-ghost-text";
 import {
   createLineNumberCompartment,
   lineNumberExtensions,
@@ -58,6 +59,8 @@ type VimEditorProps = {
   relativeLineNumbers?: boolean;
   /** Show empty-editor placeholder. Default true. */
   showPlaceholder?: boolean;
+  /** Studio ghost-text completions (#55). Default false. */
+  ghostText?: boolean;
   onVimModeChange: (mode: VimMode) => void;
   /** Fires when the main selection collapses or expands (#28). */
   onSelectionRangeChange?: (hasRange: boolean) => void;
@@ -149,6 +152,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       inlineMath = true,
       relativeLineNumbers = true,
       showPlaceholder = true,
+      ghostText = false,
       onVimModeChange,
       onSelectionRangeChange,
     },
@@ -281,6 +285,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           yUndoKeys,
           ...latexCompletionExtension,
           ...latexHighlightExtension,
+          ...(ghostText ? ghostTextExtension() : []),
           keymap.of(defaultKeymap),
           vimTexTheme,
           remoteSelectionTheme,
@@ -328,11 +333,11 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         view.destroy();
         viewRef.current = null;
       };
-      // Remount when the workspace (room/collab) or Vim binding changes.
+      // Remount when the workspace (room/collab), Vim binding, or ghost-text gate changes.
       // inlineMath/relativeLineNumbers/showPlaceholder reconfigure via
       // compartments/placeholder below — no view remount needed.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workspace, vimEnabled]);
+    }, [workspace, vimEnabled, ghostText]);
 
     useEffect(() => {
       const view = viewRef.current;
