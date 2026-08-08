@@ -194,7 +194,9 @@ export function useRoomChat({
 
   const filteredSlashCommands = useMemo(() => {
     if (!aiFeatureEnabled(shell, "slashCommands")) return [];
-    return filterSlashCommands(slashFilter);
+    return filterSlashCommands(slashFilter, undefined, {
+      includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
+    });
   }, [shell, slashFilter]);
 
   const updateComposerMenus = useCallback(

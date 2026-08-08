@@ -11,7 +11,11 @@ export type SlashCommandId =
   | "summarize"
   | "math"
   | "format"
-  | "expand";
+  | "expand"
+  | "letter"
+  | "paper"
+  | "cv"
+  | "notes";
 
 export type SlashCommand = {
   id: SlashCommandId;
@@ -20,6 +24,8 @@ export type SlashCommand = {
   hint: string;
   /** Instruction after @vimothy (no mention prefix). */
   instruction: string;
+  /** When true, only offered if templatesGen is enabled (#52). */
+  template?: boolean;
 };
 
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
@@ -79,16 +85,53 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     instruction:
       "Expand abbreviations or shorthand in the selection into full LaTeX. Propose a full-document edit.",
   },
+  {
+    id: "letter",
+    title: "Letter",
+    hint: "Scaffold a letter",
+    template: true,
+    instruction:
+      "Replace the note with a short, compilable KaTeX-friendly letter skeleton (greeting, body, closing). Prefer plain TeX macros over a full documentclass unless helpful. Propose a full-document edit.",
+  },
+  {
+    id: "paper",
+    title: "Paper",
+    hint: "Scaffold a paper",
+    template: true,
+    instruction:
+      "Replace the note with a short article/paper skeleton: title, abstract, sections, and a sample equation. KaTeX-friendly; no heavy preamble. Propose a full-document edit.",
+  },
+  {
+    id: "cv",
+    title: "CV",
+    hint: "Scaffold a CV",
+    template: true,
+    instruction:
+      "Replace the note with a compact CV/resume skeleton (name, contact, education, experience). KaTeX-friendly. Propose a full-document edit.",
+  },
+  {
+    id: "notes",
+    title: "Notes",
+    hint: "Scaffold lecture notes",
+    template: true,
+    instruction:
+      "Replace the note with a lecture-notes skeleton: title, outline, and a few section headings with placeholder math. KaTeX-friendly. Propose a full-document edit.",
+  },
 ] as const;
 
 /** Filter by id / title prefix (case-insensitive). */
 export function filterSlashCommands(
   query: string,
   commands: readonly SlashCommand[] = SLASH_COMMANDS,
+  opts?: { includeTemplates?: boolean },
 ): SlashCommand[] {
+  const includeTemplates = opts?.includeTemplates ?? true;
+  const pool = includeTemplates
+    ? commands
+    : commands.filter((c) => !c.template);
   const q = query.trim().toLowerCase();
-  if (!q) return [...commands];
-  return commands.filter(
+  if (!q) return [...pool];
+  return pool.filter(
     (c) =>
       c.id.startsWith(q) ||
       c.title.toLowerCase().startsWith(q) ||
