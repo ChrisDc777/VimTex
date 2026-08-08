@@ -91,7 +91,7 @@ Models (sidebar dropdown) are grouped by provider:
 
 ## Stack
 
-Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter
+Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter · OpenCode Zen
 
 ---
 
