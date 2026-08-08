@@ -202,9 +202,12 @@ export function useRoomChat({
       const before = value.slice(0, caret);
       const at = before.match(/(^|[\s])@([a-zA-Z0-9_]*)$/);
       if (at) {
+        const nextFilter = at[2] ?? "";
         setMentionOpen(true);
-        setMentionFilter(at[2] ?? "");
-        setMentionIndex(0);
+        setMentionFilter((prev) => {
+          if (prev !== nextFilter) setMentionIndex(0);
+          return nextFilter;
+        });
         setSlashOpen(false);
         setSlashFilter("");
         return;
@@ -221,9 +224,14 @@ export function useRoomChat({
 
       const slash = before.match(/(^|[\s])\/([a-zA-Z]*)$/);
       if (slash) {
+        const nextFilter = slash[2] ?? "";
         setSlashOpen(true);
-        setSlashFilter(slash[2] ?? "");
-        setSlashIndex(0);
+        // Only reset highlight when the filter text changes — not on ArrowUp/Down
+        // (those fire keyup → onInputChange and used to pin the selection to 0).
+        setSlashFilter((prev) => {
+          if (prev !== nextFilter) setSlashIndex(0);
+          return nextFilter;
+        });
       } else {
         setSlashOpen(false);
         setSlashFilter("");

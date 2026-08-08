@@ -61,9 +61,8 @@ export function suggestMathCloser(
     }
   }
 
-  // Single $ — crude: odd count of unescaped $ before caret.
-  const dollars = before.match(/(^|[^\\])\$/g);
-  if (dollars && dollars.length % 2 === 1 && !after.startsWith("$")) {
+  // Single $ — only right after an opener `$` (not an odd-count scan of the whole buffer).
+  if (/(^|[^\\])\$$/.test(before) && !before.endsWith("$$") && !after.startsWith("$")) {
     return { text: "$", from: head };
   }
   return null;
