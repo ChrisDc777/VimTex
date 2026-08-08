@@ -486,9 +486,6 @@ export function StudioShell({
                 inlineMath={viewMode === "realtime"}
                 relativeLineNumbers={relativeLineNumbers}
                 showPlaceholder={false}
-                ghostText={
-                  !readOnly && aiFeatureEnabled("studio", "ghostText")
-                }
                 onVimModeChange={setVimMode}
                 onSelectionRangeChange={setHasSelectionRange}
               />
