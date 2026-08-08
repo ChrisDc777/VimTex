@@ -44,11 +44,12 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 | Diff accept / reject | ✅ | ❌ | #27 |
 | Auto-apply + Undo | ✅ | ❌ | review prefs |
 | Preview Before/After | ✅ | — | showInPreview |
-| Selection / inline actions | 🔄 | ❌ | #28 |
+| Selection / inline actions | ✅ | ❌ | #28 |
 | Ghost text | 🔄 | ❌ | #55 |
 | Streaming + cancel | ✅ | ✅ | #29 |
 | Diagnostics explain | ✅ | ✅ | #53 |
-| Chat memory (last N) | 🔄 | ❌ | #54 |
+| Chat memory (last N) | ✅ | ❌ | #54 |
+| Slash commands | 🔄 | ❌ | #63 |
 | Grammar / critique review | 🔄 | ❌ | #62 |
 
 ## Delivery waves
@@ -77,7 +78,9 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 ### Wave C — Studio depth
 
-#63 slash, #55 ghost, #58 doc actions, #52 templates, #56 outline, #62 review, #61 cite, #60 polish
+#63 slash (chat composer), #55 ghost, #58 doc actions, #52 templates, #56 outline, #62 review, #61 cite, #60 polish
+
+**#63:** Studio chat `/` menu (explain/rewrite/fix/…) → `runAiInstruction` + diff confirm. Editor insert-mode `/` deferred (Vim).
 
 ### Wave D / triage
 

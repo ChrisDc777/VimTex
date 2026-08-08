@@ -504,6 +504,7 @@ export function StudioShell({
                   void aiRunnerRef.current?.runInstruction(request.instruction, {
                     chatText: request.chatText,
                     attachment: request.attachment,
+                    source: "diagnostics",
                   });
                 }}
               />
@@ -515,7 +516,9 @@ export function StudioShell({
                 visible={hasSelectionRange}
                 onAction={(instruction) => {
                   setChatOpen(true);
-                  void aiRunnerRef.current?.runInstruction(instruction);
+                  void aiRunnerRef.current?.runInstruction(instruction, {
+                    source: "selection",
+                  });
                 }}
               />
             ) : null}

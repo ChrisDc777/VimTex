@@ -114,6 +114,13 @@ export function RoomChatSidebar({
         onMentionSelect={chat.insertMention}
         onMentionIndexChange={chat.setMentionIndex}
         onMentionClose={() => chat.setMentionOpen(false)}
+        slashOpen={chat.slashOpen}
+        filteredSlashCommands={chat.filteredSlashCommands}
+        slashIndex={chat.slashIndex}
+        onSlashSelect={chat.runSlashCommand}
+        onSlashIndexChange={chat.setSlashIndex}
+        onSlashClose={() => chat.setSlashOpen(false)}
+        slashCommandsEnabled={chat.shell === "studio"}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

@@ -38,6 +38,11 @@ import {
   newChatMessageId,
   type RoomChatMessage,
 } from "@/lib/room-chat";
+import {
+  filterSlashCommands,
+  type SlashCommand,
+} from "@/lib/slash-commands";
+import type { AiEditSource } from "@/lib/ai-review-store";
 import { notify } from "@/lib/toasts";
 import type { CollabUser } from "@/lib/types";
 import type { UiVariant } from "@/lib/ui-variant";
@@ -81,6 +86,9 @@ export function useRoomChat({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashFilter, setSlashFilter] = useState("");
+  const [slashIndex, setSlashIndex] = useState(0);
   const [stickBottom, setStickBottom] = useState(true);
   const [currentClientId, setCurrentClientId] = useState<number | null>(null);
   const [streamingText, setStreamingText] = useState<string | null>(null);
@@ -184,18 +192,45 @@ export function useRoomChat({
     [mentionFilter],
   );
 
-  const updateMentionState = useCallback((value: string, caret: number) => {
-    const before = value.slice(0, caret);
-    const at = before.match(/(^|[\s])@([a-zA-Z0-9_]*)$/);
-    if (at) {
-      setMentionOpen(true);
-      setMentionFilter(at[2] ?? "");
-      setMentionIndex(0);
-    } else {
+  const filteredSlashCommands = useMemo(() => {
+    if (!aiFeatureEnabled(shell, "slashCommands")) return [];
+    return filterSlashCommands(slashFilter);
+  }, [shell, slashFilter]);
+
+  const updateComposerMenus = useCallback(
+    (value: string, caret: number) => {
+      const before = value.slice(0, caret);
+      const at = before.match(/(^|[\s])@([a-zA-Z0-9_]*)$/);
+      if (at) {
+        setMentionOpen(true);
+        setMentionFilter(at[2] ?? "");
+        setMentionIndex(0);
+        setSlashOpen(false);
+        setSlashFilter("");
+        return;
+      }
+
       setMentionOpen(false);
       setMentionFilter("");
-    }
-  }, []);
+
+      if (!aiFeatureEnabled(shell, "slashCommands")) {
+        setSlashOpen(false);
+        setSlashFilter("");
+        return;
+      }
+
+      const slash = before.match(/(^|[\s])\/([a-zA-Z]*)$/);
+      if (slash) {
+        setSlashOpen(true);
+        setSlashFilter(slash[2] ?? "");
+        setSlashIndex(0);
+      } else {
+        setSlashOpen(false);
+        setSlashFilter("");
+      }
+    },
+    [shell],
+  );
 
   const insertMention = useCallback(
     (tag: string) => {
@@ -220,6 +255,7 @@ export function useRoomChat({
   const insertSuggestion = useCallback((text: string) => {
     setInput(text);
     setMentionOpen(false);
+    setSlashOpen(false);
     requestAnimationFrame(() => {
       const el = inputRef.current;
       el?.focus();
@@ -243,6 +279,7 @@ export function useRoomChat({
   }, []);
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
+  const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
@@ -353,11 +390,13 @@ export function useRoomChat({
         if (parsed.documentEdit == null || !aiMayMutateDocument(shell)) {
           // Forge / Q&A only.
         } else if (aiFeatureEnabled(shell, "diffAcceptReject")) {
+          const source =
+            editSourceOverridesRef.current[userMsg.id] ?? "chat";
           review.proposeDocumentEdit({
             messageId: aiMsg.id,
             before: beforeSnapshot,
             after: parsed.documentEdit,
-            source: "chat",
+            source,
             createdAt: Date.now(),
           });
         } else {
@@ -411,6 +450,7 @@ export function useRoomChat({
 
     setInput("");
     setMentionOpen(false);
+    setSlashOpen(false);
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
@@ -425,13 +465,14 @@ export function useRoomChat({
     }
   }, [busy, workspace, input, invokeAi, user.color, user.name]);
 
-  /** Programmatic @vimothy turn (#28 / #53). */
+  /** Programmatic @vimothy turn (#28 / #53 / #63). */
   const runAiInstruction = useCallback(
     async (
       instruction: string,
       opts?: {
         chatText?: string;
         attachment?: SelectionContextPreview;
+        source?: AiEditSource;
       },
     ) => {
       const ws = workspace;
@@ -454,6 +495,9 @@ export function useRoomChat({
       };
 
       instructionOverridesRef.current[userMsg.id] = trimmed;
+      if (opts?.source) {
+        editSourceOverridesRef.current[userMsg.id] = opts.source;
+      }
       if (opts?.attachment) {
         setMessageContexts((prev) => ({
           ...prev,
@@ -470,6 +514,27 @@ export function useRoomChat({
     [busy, workspace, invokeAi, user.color, user.name],
   );
 
+  const runSlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      if (!aiFeatureEnabled(shell, "slashCommands")) return;
+      const el = inputRef.current;
+      const value = input;
+      const caret = el?.selectionStart ?? value.length;
+      const before = value.slice(0, caret);
+      const after = value.slice(caret);
+      const replaced = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1");
+      const next = (replaced + after).trim();
+      setInput(next);
+      setSlashOpen(false);
+      setSlashFilter("");
+      void runAiInstruction(cmd.instruction, {
+        chatText: `/${cmd.id}`,
+        source: "slash",
+      });
+    },
+    [input, runAiInstruction, shell],
+  );
+
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
       if (busy || !msg.mentionAi) return;
@@ -481,10 +546,10 @@ export function useRoomChat({
   const onInputChange = useCallback(
     (value: string, caret: number) => {
       setInput(value);
-      updateMentionState(value, caret);
+      updateComposerMenus(value, caret);
       workspace?.publishTyping(value.trim().length > 0);
     },
-    [updateMentionState, workspace],
+    [updateComposerMenus, workspace],
   );
 
   return {
@@ -522,14 +587,20 @@ export function useRoomChat({
     mentionIndex,
     setMentionIndex,
     setMentionOpen,
+    slashOpen,
+    slashIndex,
+    setSlashIndex,
+    setSlashOpen,
     stickBottom,
     currentClientId,
     listRef: listRef as RefObject<HTMLDivElement | null>,
     inputRef: inputRef as RefObject<HTMLTextAreaElement | null>,
     filteredMentions,
+    filteredSlashCommands,
     onListScroll,
     scrollToBottom,
     insertMention,
+    runSlashCommand,
     insertSuggestion,
     onInputChange,
     send,

@@ -8,9 +8,11 @@ import {
 import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
 import type { AiModelId } from "@/lib/ai-providers";
 import type { SelectionContextPreview } from "@/lib/ai-chat-context";
+import type { SlashCommand } from "@/lib/slash-commands";
 import { ChatContextChip } from "@/components/chat/ChatContextChip";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
 import { MentionMenu } from "@/components/chat/MentionMenu";
+import { SlashMenu } from "@/components/chat/SlashMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
 
 type ChatComposerProps = {
@@ -28,6 +30,14 @@ type ChatComposerProps = {
   onMentionSelect: (tag: string) => void;
   onMentionIndexChange: (index: number) => void;
   onMentionClose: () => void;
+  slashOpen?: boolean;
+  filteredSlashCommands?: SlashCommand[];
+  slashIndex?: number;
+  onSlashSelect?: (command: SlashCommand) => void;
+  onSlashIndexChange?: (index: number) => void;
+  onSlashClose?: () => void;
+  /** Studio-only: show / hint in placeholder. */
+  slashCommandsEnabled?: boolean;
   /** View-only rooms: hide send UI, show explanation. */
   readOnly?: boolean;
   /** Active editor selection attached to the next @vimothy turn. */
@@ -50,6 +60,13 @@ export function ChatComposer({
   onMentionSelect,
   onMentionIndexChange,
   onMentionClose,
+  slashOpen = false,
+  filteredSlashCommands = [],
+  slashIndex = 0,
+  onSlashSelect,
+  onSlashIndexChange,
+  onSlashClose,
+  slashCommandsEnabled = false,
   readOnly = false,
   selectionPreview = null,
   onHideSelectionChip,
@@ -92,6 +109,40 @@ export function ChatComposer({
       }
     }
 
+    if (slashOpen && filteredSlashCommands.length > 0 && onSlashSelect) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        onSlashIndexChange?.(
+          (slashIndex + 1) % filteredSlashCommands.length,
+        );
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        onSlashIndexChange?.(
+          (slashIndex - 1 + filteredSlashCommands.length) %
+            filteredSlashCommands.length,
+        );
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        const cmd = filteredSlashCommands[slashIndex];
+        if (cmd) onSlashSelect(cmd);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onSlashClose?.();
+        return;
+      }
+      // Space dismisses without running a command (#63).
+      if (e.key === " ") {
+        onSlashClose?.();
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -114,6 +165,14 @@ export function ChatComposer({
           suggestions={filteredMentions}
           activeIndex={mentionIndex}
           onSelect={onMentionSelect}
+        />
+      ) : null}
+
+      {slashOpen && !mentionOpen ? (
+        <SlashMenu
+          commands={filteredSlashCommands}
+          activeIndex={slashIndex}
+          onSelect={onSlashSelect ?? (() => {})}
         />
       ) : null}
 
@@ -147,7 +206,9 @@ export function ChatComposer({
           onBlur={() => setShellFocused(false)}
           onKeyDown={onKeyDown}
           rows={1}
-          placeholder="Message…"
+          placeholder={
+            slashCommandsEnabled ? "Message…  (/ for commands)" : "Message…"
+          }
           enterKeyHint="send"
           disabled={busy}
           className="vt-chat-composer__field"
