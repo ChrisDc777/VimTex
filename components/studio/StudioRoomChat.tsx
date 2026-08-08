@@ -13,6 +13,7 @@ import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { aiFeatureEnabled } from "@/lib/ai-features";
 import { DOC_AI_ACTIONS, type DocAiAction } from "@/lib/doc-ai-actions";
 import { renderNoteDiagnostics } from "@/lib/render-note";
+import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
@@ -57,6 +58,7 @@ export function StudioRoomChat({
   getEditorContext,
   aiRunnerRef,
 }: StudioRoomChatProps) {
+  const { prefs: chromePrefs } = useAiChromePrefs();
   const chat = useRoomChat({
     open,
     chatReady,
@@ -234,7 +236,9 @@ export function StudioRoomChat({
         selfClientId={selfClientId}
       />
 
-      {aiFeatureEnabled("studio", "chatDocActions") && !chat.readOnly ? (
+      {aiFeatureEnabled("studio", "chatDocActions") &&
+      chromePrefs.docActionPills &&
+      !chat.readOnly ? (
         <DocActionPills
           actions={DOC_AI_ACTIONS}
           disabled={chat.busy}
@@ -281,7 +285,9 @@ export function StudioRoomChat({
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.setSlashOpen(false)}
-        slashCommandsEnabled={chat.shell === "studio"}
+        slashCommandsEnabled={
+          chat.shell === "studio" && chromePrefs.slashMenu
+        }
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
