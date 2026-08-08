@@ -2673,6 +2673,34 @@ body[data-pane-resizing] * {
   color: var(--ink-hover);
 }
 
+.vt-chat-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px 0;
+}
+
+.vt-chat-doc-actions__pill {
+  padding: 4px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.vt-chat-doc-actions__pill:hover:not(:disabled) {
+  background: var(--canvas-mid);
+}
+
+.vt-chat-doc-actions__pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .vt-chat-mention-menu {
   position: absolute;
   bottom: calc(100% + 4px);

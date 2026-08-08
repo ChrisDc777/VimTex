@@ -207,7 +207,9 @@ export function ChatComposer({
           onKeyDown={onKeyDown}
           rows={1}
           placeholder={
-            slashCommandsEnabled ? "Message…  (/ for commands)" : "Message…"
+            slashCommandsEnabled
+              ? "Message…  (/ then Enter to run)"
+              : "Message…"
           }
           enterKeyHint="send"
           disabled={busy}

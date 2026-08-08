@@ -10,6 +10,7 @@ import {
 } from "@/lib/ui-variant";
 import type { AiApplyMode } from "@/lib/ai-review-prefs";
 import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
+import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 
 type PreferencesDialogProps = {
   open: boolean;
@@ -69,6 +70,7 @@ export function PreferencesDialog({
 }: PreferencesDialogProps) {
   const titleId = useId();
   const review = useAiReviewOptional();
+  const chrome = useAiChromePrefs();
 
   useEffect(() => {
     if (!open) return;
@@ -211,6 +213,72 @@ export function PreferencesDialog({
           </div>
 
           {aiSection}
+
+          {showAiReviewPrefs ? (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Slash menu</p>
+                  <p className="mt-0.5 text-xs text-mute">
+                    Type / in chat, add context, Enter to run
+                  </p>
+                </div>
+                <Segment
+                  label="Slash menu"
+                  options={[
+                    { value: "on", label: "On" },
+                    { value: "off", label: "Off" },
+                  ]}
+                  value={chrome.prefs.slashMenu ? "on" : "off"}
+                  onChange={(value) =>
+                    chrome.setPref("slashMenu", value === "on")
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">
+                    Document action pills
+                  </p>
+                  <p className="mt-0.5 text-xs text-mute">
+                    Fix errors / abstract shortcuts above chat
+                  </p>
+                </div>
+                <Segment
+                  label="Document action pills"
+                  options={[
+                    { value: "on", label: "On" },
+                    { value: "off", label: "Off" },
+                  ]}
+                  value={chrome.prefs.docActionPills ? "on" : "off"}
+                  onChange={(value) =>
+                    chrome.setPref("docActionPills", value === "on")
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Ghost text</p>
+                  <p className="mt-0.5 text-xs text-mute">
+                    Suggest \end and math closers while typing
+                  </p>
+                </div>
+                <Segment
+                  label="Ghost text"
+                  options={[
+                    { value: "on", label: "On" },
+                    { value: "off", label: "Off" },
+                  ]}
+                  value={chrome.prefs.ghostText ? "on" : "off"}
+                  onChange={(value) =>
+                    chrome.setPref("ghostText", value === "on")
+                  }
+                />
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div className="mt-6">

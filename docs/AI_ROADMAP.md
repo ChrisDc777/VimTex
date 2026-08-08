@@ -50,6 +50,8 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 | Diagnostics explain | ✅ | ✅ | #53 |
 | Chat memory (last N) | ✅ | ❌ | #54 |
 | Slash commands | ✅ | ❌ | #63 |
+| Doc actions | 🔄 | ❌ | #58 |
+| Templates (/letter…) | 🔄 | ❌ | #52 |
 | Grammar / critique review | 🔄 | ❌ | #62 |
 
 ## Delivery waves
@@ -78,10 +80,12 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) → #58 doc actions, #52 templates, #56 outline, #62 review, #61 cite, #60 polish
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline, #62 review, #61 cite, #60 polish
 
-**#63:** Studio chat `/` menu (explain/rewrite/fix/…) → `runAiInstruction` + diff confirm. Editor insert-mode `/` deferred (Vim).  
-**#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.
+**#63:** Studio chat `/` menu — pick command → fill composer → optional context → Enter runs (not auto-fire).  
+**#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
+**#58 / #52:** Chat doc-action pills (fix errors, abstract, …) + `/letter` `/paper` `/cv` `/notes` scaffolds via diff.  
+**Chrome prefs:** Settings toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).
 
 ### Wave D / triage
 
