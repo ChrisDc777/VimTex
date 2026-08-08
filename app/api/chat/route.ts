@@ -1,6 +1,13 @@
 import { generateText, streamText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "@/lib/ai-chat";
+import {
+  type AiHistoryMessage,
+  DEFAULT_HISTORY_MAX_CHARS,
+  DEFAULT_HISTORY_MAX_MESSAGES,
+  MAX_HISTORY_MESSAGE_CHARS,
+  trimAiHistory,
+} from "@/lib/ai-chat-history";
 import { formatAiError } from "@/lib/ai-errors";
 import {
   CUSTOM_MODEL_PATTERN,
@@ -27,6 +34,8 @@ type ChatRequestBody = {
   surrounding?: string;
   caret?: { line?: number; column?: number; offset?: number };
   truncated?: boolean;
+  /** Prior @vimothy turns (#54 Level A). */
+  history?: unknown;
 };
 
 function appUrl(): string {
@@ -68,6 +77,26 @@ function parseCaret(
   };
 }
 
+function parseHistory(value: unknown): AiHistoryMessage[] {
+  if (!Array.isArray(value)) return [];
+  const out: AiHistoryMessage[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const role = (item as { role?: unknown }).role;
+    const content = (item as { content?: unknown }).content;
+    if (role !== "user" && role !== "assistant") continue;
+    if (typeof content !== "string" || !content.trim()) continue;
+    out.push({
+      role,
+      content: content.trim().slice(0, MAX_HISTORY_MESSAGE_CHARS),
+    });
+  }
+  return trimAiHistory(out, {
+    maxMessages: DEFAULT_HISTORY_MAX_MESSAGES,
+    maxChars: DEFAULT_HISTORY_MAX_CHARS,
+  });
+}
+
 function parseBody(body: ChatRequestBody): {
   instruction: string;
   document: string;
@@ -79,6 +108,7 @@ function parseBody(body: ChatRequestBody): {
   surrounding?: string;
   caret?: { line: number; column: number; offset: number };
   truncated: boolean;
+  history: AiHistoryMessage[];
   error?: Response;
 } {
   const instruction =
@@ -92,6 +122,7 @@ function parseBody(body: ChatRequestBody): {
       providerLabel: "",
       stream: false,
       truncated: false,
+      history: [],
       error: Response.json(
         { error: "instruction must be a non-empty string." },
         { status: 400 },
@@ -107,6 +138,7 @@ function parseBody(body: ChatRequestBody): {
       providerLabel: "",
       stream: false,
       truncated: false,
+      history: [],
       error: Response.json({ error: "instruction too long." }, { status: 400 }),
     };
   }
@@ -121,6 +153,7 @@ function parseBody(body: ChatRequestBody): {
       providerLabel: "",
       stream: false,
       truncated: false,
+      history: [],
       error: Response.json({ error: "document too long." }, { status: 400 }),
     };
   }
@@ -141,6 +174,7 @@ function parseBody(body: ChatRequestBody): {
       providerLabel: "",
       stream: false,
       truncated: false,
+      history: [],
       error: Response.json(
         {
           error:
@@ -162,6 +196,7 @@ function parseBody(body: ChatRequestBody): {
       providerLabel: "",
       stream: false,
       truncated: false,
+      history: [],
       error: Response.json(
         {
           error:
@@ -183,6 +218,7 @@ function parseBody(body: ChatRequestBody): {
     surrounding: parseOptionalString(body.surrounding, MAX_SURROUNDING_CHARS),
     caret: parseCaret(body.caret),
     truncated: Boolean(body.truncated),
+    history: parseHistory(body.history),
   };
 }
 
@@ -213,6 +249,7 @@ export async function POST(req: Request) {
     surrounding,
     caret,
     truncated,
+    history,
   } = parsed;
 
   const provider = createOpenRouter({
@@ -229,12 +266,17 @@ export async function POST(req: Request) {
     truncated,
   });
 
+  const messages = [
+    ...history.map((m) => ({ role: m.role, content: m.content })),
+    { role: "user" as const, content: instruction },
+  ];
+
   try {
     if (stream) {
       const result = streamText({
         model: provider.chat(model),
         system,
-        prompt: instruction,
+        messages,
         temperature: 0.4,
         abortSignal: req.signal,
       });
@@ -250,7 +292,7 @@ export async function POST(req: Request) {
     const { text } = await generateText({
       model: provider.chat(model),
       system,
-      prompt: instruction,
+      messages,
       temperature: 0.4,
       abortSignal: req.signal,
     });
