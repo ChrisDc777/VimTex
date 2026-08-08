@@ -1,6 +1,7 @@
 import {
   DEFAULT_AI_MODEL,
-  isKnownOrCustomModelId,
+  isValidModelId,
+  CUSTOM_MODEL_PATTERN,
   type AiModelId,
 } from "@/lib/ai-providers";
 
@@ -10,7 +11,10 @@ export function loadChatModel(): AiModelId {
   if (typeof window === "undefined") return DEFAULT_AI_MODEL;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw && isKnownOrCustomModelId(raw)) return raw;
+    if (!raw) return DEFAULT_AI_MODEL;
+    // Drop removed free-tier ids (e.g. tencent/hy3:free) back to default.
+    if (isValidModelId(raw)) return raw;
+    if (CUSTOM_MODEL_PATTERN.test(raw) && !raw.includes(":free")) return raw;
   } catch {
     // ignore
   }

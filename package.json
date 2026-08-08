@@ -17,6 +17,7 @@
     "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.27",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/language": "^6.12.4",

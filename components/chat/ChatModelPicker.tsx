@@ -14,7 +14,11 @@ import {
   providerForModel,
   type AiModelId,
 } from "@/lib/ai-providers";
-import { hasUserAiKey, saveUserAiKey } from "@/lib/ai-keys";
+import {
+  hasUserAiKey,
+  saveUserAiKey,
+  type AiKeyBackend,
+} from "@/lib/ai-keys";
 import { loadCustomModels, saveCustomModels } from "@/lib/ai-custom-models";
 import { ChevronIcon } from "@/components/chat/icons";
 
@@ -29,15 +33,131 @@ type AnchorRect = {
   right: number;
 };
 
+type KeyEditorProps = {
+  backend: AiKeyBackend;
+  label: string;
+  placeholder: string;
+  hasKey: boolean;
+  onChanged: () => void;
+};
+
+function KeyEditor({
+  backend,
+  label,
+  placeholder,
+  hasKey,
+  onChanged,
+}: KeyEditorProps) {
+  const [show, setShow] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const save = () => {
+    saveUserAiKey(draft, backend);
+    onChanged();
+    setShow(false);
+    setDraft("");
+  };
+
+  const remove = () => {
+    saveUserAiKey("", backend);
+    onChanged();
+    setShow(false);
+    setDraft("");
+  };
+
+  return (
+    <div className="vt-chat-model-menu__key">
+      {hasKey ? (
+        <>
+          <div className="vt-chat-model-menu__key-actions">
+            <button
+              type="button"
+              className="vt-chat-model-menu__key-link"
+              onClick={() => setShow((v) => !v)}
+            >
+              {show ? "Cancel" : `Change ${label}`}
+            </button>
+            <button
+              type="button"
+              className="vt-chat-model-menu__key-link"
+              onClick={remove}
+            >
+              Remove
+            </button>
+          </div>
+          {show ? (
+            <div className="vt-chat-model-menu__key-row">
+              <input
+                type="password"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={placeholder}
+                autoComplete="off"
+                spellCheck={false}
+                className="vt-chat-model-menu__key-input"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    save();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="vt-chat-model-menu__key-save"
+                onClick={save}
+              >
+                Save
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : show ? (
+        <div className="vt-chat-model-menu__key-row">
+          <input
+            type="password"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={placeholder}
+            autoComplete="off"
+            spellCheck={false}
+            className="vt-chat-model-menu__key-input"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="vt-chat-model-menu__key-save"
+            onClick={save}
+          >
+            Save
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="vt-chat-model-menu__key-link"
+          onClick={() => setShow(true)}
+        >
+          Add {label}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ChatModelPicker({
   model,
   onChange,
   disabled,
 }: ChatModelPickerProps) {
   const [open, setOpen] = useState(false);
-  const [hasKey, setHasKey] = useState(false);
-  const [showKeyInput, setShowKeyInput] = useState(false);
-  const [keyDraft, setKeyDraft] = useState("");
+  const [hasOrKey, setHasOrKey] = useState(false);
+  const [hasOcKey, setHasOcKey] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
   const [customModels, setCustomModels] = useState<string[]>([]);
@@ -46,8 +166,13 @@ export function ChatModelPicker({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
+  const refreshKeys = () => {
+    setHasOrKey(hasUserAiKey("openrouter"));
+    setHasOcKey(hasUserAiKey("opencode"));
+  };
+
   useEffect(() => {
-    setHasKey(hasUserAiKey());
+    refreshKeys();
     setCustomModels(loadCustomModels());
   }, []);
 
@@ -101,20 +226,6 @@ export function ChatModelPicker({
     setOpen(false);
   };
 
-  const handleSaveKey = () => {
-    saveUserAiKey(keyDraft);
-    setHasKey(hasUserAiKey());
-    setShowKeyInput(false);
-    setKeyDraft("");
-  };
-
-  const handleRemoveKey = () => {
-    saveUserAiKey("");
-    setHasKey(false);
-    setShowKeyInput(false);
-    setKeyDraft("");
-  };
-
   const handleAddCustom = () => {
     const slug = customDraft.trim();
     if (!CUSTOM_MODEL_PATTERN.test(slug)) return;
@@ -140,8 +251,8 @@ export function ChatModelPicker({
         right: Math.max(8, window.innerWidth - anchor.right),
         bottom: window.innerHeight - anchor.top + 6,
         zIndex: 999,
-        width: "min(18rem, calc(100vw - 2rem))",
-        maxHeight: "min(60vh, 26rem)",
+        width: "min(13.5rem, calc(100vw - 2rem))",
+        maxHeight: "min(48vh, 18rem)",
         overflowY: "auto",
       }
     : undefined;
@@ -174,7 +285,8 @@ export function ChatModelPicker({
               className="vt-elevated--sm vt-dropdown vt-chat-model-menu"
             >
               {AI_PROVIDERS.map((provider) => {
-                const providerLocked = provider.keySource === "user" && !hasKey;
+                const providerLocked =
+                  provider.keySource === "user" && !hasOrKey;
                 return (
                   <div key={provider.id} className="vt-chat-model-menu__group">
                     <p className="vt-chat-model-menu__group-label">
@@ -200,15 +312,15 @@ export function ChatModelPicker({
                             <span className="vt-chat-model-menu__name">
                               {m.label}
                             </span>
-                            <span className="vt-chat-model-menu__desc">
-                              {m.description}
-                            </span>
                           </button>
                         </li>
                       ))}
                       {provider.id === "byok-openrouter"
                         ? customModels.map((slug) => (
-                            <li key={slug} className="vt-chat-model-menu__custom">
+                            <li
+                              key={slug}
+                              className="vt-chat-model-menu__custom"
+                            >
                               <button
                                 type="button"
                                 role="option"
@@ -225,9 +337,6 @@ export function ChatModelPicker({
                               >
                                 <span className="vt-chat-model-menu__name">
                                   {slug}
-                                </span>
-                                <span className="vt-chat-model-menu__desc">
-                                  Custom model
                                 </span>
                               </button>
                               <button
@@ -248,105 +357,25 @@ export function ChatModelPicker({
               })}
 
               <div className="vt-chat-model-menu__group">
-                <div className="vt-chat-model-menu__key">
-                  {hasKey ? (
-                    <>
-                      <p className="vt-chat-model-menu__hint">
-                        Your OpenRouter key is saved in this browser only.
-                      </p>
-                      <div className="vt-chat-model-menu__key-actions">
-                        <button
-                          type="button"
-                          className="vt-chat-model-menu__key-link"
-                          onClick={() => setShowKeyInput((v) => !v)}
-                        >
-                          {showKeyInput ? "Cancel" : "Change key"}
-                        </button>
-                        <button
-                          type="button"
-                          className="vt-chat-model-menu__key-link"
-                          onClick={handleRemoveKey}
-                        >
-                          Remove key
-                        </button>
-                      </div>
-                      {showKeyInput ? (
-                        <div className="vt-chat-model-menu__key-row">
-                          <input
-                            type="password"
-                            value={keyDraft}
-                            onChange={(e) => setKeyDraft(e.target.value)}
-                            placeholder="sk-or-v1-…"
-                            autoComplete="off"
-                            spellCheck={false}
-                            className="vt-chat-model-menu__key-input"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleSaveKey();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="vt-chat-model-menu__key-save"
-                            onClick={handleSaveKey}
-                          >
-                            Save
-                          </button>
-                        </div>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <p className="vt-chat-model-menu__hint">
-                        BYOK models need your own OpenRouter key, stored in this
-                        browser only.
-                      </p>
-                      {showKeyInput ? (
-                        <div className="vt-chat-model-menu__key-row">
-                          <input
-                            type="password"
-                            value={keyDraft}
-                            onChange={(e) => setKeyDraft(e.target.value)}
-                            placeholder="sk-or-v1-…"
-                            autoComplete="off"
-                            spellCheck={false}
-                            className="vt-chat-model-menu__key-input"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleSaveKey();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="vt-chat-model-menu__key-save"
-                            onClick={handleSaveKey}
-                          >
-                            Save
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="vt-chat-model-menu__key-link"
-                          onClick={() => setShowKeyInput(true)}
-                        >
-                          Add your own key
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                <p className="vt-chat-model-menu__group-label">Keys</p>
+                <KeyEditor
+                  backend="openrouter"
+                  label="OpenRouter key"
+                  placeholder="sk-or-v1-…"
+                  hasKey={hasOrKey}
+                  onChanged={refreshKeys}
+                />
+                <KeyEditor
+                  backend="opencode"
+                  label="OpenCode key"
+                  placeholder="opencode…"
+                  hasKey={hasOcKey}
+                  onChanged={refreshKeys}
+                />
               </div>
 
               <div className="vt-chat-model-menu__group">
                 <div className="vt-chat-model-menu__key">
-                  <p className="vt-chat-model-menu__hint">
-                    Use any OpenRouter model id (requires your key).
-                  </p>
                   {showCustom ? (
                     <div className="vt-chat-model-menu__key-row">
                       <input
@@ -378,7 +407,7 @@ export function ChatModelPicker({
                       className="vt-chat-model-menu__key-link"
                       onClick={() => setShowCustom(true)}
                     >
-                      Add a custom model…
+                      Custom model…
                     </button>
                   )}
                 </div>

@@ -1,6 +1,7 @@
 import { loadUserAiKey } from "@/lib/ai-keys";
 import type { EditorCaret } from "@/lib/ai-chat-context";
 import type { AiHistoryMessage } from "@/lib/ai-chat-history";
+import { backendForModel } from "@/lib/ai-providers";
 
 export type AiChatRequest = {
   instruction: string;
@@ -36,11 +37,13 @@ function requestBody({
   history,
   stream,
 }: AiChatRequest & { stream?: boolean }) {
+  const backend = backendForModel(model);
+  const apiKey = loadUserAiKey(backend) || undefined;
   return {
     instruction,
     document,
     model,
-    apiKey: loadUserAiKey() || undefined,
+    apiKey,
     ...(selection ? { selection } : {}),
     ...(surrounding ? { surrounding } : {}),
     ...(caret ? { caret } : {}),

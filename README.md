@@ -83,16 +83,15 @@ Restart after changing env. The key stays on the server (`POST /api/chat`) — n
 
 Models (sidebar dropdown) are grouped by provider:
 
-- **OpenRouter (shared)** — free-tier models keyed by the server's `OPENROUTER_API_KEY`:
-  - `tencent/hy3:free` (default)
-  - `nvidia/nemotron-3-ultra-550b-a55b:free`
-- **OpenRouter (your key)** — heavier models billed to your own OpenRouter key. Add the key in the dropdown; it is stored only in your browser's `localStorage` and sent per-request, never persisted or logged. See [`docs/AI_PROVIDERS.md`](docs/AI_PROVIDERS.md).
+- **OpenRouter** — free-tier models via `OPENROUTER_API_KEY` (default: Gemma 4 26B).
+- **OpenCode** — free Zen models via `OPENCODE_API_KEY` (DeepSeek Flash, MiMo, Big Pickle, …).
+- **Your key** — heavier OpenRouter models billed to a browser-stored key. See [`docs/AI_PROVIDERS.md`](docs/AI_PROVIDERS.md).
 
 ---
 
 ## Stack
 
-Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter
+Next.js · CodeMirror 6 · Yjs · KaTeX · OpenRouter · OpenCode Zen
 
 ---
 

@@ -26,28 +26,22 @@ packages. OpenRouter is supported via `@openrouter/ai-sdk-provider`. This gives
 ### Registry (`lib/ai-providers.ts`)
 
 ```ts
-type AiProviderId = "openrouter" | "byok-openrouter";
-
-type AiModel = {
-  id: string;          // provider model id (e.g. OpenRouter slug)
-  label: string;
-  description?: string;
-};
+type AiProviderId = "openrouter" | "opencode" | "byok-openrouter";
 
 type AiProvider = {
   id: AiProviderId;
   label: string;
   keySource: "server" | "user";
+  backend: "openrouter" | "opencode";
   models: AiModel[];
 };
 ```
 
-- `openrouter` — `keySource: "server"`, free-tier models, always available.
-- `byok-openrouter` — `keySource: "user"`, heavier models, only when a user key
-  is present.
+- `openrouter` — free OpenRouter `:free` models via `OPENROUTER_API_KEY`.
+- `opencode` — free [OpenCode Zen](https://opencode.ai/docs/zen/) models via `OPENCODE_API_KEY` (or a browser OpenCode key).
+- `byok-openrouter` — heavier OpenRouter models; requires a user key in the picker.
 
-Default provider/model: `openrouter` + the current free default, so the chat
-flow is unchanged for existing users.
+Default: `google/gemma-4-26b-a4b-it:free`. Dead slugs such as `tencent/hy3:free` are removed.
 
 ### Key resolution (server)
 
@@ -57,20 +51,13 @@ flow is unchanged for existing users.
 { instruction, document, model?: string, apiKey?: string }
 ```
 
-The provider is **derived from `model`**: models listed under `openrouter`
-(server-keyed) use the server key; anything else (registry BYOK models or a
-custom slug) is routed as BYOK and requires a user key.
+The provider/backend is **derived from `model`**:
 
-Resolution order (for OpenRouter-family providers):
+- OpenRouter free → `OPENROUTER_API_KEY`, else browser OpenRouter key
+- OpenCode free → `OPENCODE_API_KEY`, else browser OpenCode key
+- BYOK OpenRouter → browser OpenRouter key required
 
-1. `body.apiKey` (trimmed) — sent by the client from `localStorage`; used for
-   this request **only**, never persisted or logged.
-2. `OPENROUTER_API_KEY` server env.
-3. If the model is not server-keyed and no `apiKey` is provided → `400`.
-
-`apiKey` is stripped from any error/log output. Response keeps the current
-shape `{ message, model, provider }` so both chat UIs are unaffected until
-streaming lands.
+Keys are never cross-wired between backends.
 
 ### Model validation
 
