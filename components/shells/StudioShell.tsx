@@ -517,31 +517,46 @@ export function StudioShell({
           <section
             className={
               isSplit
-                ? "relative min-h-0 min-w-0 flex-1 border-b border-hairline md:border-b-0 md:border-r"
-                : "relative h-full min-h-0"
+                ? "relative flex min-h-0 min-w-0 flex-1 flex-col border-b border-hairline md:border-b-0 md:border-r"
+                : "relative flex h-full min-h-0 flex-col"
             }
           >
-            {ready && roomId && user ? (
-              <VimEditor
-                key={`${roomId}-${editorMode}`}
-                ref={editorRef}
-                vimEnabled={editorMode === "vim"}
-                inlineMath={viewMode === "realtime"}
-                relativeLineNumbers={relativeLineNumbers}
-                showPlaceholder={false}
-                ghostText={
-                  !readOnly &&
-                  aiFeatureEnabled("studio", "ghostText") &&
-                  chromePrefs.ghostText
-                }
-                onVimModeChange={setVimMode}
-                onSelectionRangeChange={setHasSelectionRange}
-              />
-            ) : (
-              <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
-                {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
-              </div>
-            )}
+            <div className="relative min-h-0 min-w-0 flex-1">
+              {ready && roomId && user ? (
+                <VimEditor
+                  key={`${roomId}-${editorMode}`}
+                  ref={editorRef}
+                  vimEnabled={editorMode === "vim"}
+                  inlineMath={viewMode === "realtime"}
+                  relativeLineNumbers={relativeLineNumbers}
+                  showPlaceholder={false}
+                  ghostText={
+                    !readOnly &&
+                    aiFeatureEnabled("studio", "ghostText") &&
+                    chromePrefs.ghostText
+                  }
+                  onVimModeChange={setVimMode}
+                  onSelectionRangeChange={setHasSelectionRange}
+                />
+              ) : (
+                <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
+                  {namePickerOpen ? "Enter a display name…" : "Preparing room…"}
+                </div>
+              )}
+              {aiFeatureEnabled("studio", "selectionActions") &&
+              !readOnly &&
+              ready ? (
+                <SelectionActionBar
+                  visible={hasSelectionRange}
+                  onAction={(instruction) => {
+                    setChatOpen(true);
+                    void aiRunnerRef.current?.runInstruction(instruction, {
+                      source: "selection",
+                    });
+                  }}
+                />
+              ) : null}
+            </div>
             {ready && !readOnly ? (
               <StudioDiagnosticsBar
                 note={note}
@@ -553,19 +568,6 @@ export function StudioShell({
                     chatText: request.chatText,
                     attachment: request.attachment,
                     source: "diagnostics",
-                  });
-                }}
-              />
-            ) : null}
-            {aiFeatureEnabled("studio", "selectionActions") &&
-            !readOnly &&
-            ready ? (
-              <SelectionActionBar
-                visible={hasSelectionRange}
-                onAction={(instruction) => {
-                  setChatOpen(true);
-                  void aiRunnerRef.current?.runInstruction(instruction, {
-                    source: "selection",
                   });
                 }}
               />
