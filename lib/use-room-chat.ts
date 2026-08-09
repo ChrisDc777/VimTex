@@ -29,6 +29,7 @@ import {
   aiFeatureEnabled,
   aiMayMutateDocument,
 } from "@/lib/ai-features";
+import { buildGrammarReviewInstruction } from "@/lib/grammar-review";
 import {
   DEFAULT_AI_MODEL,
   providerForModel,
@@ -206,6 +207,7 @@ export function useRoomChat({
     if (!chromePrefs.slashMenu) return [];
     return filterSlashCommands(slashFilter, undefined, {
       includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
+      includeGrammarReview: aiFeatureEnabled(shell, "grammarReview"),
     });
   }, [shell, slashFilter, chromePrefs.slashMenu]);
 
@@ -500,9 +502,12 @@ export function useRoomChat({
         ? `@${AI_MENTION_TAG} ${extra}`
         : `@${AI_MENTION_TAG} ${slash.title}`;
       mention = true;
-      slashInstruction = extra
-        ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
-        : slash.instruction;
+      slashInstruction =
+        slash.id === "review"
+          ? buildGrammarReviewInstruction(extra || undefined)
+          : extra
+            ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
+            : slash.instruction;
     }
 
     const userMsg: RoomChatMessage = {

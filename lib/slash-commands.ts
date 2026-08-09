@@ -8,6 +8,7 @@ export type SlashCommandId =
   | "rewrite"
   | "fix"
   | "proofread"
+  | "review"
   | "summarize"
   | "math"
   | "format"
@@ -26,6 +27,8 @@ export type SlashCommand = {
   instruction: string;
   /** When true, only offered if templatesGen is enabled (#52). */
   template?: boolean;
+  /** When true, only offered if grammarReview is enabled (#62). */
+  grammarReview?: boolean;
 };
 
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
@@ -56,6 +59,20 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     hint: "Grammar and style pass",
     instruction:
       "Proofread the selection for grammar and style. Propose a full-document edit only when wording should change.",
+  },
+  {
+    id: "review",
+    title: "Review",
+    hint: "Whole-note grammar / style",
+    grammarReview: true,
+    // Keep in sync with GRAMMAR_REVIEW_INSTRUCTION (lib/grammar-review.ts).
+    instruction: [
+      "Proofread the entire note for grammar, spelling, punctuation, and style.",
+      "Skip math mode, verbatim/listings, and comments when possible — do not rewrite equations or code-like TeX.",
+      "Preserve meaning, structure, and KaTeX-friendly markup.",
+      "Propose edits via a ranged @@@PATCH (preferred) or a full-document edit only if a patch is impractical.",
+      "If the prose is already fine, say so briefly and do not emit edit markers.",
+    ].join("\n"),
   },
   {
     id: "summarize",
@@ -123,14 +140,18 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
 export function filterSlashCommands(
   query: string,
   commands: readonly SlashCommand[] = SLASH_COMMANDS,
-  opts?: { includeTemplates?: boolean },
+  opts?: { includeTemplates?: boolean; includeGrammarReview?: boolean },
 ): SlashCommand[] {
   const includeTemplates = opts?.includeTemplates ?? true;
-  const pool = includeTemplates
-    ? commands
+  const includeGrammarReview = opts?.includeGrammarReview ?? true;
+  let pool = includeTemplates
+    ? [...commands]
     : commands.filter((c) => !c.template);
+  if (!includeGrammarReview) {
+    pool = pool.filter((c) => !c.grammarReview);
+  }
   const q = query.trim().toLowerCase();
-  if (!q) return [...pool];
+  if (!q) return pool;
   return pool.filter(
     (c) =>
       c.id.startsWith(q) ||
