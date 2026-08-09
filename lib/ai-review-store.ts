@@ -1,9 +1,16 @@
 /**
  * Client-local source of truth for AI document proposals (#27 / review UX).
  * Not synced via Yjs — Accept is proposer-only until peer-aware apply lands.
+ * Pending edits may be kind "patch" (#87) with hunk metadata for later
+ * per-hunk Accept and CM gutter diffs (#88); Accept still applies full `after`.
  */
 
+import type { AppliedAiPatchHunk } from "./ai-patch";
+
 export type AiEditSource = "chat" | "selection" | "slash" | "diagnostics";
+
+/** How the model proposed the edit — patch is primary (#87); document is fallback. */
+export type AiEditKind = "document" | "patch";
 
 export type PendingAiEdit = {
   messageId: string;
@@ -11,6 +18,10 @@ export type PendingAiEdit = {
   after: string;
   source: AiEditSource;
   createdAt: number;
+  /** Defaults to document for older callers. */
+  kind?: AiEditKind;
+  /** Populated for kind === "patch" (applied + skipped hunks). */
+  hunks?: AppliedAiPatchHunk[];
 };
 
 export type AiEditOutcome = "accepted" | "rejected" | "auto";

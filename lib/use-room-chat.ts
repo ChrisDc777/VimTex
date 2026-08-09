@@ -8,7 +8,14 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { parseAssistantReply } from "@/lib/ai-chat";
+import {
+  earliestEditMarkerIndex,
+  parseAssistantReply,
+} from "@/lib/ai-chat";
+import {
+  applyAiPatch,
+  type AppliedAiPatchHunk,
+} from "@/lib/ai-patch";
 import {
   packAiChatContext,
   selectionContextPreview,
@@ -386,7 +393,7 @@ export function useRoomChat({
         const data = useStream
           ? await streamAiChat(req, {
               onToken: (acc) => {
-                const cut = acc.indexOf("@@@DOCUMENT");
+                const cut = earliestEditMarkerIndex(acc);
                 setStreamingText(
                   cut === -1 ? acc : acc.slice(0, cut).trimEnd(),
                 );
@@ -397,6 +404,24 @@ export function useRoomChat({
         if (ac.signal.aborted) return;
 
         const parsed = parseAssistantReply(data.message ?? "");
+        let proposedAfter: string | null = parsed.documentEdit;
+        let editKind: "document" | "patch" = "document";
+        let appliedHunks: AppliedAiPatchHunk[] | undefined;
+
+        if (parsed.patch) {
+          const applied = applyAiPatch(beforeSnapshot, parsed.patch);
+          if (applied.ok) {
+            proposedAfter = applied.after;
+            editKind = "patch";
+            appliedHunks = applied.hunks;
+          } else {
+            notify.error(
+              `Could not apply AI patch: ${applied.error}`,
+            );
+            proposedAfter = null;
+          }
+        }
+
         const clientId = ws.getClientId() ?? userMsg.clientId;
         const aiMsg: RoomChatMessage = {
           id: newChatMessageId(),
@@ -407,24 +432,26 @@ export function useRoomChat({
           text: parsed.message,
           mentionAi: false,
           createdAt: Date.now(),
-          documentEdit: parsed.documentEdit,
+          documentEdit: proposedAfter,
         };
         ws.appendChatMessage(aiMsg);
 
-        if (parsed.documentEdit == null || !aiMayMutateDocument(shell)) {
-          // Forge / Q&A only.
+        if (proposedAfter == null || !aiMayMutateDocument(shell)) {
+          // Forge / Q&A only (Forge still gets documentEdit blob for suggest UI).
         } else if (aiFeatureEnabled(shell, "diffAcceptReject")) {
           const source =
             editSourceOverridesRef.current[userMsg.id] ?? "chat";
           review.proposeDocumentEdit({
             messageId: aiMsg.id,
             before: beforeSnapshot,
-            after: parsed.documentEdit,
+            after: proposedAfter,
             source,
             createdAt: Date.now(),
+            kind: editKind,
+            hunks: appliedHunks,
           });
         } else {
-          ws.applyAiEdit(parsed.documentEdit);
+          ws.applyAiEdit(proposedAfter);
         }
       } catch (err) {
         if (
