@@ -308,6 +308,10 @@ export async function POST(req: Request) {
   ];
 
   const keyHeader = keySource ?? "server";
+  // Meter / surface usage only for BYOK. App-provided shared keys have no
+  // usage quota gate and we do not attach usage (avoids trailer/provider
+  // usage failures affecting free models).
+  const reportUsage = keyHeader === "user";
 
   try {
     if (stream) {
@@ -326,9 +330,17 @@ export async function POST(req: Request) {
             for await (const chunk of result.textStream) {
               controller.enqueue(encoder.encode(chunk));
             }
-            const usage = normalizeAiUsage(await result.usage);
-            if (usage) {
-              controller.enqueue(encoder.encode(formatAiUsageTrailer(usage)));
+            if (reportUsage) {
+              try {
+                const usage = normalizeAiUsage(await result.usage);
+                if (usage) {
+                  controller.enqueue(
+                    encoder.encode(formatAiUsageTrailer(usage)),
+                  );
+                }
+              } catch {
+                // Usage is optional — never fail the reply over metering.
+              }
             }
             controller.close();
           } catch (err) {
@@ -362,7 +374,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const usage = normalizeAiUsage(rawUsage);
+    const usage = reportUsage ? normalizeAiUsage(rawUsage) : null;
     return Response.json({
       message: text,
       model,
