@@ -86,6 +86,28 @@ export function saveAiRoomPrefs(
   return next;
 }
 
+/** Preset labels for Preferences (#60). */
+export const AI_TEMPERATURE_PRESETS = [
+  { value: 0.2, label: "Precise" },
+  { value: 0.4, label: "Balanced" },
+  { value: 0.8, label: "Creative" },
+] as const;
+
+export type AiTemperaturePreset = (typeof AI_TEMPERATURE_PRESETS)[number]["value"];
+
+export function nearestAiTemperaturePreset(value: number): AiTemperaturePreset {
+  let best: AiTemperaturePreset = DEFAULT_AI_TEMPERATURE as AiTemperaturePreset;
+  let bestDist = Infinity;
+  for (const preset of AI_TEMPERATURE_PRESETS) {
+    const dist = Math.abs(preset.value - value);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = preset.value;
+    }
+  }
+  return best;
+}
+
 /** Resolve model for a room: room override → fallback → app default. */
 export function resolveAiRoomModel(
   roomId: string | null | undefined,

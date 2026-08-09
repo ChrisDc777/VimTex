@@ -1,3 +1,6 @@
+import {
+  normalizeAiTemperature,
+} from "@/lib/ai-room-prefs";
 import { loadUserAiKey } from "@/lib/ai-keys";
 import type { EditorCaret } from "@/lib/ai-chat-context";
 import type { AiHistoryMessage } from "@/lib/ai-chat-history";
@@ -22,6 +25,8 @@ export type AiChatRequest = {
   history?: AiHistoryMessage[];
   /** Chat-only derivation coach (#84). */
   mode?: "coach";
+  /** Sampling temperature 0–1 (#60). */
+  temperature?: number;
 };
 
 export type AiChatResult = {
@@ -46,10 +51,12 @@ function requestBody({
   truncated,
   history,
   mode,
+  temperature,
   stream,
 }: AiChatRequest & { stream?: boolean }) {
   const backend = backendForModel(model);
   const apiKey = loadUserAiKey(backend) || undefined;
+  const temp = normalizeAiTemperature(temperature);
   return {
     instruction,
     document,
@@ -61,6 +68,7 @@ function requestBody({
     ...(truncated ? { truncated: true } : {}),
     ...(history && history.length > 0 ? { history } : {}),
     ...(mode ? { mode } : {}),
+    ...(temp !== undefined ? { temperature: temp } : {}),
     ...(stream ? { stream: true } : {}),
   };
 }

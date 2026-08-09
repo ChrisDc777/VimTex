@@ -44,6 +44,7 @@ import {
 } from "@/lib/chat-mentions";
 import {
   AI_ROOM_PREFS_EVENT,
+  DEFAULT_AI_TEMPERATURE,
   loadAiRoomPrefs,
   resolveAiRoomModel,
   saveAiRoomPrefs,
@@ -100,6 +101,7 @@ export function useRoomChat({
   const review = useAiReview();
   const { prefs: chromePrefs } = useAiChromePrefs();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
+  const [temperature, setTemperatureState] = useState(DEFAULT_AI_TEMPERATURE);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -134,6 +136,8 @@ export function useRoomChat({
   useEffect(() => {
     const fallback = persistModel ? loadChatModel() : DEFAULT_AI_MODEL;
     setModelState(resolveAiRoomModel(roomId, fallback) as AiModelId);
+    const roomTemp = loadAiRoomPrefs(roomId).temperature;
+    setTemperatureState(roomTemp ?? DEFAULT_AI_TEMPERATURE);
   }, [roomId, persistModel]);
 
   useEffect(() => {
@@ -141,8 +145,11 @@ export function useRoomChat({
     const onPrefs = (event: Event) => {
       const detail = (event as CustomEvent<{ roomId?: string }>).detail;
       if (detail?.roomId && detail.roomId !== roomId) return;
-      const next = loadAiRoomPrefs(roomId).model;
-      if (next) setModelState(next as AiModelId);
+      const prefs = loadAiRoomPrefs(roomId);
+      if (prefs.model) setModelState(prefs.model as AiModelId);
+      if (prefs.temperature !== undefined) {
+        setTemperatureState(prefs.temperature);
+      }
     };
     window.addEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
     return () => window.removeEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
@@ -333,6 +340,14 @@ export function useRoomChat({
     [persistModel, roomId],
   );
 
+  const setTemperature = useCallback(
+    (next: number) => {
+      setTemperatureState(next);
+      if (roomId) saveAiRoomPrefs(roomId, { temperature: next });
+    },
+    [roomId],
+  );
+
   const cancelAi = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -441,6 +456,7 @@ export function useRoomChat({
           instruction,
           document: packed.document,
           model,
+          temperature,
           signal: ac.signal,
           selection: packed.selection,
           surrounding: packed.surrounding,
@@ -542,7 +558,7 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell, review, busy, getEditorContext, messages],
+    [workspace, model, temperature, shell, review, busy, getEditorContext, messages],
   );
 
   const send = useCallback(async () => {
@@ -762,6 +778,8 @@ export function useRoomChat({
     messageContexts,
     model,
     setModel,
+    temperature,
+    setTemperature,
     input,
     messages,
     busy,
