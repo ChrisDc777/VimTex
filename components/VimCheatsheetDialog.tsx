@@ -14,6 +14,7 @@ const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
   { keys: "Ctrl/Cmd+,", action: "Open preferences" },
   { keys: "?", action: "Open this shortcuts & tips panel" },
   { keys: "/", action: "Slash commands in Studio chat" },
+  { keys: "i then /", action: "Insert section / todo / math block" },
   { keys: "@vimothy", action: "Ask Vimothy in Studio chat" },
 ];
 

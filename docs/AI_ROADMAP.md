@@ -82,27 +82,30 @@ land and expose stable hunk ranges — see Wave D.
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline 🔄 → #62 review, #61 cite, #60 polish
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #62 review, #61 cite, #60 polish
 
 **#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
 **#58 / #52:** Chat doc-action pills (fix errors, abstract, …) + `/letter` `/paper` `/cv` `/notes` scaffolds via diff.  
 **Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).  
-**#56:** Studio left outline panel — heuristic `\part`/`\section`/`\subsection` tree + `\todo{}` / `% TODO` badges with jump-to-line (AI fallback deferred).
+**#56:** Studio left outline panel — heuristic `\part`/`\section`/`\subsection` tree + `\todo{}` / `% TODO` badges with jump-to-line (AI fallback deferred).  
+**Editor `/` inserts:** Insert-mode only — `/section` `/todo` `/math` `/list` /… via CM autocomplete (Vim normal `/` search untouched).
 
 ### Wave D / triage
 
 | Idea | Action |
 |------|--------|
-| Ranged patch format (#87) | **P1** — Level A: `@@@PATCH` + `@@@FIND`/`@@@THEN` hunks; `@@@DOCUMENT` fallback; `AiReviewStore.kind`/`hunks` |
-| CM line/gutter diff (#88) | P2 after patches (consume hunk offsets) |
+| Ranged patch format (#87) | ✅ Level A shipped |
+| CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
 | Snapshot on Accept (#25) | P2 optional |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
 | Derivation coach / equation-scoped | M3 (#83/#84) |
 
-**#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI and CM decorations stay deferred to #88.
+**#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI deferred.  
+
+**#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
 
 ## Out of scope
 

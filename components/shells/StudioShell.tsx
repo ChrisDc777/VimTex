@@ -26,6 +26,7 @@ import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { StudioRoomChat, type StudioAiRunner } from "@/components/studio/StudioRoomChat";
 import { StudioOutlinePanel } from "@/components/studio/StudioOutlinePanel";
+import { StudioAiDiffBridge } from "@/components/studio/StudioAiDiffBridge";
 import { SelectionActionBar } from "@/components/editor/SelectionActionBar";
 import { StudioDiagnosticsBar } from "@/components/diagnostics/StudioDiagnosticsBar";
 import { SafeSvg } from "@/components/SafeSvg";
@@ -396,6 +397,7 @@ export function StudioShell({
   return (
     <WorkspaceProvider value={workspace}>
     <AiReviewProvider>
+    <StudioAiDiffBridge editorRef={editorRef} />
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
       <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
@@ -530,12 +532,15 @@ export function StudioShell({
                   inlineMath={viewMode === "realtime"}
                   relativeLineNumbers={relativeLineNumbers}
                   showPlaceholder={false}
-                  ghostText={
-                    !readOnly &&
-                    aiFeatureEnabled("studio", "ghostText") &&
-                    chromePrefs.ghostText
-                  }
-                  onVimModeChange={setVimMode}
+                ghostText={
+                  !readOnly &&
+                  aiFeatureEnabled("studio", "ghostText") &&
+                  chromePrefs.ghostText
+                }
+                aiDiff={
+                  !readOnly && aiFeatureEnabled("studio", "diffAcceptReject")
+                }
+                onVimModeChange={setVimMode}
                   onSelectionRangeChange={setHasSelectionRange}
                 />
               ) : (

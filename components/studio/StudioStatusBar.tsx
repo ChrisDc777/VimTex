@@ -54,6 +54,7 @@ export function StudioStatusBar({
         shortcuts={[
           { keys: `${MOD_LABEL} K`, label: "palette" },
           { keys: "/", label: "commands" },
+          { keys: "i /", label: "insert block" },
           { keys: "?", label: "tips" },
         ]}
       />
