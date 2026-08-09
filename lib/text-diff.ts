@@ -32,6 +32,25 @@ export function diffLines(
   return lcsDiff(a, b);
 }
 
+/**
+ * 1-based lines in `before` that a pending AI edit will change or remove (#88).
+ * Pure additions mark the preceding before-line when available.
+ */
+export function changedBeforeLines(before: string, after: string): number[] {
+  if (before === after) return [];
+  const lines = new Set<number>();
+  let lastBeforeLine = 0;
+  for (const row of diffLines(before, after)) {
+    if (row.beforeLine != null) lastBeforeLine = row.beforeLine;
+    if (row.kind === "del" && row.beforeLine != null) {
+      lines.add(row.beforeLine);
+    } else if (row.kind === "add" && lastBeforeLine > 0) {
+      lines.add(lastBeforeLine);
+    }
+  }
+  return [...lines].sort((a, b) => a - b);
+}
+
 function coarseDiff(a: string[], b: string[]): DiffLine[] {
   const out: DiffLine[] = [];
   for (let i = 0; i < a.length; i++) {

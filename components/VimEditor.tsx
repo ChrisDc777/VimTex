@@ -22,6 +22,7 @@ import { editorPlaceholder } from "@/lib/cm-placeholder";
 import { latexCompletionExtension } from "@/lib/cm-latex-completion";
 import { latexHighlightExtension } from "@/lib/cm-latex-highlight";
 import { ghostTextExtension } from "@/lib/cm-ghost-text";
+import { aiDiffExtension, setAiDiffLines } from "@/lib/cm-ai-diff";
 import {
   createLineNumberCompartment,
   lineNumberExtensions,
@@ -50,6 +51,8 @@ export type VimEditorHandle = {
   getEditorContext: () => EditorContextSnapshot | null;
   /** Move caret to a 1-based line and scroll it into view (#56). */
   jumpToLine: (line: number) => void;
+  /** Highlight 1-based lines for a pending AI edit (#88); pass [] to clear. */
+  setAiDiffLines: (lines: readonly number[]) => void;
 };
 
 type VimEditorProps = {
@@ -63,6 +66,8 @@ type VimEditorProps = {
   showPlaceholder?: boolean;
   /** Studio ghost-text completions (#55). Default false. */
   ghostText?: boolean;
+  /** Pending AI edit gutter / line marks (#88). Default false. */
+  aiDiff?: boolean;
   onVimModeChange: (mode: VimMode) => void;
   /** Fires when the main selection collapses or expands (#28). */
   onSelectionRangeChange?: (hasRange: boolean) => void;
@@ -155,6 +160,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       relativeLineNumbers = true,
       showPlaceholder = true,
       ghostText = false,
+      aiDiff = false,
       onVimModeChange,
       onSelectionRangeChange,
     },
@@ -242,6 +248,11 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         });
         view.focus();
       },
+      setAiDiffLines: (lines) => {
+        const view = viewRef.current;
+        if (!view) return;
+        setAiDiffLines(view, lines);
+      },
     }));
 
     useEffect(() => {
@@ -300,6 +311,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           ...latexCompletionExtension,
           ...latexHighlightExtension,
           ...(ghostText ? ghostTextExtension() : []),
+          ...(aiDiff ? aiDiffExtension() : []),
           keymap.of(defaultKeymap),
           vimTexTheme,
           remoteSelectionTheme,
@@ -351,7 +363,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       // inlineMath/relativeLineNumbers/showPlaceholder reconfigure via
       // compartments/placeholder below — no view remount needed.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workspace, vimEnabled, ghostText]);
+    }, [workspace, vimEnabled, ghostText, aiDiff]);
 
     useEffect(() => {
       const view = viewRef.current;

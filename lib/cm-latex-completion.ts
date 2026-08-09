@@ -17,6 +17,7 @@ import {
   LATEX_COMMAND_MAP,
   type LatexCommand,
 } from "@/lib/latex-commands";
+import { editorSlashCompletionSource } from "@/lib/cm-editor-slash";
 
 const COMMAND_RE = /\\([a-zA-Z]*)$/;
 
@@ -208,7 +209,7 @@ const latexKeyBindings: KeyBinding[] = [
 
 export const latexCompletionExtension = [
   autocompletion({
-    override: [latexCompletionSource],
+    override: [editorSlashCompletionSource, latexCompletionSource],
     activateOnTyping: true,
     defaultKeymap: true,
     icons: false,
