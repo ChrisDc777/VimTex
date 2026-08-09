@@ -59,9 +59,9 @@ The provider/backend is **derived from `model`**:
 - BYOK-only models still require a browser OpenRouter key.
 
 Keys are never cross-wired between backends. Responses include `keySource`
-(`user` | `server`). **Token `usage` is only attached for BYOK (`user`)** —
-app-provided shared keys are not usage-gated and do not surface token counts
-(so metering never fails a free reply).
+(`user` | `server`). Optional `usage` token counts are attached when the
+provider reports them (shared key or BYOK). Missing/failed usage is omitted —
+never fails the reply.
 
 ### Payload ceilings (#60)
 
