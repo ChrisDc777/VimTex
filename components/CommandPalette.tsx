@@ -37,6 +37,9 @@ type CommandPaletteProps = {
   onViewModeChange?: (mode: ViewMode) => void;
   /** Forge — adds a "Toggle preview" command (no Split/Live toggle there). */
   onTogglePreview?: () => void;
+  /** Studio outline panel (#56). */
+  outlineOpen?: boolean;
+  onToggleOutline?: () => void;
 };
 
 type Command = {
@@ -88,6 +91,8 @@ export function CommandPalette({
   onOpenPreferences,
   onOpenOnboarding,
   onSaveAsTemplate,
+  outlineOpen,
+  onToggleOutline,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -190,6 +195,15 @@ export function CommandPalette({
       hint: "Chat",
       run: () => onToggleChat(),
     });
+    if (onToggleOutline) {
+      list.push({
+        id: "toggle-outline",
+        label: outlineOpen ? "Close document outline" : "Open document outline",
+        keywords: "outline sections todo headings structure",
+        hint: "Outline",
+        run: () => onToggleOutline(),
+      });
+    }
     list.push({
       id: "cheatsheet",
       label: "Open shortcuts & tips",
@@ -227,11 +241,13 @@ export function CommandPalette({
     editorMode,
     uiVariant,
     chatOpen,
+    outlineOpen,
     onNewRoom,
     onOpenSheetPicker,
     onViewModeChange,
     onEditorModeChange,
     onToggleChat,
+    onToggleOutline,
     onTogglePreview,
     onOpenCheatsheet,
     onOpenPreferences,

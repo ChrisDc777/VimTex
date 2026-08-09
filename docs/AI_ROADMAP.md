@@ -1,8 +1,8 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Wave A landed (gate + diff + stream); review UX store + prefs  
+**Status:** Waves A–C landed; Wave D Level A ranged patches (#87) in progress  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
-**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29)
+**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29), patches [#87](https://github.com/ChrisDc777/VimTex/issues/87)
 
 ## Product stance
 
@@ -33,7 +33,8 @@ ychat (shared prose + documentEdit blob; Accept stays local)
 
 Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` boolean. Chat is always the control surface; preview is optional when Split is on.
 
-**Deferred:** VS Code-style CM6 inline diff until **ranged patches** replace full-buffer `@@@DOCUMENT`.
+**Deferred:** VS Code-style CM6 inline/gutter diff (#88) until ranged patches
+land and expose stable hunk ranges — see Wave D.
 
 ## Shell matrix
 
@@ -52,6 +53,7 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 | Slash commands | ✅ | ❌ | #63 |
 | Doc actions | 🔄 | ❌ | #58 |
 | Templates (/letter…) | 🔄 | ❌ | #52 |
+| Outline + TODO scan | 🔄 | ❌ | #56 |
 | Grammar / critique review | 🔄 | ❌ | #62 |
 
 ## Delivery waves
@@ -80,24 +82,27 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline, #62 review, #61 cite, #60 polish
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline 🔄 → #62 review, #61 cite, #60 polish
 
 **#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
 **#58 / #52:** Chat doc-action pills (fix errors, abstract, …) + `/letter` `/paper` `/cv` `/notes` scaffolds via diff.  
-**Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).
+**Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).  
+**#56:** Studio left outline panel — heuristic `\part`/`\section`/`\subsection` tree + `\todo{}` / `% TODO` badges with jump-to-line (AI fallback deferred).
 
 ### Wave D / triage
 
 | Idea | Action |
 |------|--------|
-| Ranged patch format | **P1** — unlocks multi-hunk + CM marks |
-| CM line/gutter diff | P2 after patches |
+| Ranged patch format (#87) | **P1** — Level A: `@@@PATCH` + `@@@FIND`/`@@@THEN` hunks; `@@@DOCUMENT` fallback; `AiReviewStore.kind`/`hunks` |
+| CM line/gutter diff (#88) | P2 after patches (consume hunk offsets) |
 | Snapshot on Accept (#25) | P2 optional |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
 | Derivation coach / equation-scoped | M3 (#83/#84) |
+
+**#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI and CM decorations stay deferred to #88.
 
 ## Out of scope
 

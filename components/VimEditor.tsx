@@ -48,6 +48,8 @@ export type VimEditorHandle = {
   insertSnippet: (template: string) => void;
   /** Snapshot for AI chat context (#57). Null if the editor is not mounted. */
   getEditorContext: () => EditorContextSnapshot | null;
+  /** Move caret to a 1-based line and scroll it into view (#56). */
+  jumpToLine: (line: number) => void;
 };
 
 type VimEditorProps = {
@@ -172,6 +174,18 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
     useImperativeHandle(ref, () => ({
       focus: () => {
         viewRef.current?.focus();
+      },
+      jumpToLine: (line) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const doc = view.state.doc;
+        const target = Math.max(1, Math.min(Math.floor(line), doc.lines));
+        const lineObj = doc.line(target);
+        view.dispatch({
+          selection: { anchor: lineObj.from },
+          effects: EditorView.scrollIntoView(lineObj.from, { y: "center" }),
+        });
+        view.focus();
       },
       getEditorContext: () => {
         const view = viewRef.current;
