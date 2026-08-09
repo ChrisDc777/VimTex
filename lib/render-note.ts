@@ -611,6 +611,69 @@ export function findMathAtCursor(
   return null;
 }
 
+export type EquationScope = {
+  /** Inclusive start of the full math span (delimiters included). */
+  from: number;
+  /** Exclusive end of the full math span. */
+  to: number;
+  /** Full span text including delimiters when explicit. */
+  text: string;
+  /** Math body only (no delimiters). */
+  body: string;
+  display: boolean;
+};
+
+function asEquationScope(
+  note: string,
+  seg: Extract<NoteSegment, { type: "math" }>,
+): EquationScope {
+  return {
+    from: seg.from,
+    to: seg.to,
+    text: note.slice(seg.from, seg.to),
+    body: seg.content,
+    display: seg.display,
+  };
+}
+
+/**
+ * Resolve the math region for equation-scoped AI (#83).
+ * - Collapsed caret inside math → that span
+ * - Selection fully inside one math → that span
+ * - Selection intersects exactly one math → that span
+ * - Otherwise null
+ */
+export function findEquationScope(
+  note: string,
+  from: number,
+  to: number,
+): EquationScope | null {
+  const start = Math.min(from, to);
+  const end = Math.max(from, to);
+  const math = parseNote(note).filter(
+    (seg): seg is Extract<NoteSegment, { type: "math" }> => seg.type === "math",
+  );
+  if (math.length === 0) return null;
+
+  if (start === end) {
+    const hit = math.find((seg) => start >= seg.from && start <= seg.to);
+    return hit ? asEquationScope(note, hit) : null;
+  }
+
+  const containing = math
+    .filter((seg) => start >= seg.from && end <= seg.to)
+    .sort((a, b) => a.to - a.from - (b.to - b.from));
+  if (containing[0]) return asEquationScope(note, containing[0]);
+
+  const intersecting = math.filter((seg) => start < seg.to && end > seg.from);
+  if (intersecting.length === 1) return asEquationScope(note, intersecting[0]!);
+  return null;
+}
+
+/** Instruction for Studio equation rewrite (Confirm / @@@PATCH). */
+export const EQUATION_REWRITE_INSTRUCTION =
+  "Rewrite only the primary selection (the equation under the caret). Keep the same delimiters and surrounding note text. Prefer a single @@@PATCH FIND/THEN hunk that replaces just that equation. Do not rewrite prose or other equations.";
+
 export type MathDiagnostic = {
   message: string;
   line: number;

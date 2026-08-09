@@ -39,6 +39,8 @@ import { AiReviewProvider } from "@/components/ai/AiReviewProvider";
 import { AiPreviewReview } from "@/components/ai/AiPreviewReview";
 import { useAiReview } from "@/components/ai/AiReviewProvider";
 import { aiFeatureEnabled } from "@/lib/ai-features";
+import { findEquationScope } from "@/lib/render-note";
+import type { SelectionAiAction } from "@/lib/selection-ai-actions";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import {
   createCollabUser,
@@ -139,6 +141,7 @@ export function StudioShell({
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const [hasSelectionRange, setHasSelectionRange] = useState(false);
+  const [hasEquationScope, setHasEquationScope] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
   const aiRunnerRef = useRef<StudioAiRunner | null>(null);
 
@@ -548,7 +551,10 @@ export function StudioShell({
                   !readOnly && aiFeatureEnabled("studio", "diffAcceptReject")
                 }
                 onVimModeChange={setVimMode}
-                  onSelectionRangeChange={setHasSelectionRange}
+                  onSelectionRangeChange={({ hasRange, hasEquation }) => {
+                    setHasSelectionRange(hasRange);
+                    setHasEquationScope(hasEquation);
+                  }}
                 />
               ) : (
                 <div className="flex h-full items-center px-4 font-mono text-xs uppercase tracking-[1.2px] text-mute sm:px-5">
@@ -559,11 +565,38 @@ export function StudioShell({
               !readOnly &&
               ready ? (
                 <SelectionActionBar
-                  visible={hasSelectionRange}
-                  onAction={(instruction) => {
+                  visible={
+                    hasSelectionRange ||
+                    (aiFeatureEnabled("studio", "equationScopedAi") &&
+                      hasEquationScope)
+                  }
+                  equationScoped={
+                    aiFeatureEnabled("studio", "equationScopedAi") &&
+                    hasEquationScope
+                  }
+                  onAction={(action: SelectionAiAction) => {
+                    const ctx = editorRef.current?.getEditorContext();
+                    if (
+                      aiFeatureEnabled("studio", "equationScopedAi") &&
+                      (action.preferEquationScope || !ctx?.selection) &&
+                      ctx
+                    ) {
+                      const scope = findEquationScope(
+                        ctx.text,
+                        ctx.selectionFrom,
+                        ctx.selectionTo,
+                      );
+                      if (scope) {
+                        editorRef.current?.selectRange(scope.from, scope.to);
+                      }
+                    }
                     setChatOpen(true);
-                    void aiRunnerRef.current?.runInstruction(instruction, {
-                      source: "selection",
+                    // Let CM selection settle before packing AI context.
+                    requestAnimationFrame(() => {
+                      void aiRunnerRef.current?.runInstruction(
+                        action.instruction,
+                        { source: "selection" },
+                      );
                     });
                   }}
                 />

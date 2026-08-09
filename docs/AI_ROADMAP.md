@@ -1,6 +1,6 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Waves A–C landed; Wave D Level A ranged patches (#87) in progress  
+**Status:** Waves A–D Level A landed (incl. #83 equation scope); #60 polish leftovers / #84 next  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
 **Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29), patches [#87](https://github.com/ChrisDc777/VimTex/issues/87)
 
@@ -46,6 +46,7 @@ land and expose stable hunk ranges — see Wave D.
 | Auto-apply + Undo | ✅ | ❌ | review prefs |
 | Preview Before/After | ✅ | — | showInPreview |
 | Selection / inline actions | ✅ | ❌ | #28 |
+| Equation-scoped rewrite | ✅ Lvl A | ❌ | #83 |
 | Ghost text | 🔄 | ❌ | #55 |
 | Streaming + cancel | ✅ | ✅ | #29 |
 | Diagnostics explain | ✅ | ✅ | #53 |
@@ -100,16 +101,19 @@ land and expose stable hunk ranges — see Wave D.
 | Ranged patch format (#87) | ✅ Level A shipped |
 | CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
 | Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Pre-AI: …` via #25 |
+| Equation-scoped rewrite (#83) | ✅ Level A — caret/selection in math → Equation bar + Rewrite eq |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
-| Derivation coach / equation-scoped | M3 (#83/#84) |
+| Derivation coach | M3 (#84) |
 
 **#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI deferred.  
 
 **#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
 
-**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via Version history.
+**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via Version history (client Y.Doc apply).
+
+**#83 Level A:** When the caret or selection sits in a parsed math span (`\(`/`\[` / auto-math), Studio shows an Equation action bar. **Rewrite eq** expands to that span and asks Vimothy for a patch-only equation rewrite (Confirm Accept). Forge stays suggest-only.
 
 ## Out of scope
 
