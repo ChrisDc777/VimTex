@@ -10,13 +10,14 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
-import { Prec } from "@codemirror/state";
+import { Prec, type Extension } from "@codemirror/state";
 import { keymap, type EditorView, type KeyBinding } from "@codemirror/view";
 import {
   findLatexCommands,
   LATEX_COMMAND_MAP,
   type LatexCommand,
 } from "@/lib/latex-commands";
+import { citeCompletionSource } from "@/lib/cm-cite-completion";
 import { editorSlashCompletionSource } from "@/lib/cm-editor-slash";
 
 const COMMAND_RE = /\\([a-zA-Z]*)$/;
@@ -207,14 +208,31 @@ const latexKeyBindings: KeyBinding[] = [
   { key: "Enter", run: latexEnterJump },
 ];
 
-export const latexCompletionExtension = [
-  autocompletion({
-    override: [editorSlashCompletionSource, latexCompletionSource],
-    activateOnTyping: true,
-    defaultKeymap: true,
-    icons: false,
-    interactionDelay: 0,
-    optionClass: () => "vt-latex-option",
-  }),
-  Prec.highest(keymap.of(latexKeyBindings)),
-];
+export type LatexCompletionOptions = {
+  /** Studio-only `\cite{` keys from note-local bib/bibitem (#61). */
+  citeComplete?: boolean;
+};
+
+export function createLatexCompletionExtension(
+  options: LatexCompletionOptions = {},
+): Extension[] {
+  const override = [
+    ...(options.citeComplete ? [citeCompletionSource] : []),
+    editorSlashCompletionSource,
+    latexCompletionSource,
+  ];
+  return [
+    autocompletion({
+      override,
+      activateOnTyping: true,
+      defaultKeymap: true,
+      icons: false,
+      interactionDelay: 0,
+      optionClass: () => "vt-latex-option",
+    }),
+    Prec.highest(keymap.of(latexKeyBindings)),
+  ];
+}
+
+/** Default (Forge / no cite): slash + LaTeX command completion. */
+export const latexCompletionExtension = createLatexCompletionExtension();

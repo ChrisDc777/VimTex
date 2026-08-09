@@ -537,6 +537,9 @@ export function StudioShell({
                   aiFeatureEnabled("studio", "ghostText") &&
                   chromePrefs.ghostText
                 }
+                citeComplete={
+                  !readOnly && aiFeatureEnabled("studio", "citeComplete")
+                }
                 aiDiff={
                   !readOnly && aiFeatureEnabled("studio", "diffAcceptReject")
                 }
