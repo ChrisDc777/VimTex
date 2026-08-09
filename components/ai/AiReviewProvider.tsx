@@ -12,10 +12,12 @@ import {
   type ReactNode,
 } from "react";
 import toast from "react-hot-toast";
+import { formatAiAcceptSnapshotLabel } from "@/lib/ai-accept-snapshot";
 import {
   loadAiReviewPrefs,
   saveAiApplyMode,
   saveAiShowInPreview,
+  saveAiSnapshotOnAccept,
   type AiApplyMode,
   type AiReviewPrefs,
 } from "@/lib/ai-review-prefs";
@@ -24,6 +26,7 @@ import {
   type AiEditOutcome,
   type PendingAiEdit,
 } from "@/lib/ai-review-store";
+import { createRoomSnapshot } from "@/lib/room-snapshots";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 type AiReviewContextValue = {
@@ -31,12 +34,13 @@ type AiReviewContextValue = {
   prefs: AiReviewPrefs;
   setApplyMode: (mode: AiApplyMode) => void;
   setShowInPreview: (enabled: boolean) => void;
+  setSnapshotOnAccept: (enabled: boolean) => void;
   pending: PendingAiEdit | null;
   outcomes: Record<string, AiEditOutcome>;
   lastAuto: PendingAiEdit | null;
   /** Propose an edit: confirm → pending; auto → apply + Undo toast. */
   proposeDocumentEdit: (edit: PendingAiEdit) => void;
-  acceptPending: () => { stale: boolean } | null;
+  acceptPending: () => Promise<{ stale: boolean } | null>;
   rejectPending: () => void;
   undoLastAuto: () => void;
 };
@@ -71,6 +75,11 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
     setPrefs((prev) => ({ ...prev, showInPreview: enabled }));
   }, []);
 
+  const setSnapshotOnAccept = useCallback((enabled: boolean) => {
+    saveAiSnapshotOnAccept(enabled);
+    setPrefs((prev) => ({ ...prev, snapshotOnAccept: enabled }));
+  }, []);
+
   const undoLastAuto = useCallback(() => {
     const ws = workspace;
     const edit = store.takeLastAuto();
@@ -85,6 +94,7 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
       if (!ws || ws.readOnly) return;
 
       if (prefs.applyMode === "auto") {
+        // Auto-apply skips room snapshot (#89) — Undo toast is the recovery path.
         ws.applyAiEdit(edit.after);
         store.commitAuto(edit);
         toast(
@@ -113,7 +123,7 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
     [workspace, prefs.applyMode, store, undoLastAuto],
   );
 
-  const acceptPending = useCallback(() => {
+  const acceptPending = useCallback(async () => {
     const ws = workspace;
     const pending = store.getPending();
     if (!ws || !pending || ws.readOnly) return null;
@@ -125,10 +135,29 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
         { icon: "⚠️", duration: 5_000 },
       );
     }
+
+    // Optional checkpoint of the live buffer before apply (room-wide restore).
+    if (prefs.snapshotOnAccept) {
+      try {
+        await createRoomSnapshot(
+          ws.roomId,
+          formatAiAcceptSnapshotLabel(pending.source, pending.createdAt),
+        );
+        toast.success("Checkpoint saved before AI apply", { duration: 3_000 });
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Checkpoint failed — applying edit anyway",
+          { duration: 5_000 },
+        );
+      }
+    }
+
     ws.applyAiEdit(pending.after);
     store.commitAccepted(pending.messageId);
     return { stale };
-  }, [workspace, store]);
+  }, [workspace, store, prefs.snapshotOnAccept]);
 
   const rejectPending = useCallback(() => {
     const pending = store.getPending();
@@ -142,6 +171,7 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
       prefs,
       setApplyMode,
       setShowInPreview,
+      setSnapshotOnAccept,
       pending: snapshot.pending,
       outcomes: snapshot.outcomes,
       lastAuto: snapshot.lastAuto,
@@ -155,6 +185,7 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
       prefs,
       setApplyMode,
       setShowInPreview,
+      setSnapshotOnAccept,
       snapshot.pending,
       snapshot.outcomes,
       snapshot.lastAuto,
