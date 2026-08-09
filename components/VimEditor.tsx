@@ -19,7 +19,7 @@ import * as Y from "yjs";
 import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 import { mathInlineWidgets } from "@/lib/cm-math-widgets";
 import { editorPlaceholder } from "@/lib/cm-placeholder";
-import { latexCompletionExtension } from "@/lib/cm-latex-completion";
+import { createLatexCompletionExtension } from "@/lib/cm-latex-completion";
 import { latexHighlightExtension } from "@/lib/cm-latex-highlight";
 import { ghostTextExtension } from "@/lib/cm-ghost-text";
 import { aiDiffExtension, setAiDiffLines } from "@/lib/cm-ai-diff";
@@ -66,6 +66,8 @@ type VimEditorProps = {
   showPlaceholder?: boolean;
   /** Studio ghost-text completions (#55). Default false. */
   ghostText?: boolean;
+  /** Studio `\cite{` completion from note bib/bibitem (#61). Default false. */
+  citeComplete?: boolean;
   /** Pending AI edit gutter / line marks (#88). Default false. */
   aiDiff?: boolean;
   onVimModeChange: (mode: VimMode) => void;
@@ -160,6 +162,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       relativeLineNumbers = true,
       showPlaceholder = true,
       ghostText = false,
+      citeComplete = false,
       aiDiff = false,
       onVimModeChange,
       onSelectionRangeChange,
@@ -308,7 +311,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           highlightActiveLine(),
           drawSelection(),
           yUndoKeys,
-          ...latexCompletionExtension,
+          ...createLatexCompletionExtension({ citeComplete }),
           ...latexHighlightExtension,
           ...(ghostText ? ghostTextExtension() : []),
           ...(aiDiff ? aiDiffExtension() : []),
@@ -363,7 +366,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       // inlineMath/relativeLineNumbers/showPlaceholder reconfigure via
       // compartments/placeholder below — no view remount needed.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workspace, vimEnabled, ghostText, aiDiff]);
+    }, [workspace, vimEnabled, ghostText, citeComplete, aiDiff]);
 
     useEffect(() => {
       const view = viewRef.current;
