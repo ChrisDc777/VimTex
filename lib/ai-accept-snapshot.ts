@@ -13,7 +13,8 @@ const SOURCE_LABEL: Record<AiEditSource, string> = {
 };
 
 /**
- * Short checkpoint label, e.g. `Before AI: chat · 5:21 PM`.
+ * Short checkpoint label, e.g. `Pre-AI: chat · 5:21 PM`.
+ * Stored in Version history; restore is manual (room-wide).
  */
 export function formatAiAcceptSnapshotLabel(
   source: AiEditSource,
@@ -24,5 +25,5 @@ export function formatAiAcceptSnapshotLabel(
     hour: "numeric",
     minute: "2-digit",
   });
-  return `Before AI: ${sourceLabel} · ${time}`;
+  return `Pre-AI: ${sourceLabel} · ${time}`;
 }

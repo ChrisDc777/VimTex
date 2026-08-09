@@ -85,9 +85,16 @@ exports.setPersistence = persistence_ => {
 exports.getPersistence = () => persistence
 
 /**
+ * Process-wide room map. Next.js API routes and `server.mjs` can load this
+ * file as separate module instances; sharing via globalThis keeps restore /
+ * snapshot mutations on the same Y.Docs the WebSocket clients sync to.
  * @type {Map<string,WSSharedDoc>}
  */
-const docs = new Map()
+const docs = (() => {
+  const g = /** @type {typeof globalThis & { __vimtexYjsDocs?: Map<string, WSSharedDoc> }} */ (globalThis)
+  if (!g.__vimtexYjsDocs) g.__vimtexYjsDocs = new Map()
+  return g.__vimtexYjsDocs
+})()
 // exporting docs so that others can use it
 exports.docs = docs
 

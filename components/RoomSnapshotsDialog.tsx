@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import {
   createRoomSnapshot,
   deleteRoomSnapshot,
@@ -21,6 +22,7 @@ export function RoomSnapshotsDialog({
   roomId,
   onClose,
 }: RoomSnapshotsDialogProps) {
+  const workspace = useWorkspace();
   const [snapshots, setSnapshots] = useState<RoomSnapshotMeta[]>([]);
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,7 +48,9 @@ export function RoomSnapshotsDialog({
   const handleCreate = async () => {
     setBusy(true);
     try {
-      await createRoomSnapshot(roomId, label);
+      // Prefer the connected client's buffer — same path as Pre-AI checkpoints.
+      const text = workspace && !workspace.readOnly ? workspace.getText() : undefined;
+      await createRoomSnapshot(roomId, label, text);
       setLabel("");
       notify.success("Checkpoint saved");
       await refresh();
@@ -65,9 +69,16 @@ export function RoomSnapshotsDialog({
     ) {
       return;
     }
+    if (!workspace || workspace.readOnly) {
+      notify.error("Cannot restore in a read-only session.");
+      return;
+    }
     setBusy(true);
     try {
-      await restoreRoomSnapshot(roomId, snap.id);
+      const { text } = await restoreRoomSnapshot(roomId, snap.id);
+      // Apply on the live client Y.Doc so the editor updates even when the
+      // API process does not share the WebSocket room map.
+      workspace.restoreSnapshotText(text);
       notify.success("Checkpoint restored");
       onClose();
     } catch (err) {
@@ -166,7 +177,7 @@ export function RoomSnapshotsDialog({
                   <button
                     type="button"
                     className="vt-pill vt-pill--ghost"
-                    disabled={busy}
+                    disabled={busy || workspace?.readOnly}
                     onClick={() => void handleRestore(snap)}
                   >
                     Restore

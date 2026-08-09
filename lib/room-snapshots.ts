@@ -25,13 +25,18 @@ export async function listRoomSnapshots(
 export async function createRoomSnapshot(
   roomId: string,
   label?: string,
+  /** Exact note text to checkpoint (preferred). Falls back to server Y.Doc. */
+  text?: string,
 ): Promise<RoomSnapshotMeta> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: label ?? "" }),
+      body: JSON.stringify({
+        label: label ?? "",
+        ...(typeof text === "string" ? { text } : {}),
+      }),
     },
   );
   const body = (await res.json().catch(() => null)) as {
@@ -47,15 +52,22 @@ export async function createRoomSnapshot(
 export async function restoreRoomSnapshot(
   roomId: string,
   snapId: string,
-): Promise<void> {
+): Promise<{ text: string }> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
     { method: "POST" },
   );
+  const body = (await res.json().catch(() => null)) as {
+    text?: string;
+    error?: string;
+  } | null;
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error || `Restore failed (${res.status})`);
   }
+  if (typeof body?.text !== "string") {
+    throw new Error("Restore response missing note text.");
+  }
+  return { text: body.text };
 }
 
 export async function deleteRoomSnapshot(

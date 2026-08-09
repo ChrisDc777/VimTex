@@ -99,7 +99,7 @@ land and expose stable hunk ranges — see Wave D.
 |------|--------|
 | Ranged patch format (#87) | ✅ Level A shipped |
 | CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
-| Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Before AI: …` via #25 |
+| Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Pre-AI: …` via #25 |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
@@ -109,7 +109,7 @@ land and expose stable hunk ranges — see Wave D.
 
 **#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
 
-**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Before AI: source · time`) of the buffer before apply. Auto-apply skips this; restore is room-wide via Version history.
+**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via Version history.
 
 ## Out of scope
 

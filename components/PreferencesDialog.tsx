@@ -69,12 +69,12 @@ function PrefRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="min-w-0">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-ink">{title}</p>
         <p className="mt-0.5 text-xs text-mute">{description}</p>
       </div>
-      {children}
+      <div className="shrink-0 self-end sm:self-auto">{children}</div>
     </div>
   );
 }
@@ -269,7 +269,7 @@ export function PreferencesDialog({
 
                   <PrefRow
                     title="Snapshot on Accept"
-                    description="Before applying a confirmed AI edit, save a Version history checkpoint. Restoring a checkpoint replaces the shared note for everyone in the room."
+                    description="On Confirm Accept, save a Version history checkpoint first. Restore only from Version history (room-wide)."
                   >
                     <Segment
                       label="Snapshot on Accept"
