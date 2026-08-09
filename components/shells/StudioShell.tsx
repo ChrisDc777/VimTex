@@ -25,6 +25,7 @@ import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { VimCheatsheetDialog } from "@/components/VimCheatsheetDialog";
 import { StudioRoomChat, type StudioAiRunner } from "@/components/studio/StudioRoomChat";
+import { StudioOutlinePanel } from "@/components/studio/StudioOutlinePanel";
 import { SelectionActionBar } from "@/components/editor/SelectionActionBar";
 import { StudioDiagnosticsBar } from "@/components/diagnostics/StudioDiagnosticsBar";
 import { SafeSvg } from "@/components/SafeSvg";
@@ -119,6 +120,7 @@ export function StudioShell({
   const [needsName, setNeedsName] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -365,7 +367,10 @@ export function StudioShell({
 
   const { layout: paneLayout, resizePane, resizeMobileBottom, resetPane } =
     usePaneLayout({
-      open: { left: false, right: chatOpen },
+      open: {
+        left: outlineOpen && aiFeatureEnabled("studio", "outlineTodo"),
+        right: chatOpen,
+      },
     });
   const {
     layout: splitLayout,
@@ -421,6 +426,24 @@ export function StudioShell({
               }
             />
           ) : null}
+          {aiFeatureEnabled("studio", "outlineTodo") ? (
+            <button
+              type="button"
+              aria-pressed={outlineOpen}
+              aria-label={outlineOpen ? "Close outline" : "Open outline"}
+              title="Document outline"
+              disabled={!ready}
+              onClick={() => setOutlineOpen((v) => !v)}
+              className={
+                outlineOpen
+                  ? "vt-pill vt-pill--solid gap-1.5"
+                  : "vt-pill vt-pill--ghost gap-1.5"
+              }
+            >
+              <OutlineIcon />
+              <span className="hidden sm:inline">Outline</span>
+            </button>
+          ) : null}
           <button
             type="button"
             aria-pressed={chatOpen}
@@ -466,6 +489,24 @@ export function StudioShell({
       <ReconnectBanner status={collabStatus} localBuffer={false} />
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        {aiFeatureEnabled("studio", "outlineTodo") ? (
+          <SidePanel
+            side="left"
+            open={outlineOpen}
+            width={paneLayout.left}
+            ariaLabel="Document outline"
+            surfaceClassName="vt-outline-pane"
+            onResize={(delta) => resizePane("left", delta)}
+            onReset={() => resetPane("left")}
+          >
+            <StudioOutlinePanel
+              note={note}
+              onClose={() => setOutlineOpen(false)}
+              onJumpToLine={(line) => editorRef.current?.jumpToLine(line)}
+            />
+          </SidePanel>
+        ) : null}
+
         <main
           className={
             isSplit
@@ -625,12 +666,14 @@ export function StudioShell({
         editorMode={editorMode}
         uiVariant={uiVariant}
         chatOpen={chatOpen}
+        outlineOpen={outlineOpen}
         onNewRoom={handleNewRoom}
         onOpenSheetPicker={() => setSheetPickerOpen(true)}
         onViewModeChange={handleViewMode}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}
         onToggleChat={() => setChatOpen((v) => !v)}
+        onToggleOutline={() => setOutlineOpen((v) => !v)}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
         onOpenOnboarding={() => setOnboardingOpen(true)}
@@ -720,6 +763,26 @@ function ChatIcon() {
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
+}
+
+function OutlineIcon() {
+  return (
+    <SafeSvg
+      width={15}
+      height={15}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M3 4h10M3 8h7M3 12h8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
       />
     </SafeSvg>
   );
