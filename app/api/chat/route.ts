@@ -1,5 +1,6 @@
 import { generateText, streamText } from "ai";
 import { buildSystemPrompt } from "@/lib/ai-chat";
+import { isDerivationCoachInstruction } from "@/lib/derivation-coach";
 import {
   type AiHistoryMessage,
   DEFAULT_HISTORY_MAX_CHARS,
@@ -38,6 +39,8 @@ type ChatRequestBody = {
   truncated?: boolean;
   /** Prior @vimothy turns (#54 Level A). */
   history?: unknown;
+  /** Chat-only derivation coach (#84). */
+  mode?: "coach" | string;
 };
 
 function appUrl(): string {
@@ -111,6 +114,7 @@ function parseBody(body: ChatRequestBody): {
   caret?: { line: number; column: number; offset: number };
   truncated: boolean;
   history: AiHistoryMessage[];
+  coach?: boolean;
   error?: Response;
 } {
   const instruction =
@@ -229,6 +233,8 @@ function parseBody(body: ChatRequestBody): {
     caret: parseCaret(body.caret),
     truncated: Boolean(body.truncated),
     history: parseHistory(body.history),
+    coach:
+      body.mode === "coach" || isDerivationCoachInstruction(instruction),
   };
 }
 
@@ -260,6 +266,7 @@ export async function POST(req: Request) {
     caret,
     truncated,
     history,
+    coach,
   } = parsed;
 
   const lm =
@@ -276,6 +283,7 @@ export async function POST(req: Request) {
     surrounding,
     caret,
     truncated,
+    coach: Boolean(coach),
   });
 
   const messages = [

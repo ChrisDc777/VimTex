@@ -20,6 +20,7 @@ export type AiFeature =
   | "grammarReview"
   | "citeComplete"
   | "equationScopedAi"
+  | "derivationCoach"
   | "chatStreaming"
   | "chatMemory";
 
@@ -39,6 +40,7 @@ const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
   "grammarReview",
   "citeComplete",
   "equationScopedAi",
+  "derivationCoach",
   "chatStreaming",
   "chatMemory",
 ]);
@@ -46,11 +48,13 @@ const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
 /**
  * Forge: suggest-only workbench.
  * Chat Q&A and read-only explain; no document mutation paths.
+ * Derivation coach is the primary Forge AI teaching surface (#84).
  */
 const FORGE_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
   "chat",
   "diagnosticsExplain",
   "chatStreaming",
+  "derivationCoach",
 ]);
 
 const BY_SHELL: Record<UiVariant, ReadonlySet<AiFeature>> = {

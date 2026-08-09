@@ -296,7 +296,9 @@ export function StudioRoomChat({
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.setSlashOpen(false)}
         slashCommandsEnabled={
-          chat.shell === "studio" && chromePrefs.slashMenu
+          (chat.shell === "studio" && chromePrefs.slashMenu) ||
+          (chat.shell === "forge" &&
+            aiFeatureEnabled("forge", "derivationCoach"))
         }
         pendingSlash={chat.pendingSlash}
         onClearPendingSlash={chat.clearPendingSlash}

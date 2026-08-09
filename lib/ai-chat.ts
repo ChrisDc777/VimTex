@@ -7,6 +7,7 @@ import {
   parsePatchBody,
   type AiPatchProposal,
 } from "@/lib/ai-patch";
+import { DERIVATION_COACH_SYSTEM_RULES } from "@/lib/derivation-coach";
 
 /** Markers the model uses to propose a full-buffer replacement (fallback). */
 export const DOC_EDIT_START = "@@@DOCUMENT";
@@ -34,6 +35,8 @@ export type SystemPromptContext = {
   surrounding?: string;
   caret?: { line: number; column: number; offset: number };
   truncated?: boolean;
+  /** Chat-only derivation coach (#84) — no patch/document edit format. */
+  coach?: boolean;
 };
 
 export function buildSystemPrompt(
@@ -82,6 +85,17 @@ ${ctx.surrounding}
 ${ctx.document}
 -----`,
   );
+
+  if (ctx.coach) {
+    sections.push(DERIVATION_COACH_SYSTEM_RULES);
+    sections.push(
+      `Rules:
+- Help with math and LaTeX reasoning in chat.
+- Keep replies concise and step-by-step.
+- Prefer KaTeX-friendly TeX. Math in chat: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks, **bold**, or markdown code fences.`,
+    );
+    return sections.join("\n\n");
+  }
 
   sections.push(`Rules:
 - Help with math, LaTeX, and editing the note.

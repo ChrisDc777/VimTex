@@ -1,6 +1,6 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Waves A–D Level A landed (incl. #83 equation scope); #60 polish leftovers / #84 next  
+**Status:** Waves A–D Level A landed (incl. #83/#84); #60 polish leftovers next  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
 **Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29), patches [#87](https://github.com/ChrisDc777/VimTex/issues/87)
 
@@ -47,6 +47,7 @@ land and expose stable hunk ranges — see Wave D.
 | Preview Before/After | ✅ | — | showInPreview |
 | Selection / inline actions | ✅ | ❌ | #28 |
 | Equation-scoped rewrite | ✅ Lvl A | ❌ | #83 |
+| Derivation coach | ✅ Lvl A | ✅ | #84 |
 | Ghost text | 🔄 | ❌ | #55 |
 | Streaming + cancel | ✅ | ✅ | #29 |
 | Diagnostics explain | ✅ | ✅ | #53 |
@@ -102,10 +103,10 @@ land and expose stable hunk ranges — see Wave D.
 | CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
 | Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Pre-AI: …` via #25 |
 | Equation-scoped rewrite (#83) | ✅ Level A — caret/selection in math → Equation bar + Rewrite eq |
+| Derivation coach (#84) | ✅ Level A — `/derive` (+ Coach action); `mode=coach` forbids patches; Forge `/derive` only |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
-| Derivation coach | M3 (#84) |
 
 **#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI deferred.  
 
@@ -114,6 +115,8 @@ land and expose stable hunk ranges — see Wave D.
 **#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via Version history (client Y.Doc apply).
 
 **#83 Level A:** When the caret or selection sits in a parsed math span (`\(`/`\[` / auto-math), Studio shows an Equation action bar. **Rewrite eq** expands to that span and asks Vimothy for a patch-only equation rewrite (Confirm Accept). Forge stays suggest-only.
+
+**#84 Level A:** `/derive` (Studio full slash menu + Forge derive-only) and Studio **Coach** selection action run chat-only coaching. API `mode=coach` swaps the system prompt to forbid `@@@PATCH`/`@@@DOCUMENT`; the client ignores any accidental edit markers. Works in view-only rooms (chat still runs). Homework-no-answer mode deferred.
 
 ## Out of scope
 
