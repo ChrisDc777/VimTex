@@ -13,6 +13,8 @@ const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
   { keys: "Ctrl/Cmd+K", action: "Open command palette" },
   { keys: "Ctrl/Cmd+,", action: "Open preferences" },
   { keys: "?", action: "Open this shortcuts & tips panel" },
+  { keys: "/", action: "Slash commands in Studio chat" },
+  { keys: "@vimothy", action: "Ask Vimothy in Studio chat" },
 ];
 
 const VIM_ROWS: Array<{ keys: string; action: string }> = [

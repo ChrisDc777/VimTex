@@ -53,6 +53,7 @@ export function StudioStatusBar({
         className="hidden sm:inline-flex"
         shortcuts={[
           { keys: `${MOD_LABEL} K`, label: "palette" },
+          { keys: "/", label: "commands" },
           { keys: "?", label: "tips" },
         ]}
       />
