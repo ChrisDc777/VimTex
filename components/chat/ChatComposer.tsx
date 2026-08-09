@@ -273,6 +273,11 @@ export function ChatComposer({
 
       {busy ? (
         <p className="vt-chat-composer__hint">Vimothy is responding…</p>
+      ) : slashCommandsEnabled && !pendingSlash && !input.trim() ? (
+        <p className="vt-chat-composer__hint">
+          Type <span className="font-mono">/</span> for commands ·{" "}
+          <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy
+        </p>
       ) : null}
     </div>
   );
