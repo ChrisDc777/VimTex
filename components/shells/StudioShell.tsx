@@ -332,6 +332,10 @@ export function StudioShell({
   useShellShortcuts({
     onTogglePalette: useCallback(() => setPaletteOpen((v) => !v), []),
     onToggleCheatsheet: useCallback(() => setCheatsheetOpen((v) => !v), []),
+    onToggleChat: useCallback(() => setChatOpen((v) => !v), []),
+    onToggleViewMode: useCallback(() => {
+      setViewMode((prev) => (prev === "split" ? "realtime" : "split"));
+    }, []),
   });
 
   const isSplit = viewMode === "split";

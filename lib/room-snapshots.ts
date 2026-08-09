@@ -25,13 +25,18 @@ export async function listRoomSnapshots(
 export async function createRoomSnapshot(
   roomId: string,
   label?: string,
+  /** Exact note text to checkpoint (preferred). Falls back to server Y.Doc. */
+  text?: string,
 ): Promise<RoomSnapshotMeta> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: label ?? "" }),
+      body: JSON.stringify({
+        label: label ?? "",
+        ...(typeof text === "string" ? { text } : {}),
+      }),
     },
   );
   const body = (await res.json().catch(() => null)) as {

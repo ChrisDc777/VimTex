@@ -54,15 +54,31 @@ export async function POST(req: Request, context: RouteContext) {
   }
 
   let label = "";
+  let text: string | undefined;
   try {
-    const body = (await req.json()) as { label?: string };
+    const body = (await req.json()) as { label?: string; text?: string };
     if (typeof body.label === "string") label = body.label;
+    if (typeof body.text === "string") text = body.text;
   } catch {
     // empty body ok
   }
 
-  const doc = getYDoc(roomId);
-  const update = Y.encodeStateAsUpdate(doc);
+  let update: Uint8Array;
+  if (typeof text === "string") {
+    // Client-supplied buffer (e.g. AI Accept “before”) — do not touch the live doc.
+    const snapDoc = new Y.Doc();
+    try {
+      if (text.length > 0) {
+        snapDoc.getText("codemirror").insert(0, text);
+      }
+      update = Y.encodeStateAsUpdate(snapDoc);
+    } finally {
+      snapDoc.destroy();
+    }
+  } else {
+    const doc = getYDoc(roomId);
+    update = Y.encodeStateAsUpdate(doc);
+  }
   const meta = createSnapshot(roomId, update, label);
   return NextResponse.json({ snapshot: meta }, { status: 201 });
 }

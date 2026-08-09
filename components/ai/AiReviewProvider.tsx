@@ -136,14 +136,17 @@ export function AiReviewProvider({ children }: { children: ReactNode }) {
       );
     }
 
-    // Optional checkpoint of the live buffer before apply (room-wide restore).
+    // Checkpoint the exact pre-apply buffer (client text) — never mutates live Yjs.
     if (prefs.snapshotOnAccept) {
       try {
         await createRoomSnapshot(
           ws.roomId,
           formatAiAcceptSnapshotLabel(pending.source, pending.createdAt),
+          pending.before,
         );
-        toast.success("Checkpoint saved before AI apply", { duration: 3_000 });
+        toast.success("Checkpoint saved — restore via Version history", {
+          duration: 3_500,
+        });
       } catch (err) {
         toast.error(
           err instanceof Error

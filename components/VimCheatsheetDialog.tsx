@@ -12,6 +12,8 @@ type VimCheatsheetDialogProps = {
 const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
   { keys: "Ctrl/Cmd+K", action: "Open command palette" },
   { keys: "Ctrl/Cmd+,", action: "Open preferences" },
+  { keys: "Ctrl/Cmd+Shift+C", action: "Toggle Studio chat" },
+  { keys: "Ctrl/Cmd+Shift+V", action: "Toggle Live / Split view" },
   { keys: "?", action: "Open this shortcuts & tips panel" },
   { keys: "/", action: "Slash commands in Studio chat" },
   { keys: "i then /", action: "Insert section / todo / math block" },
