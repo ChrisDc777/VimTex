@@ -39,6 +39,7 @@ import {
   extractSurroundingLines,
   type EditorContextSnapshot,
 } from "@/lib/ai-chat-context";
+import { findEquationScope } from "@/lib/render-note";
 
 export type VimEditorHandle = {
   focus: () => void;
@@ -51,6 +52,8 @@ export type VimEditorHandle = {
   getEditorContext: () => EditorContextSnapshot | null;
   /** Move caret to a 1-based line and scroll it into view (#56). */
   jumpToLine: (line: number) => void;
+  /** Select an absolute document range (for equation-scoped AI #83). */
+  selectRange: (from: number, to: number) => void;
   /** Highlight 1-based lines for a pending AI edit (#88); pass [] to clear. */
   setAiDiffLines: (lines: readonly number[]) => void;
 };
@@ -71,8 +74,11 @@ type VimEditorProps = {
   /** Pending AI edit gutter / line marks (#88). Default false. */
   aiDiff?: boolean;
   onVimModeChange: (mode: VimMode) => void;
-  /** Fires when the main selection collapses or expands (#28). */
-  onSelectionRangeChange?: (hasRange: boolean) => void;
+  /** Fires when the main selection or equation-under-caret scope changes (#28/#83). */
+  onSelectionRangeChange?: (state: {
+    hasRange: boolean;
+    hasEquation: boolean;
+  }) => void;
 };
 
 const vimTexTheme = EditorView.theme(
@@ -193,6 +199,18 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         view.dispatch({
           selection: { anchor: lineObj.from },
           effects: EditorView.scrollIntoView(lineObj.from, { y: "center" }),
+        });
+        view.focus();
+      },
+      selectRange: (from, to) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const docLen = view.state.doc.length;
+        const a = Math.max(0, Math.min(from, docLen));
+        const b = Math.max(0, Math.min(to, docLen));
+        view.dispatch({
+          selection: { anchor: a, head: b },
+          effects: EditorView.scrollIntoView(a, { y: "nearest" }),
         });
         view.focus();
       },
@@ -326,9 +344,14 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
           EditorView.updateListener.of((update) => {
-            if (!update.selectionSet) return;
+            if (!update.selectionSet && !update.docChanged) return;
             const sel = update.state.selection.main;
-            onSelectionRangeChangeRef.current?.(sel.from !== sel.to);
+            const text = update.state.doc.toString();
+            const hasRange = sel.from !== sel.to;
+            const hasEquation = Boolean(
+              findEquationScope(text, sel.from, sel.to),
+            );
+            onSelectionRangeChangeRef.current?.({ hasRange, hasEquation });
           }),
         ],
       });

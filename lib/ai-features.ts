@@ -19,6 +19,7 @@ export type AiFeature =
   | "outlineTodo"
   | "grammarReview"
   | "citeComplete"
+  | "equationScopedAi"
   | "chatStreaming"
   | "chatMemory";
 
@@ -37,6 +38,7 @@ const STUDIO_FEATURES: ReadonlySet<AiFeature> = new Set<AiFeature>([
   "outlineTodo",
   "grammarReview",
   "citeComplete",
+  "equationScopedAi",
   "chatStreaming",
   "chatMemory",
 ]);
