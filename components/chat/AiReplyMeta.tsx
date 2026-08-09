@@ -29,13 +29,12 @@ export function AiReplyMeta({
 }: AiReplyMetaProps) {
   if (message.role !== "ai") return null;
   const modelLabel = shortModelLabel(message.model);
-  const usageLabel = message.usage ? formatAiUsageLabel(message.usage) : "";
-  const keyHint =
-    message.keySource === "user"
-      ? "your key"
-      : message.keySource === "server"
-        ? "shared key"
-        : null;
+  // Token counts only for BYOK turns — shared/app keys are unmetered in UI.
+  const usageLabel =
+    message.keySource === "user" && message.usage
+      ? formatAiUsageLabel(message.usage)
+      : "";
+  const keyHint = message.keySource === "user" ? "your key" : null;
   const info = [modelLabel, usageLabel, keyHint].filter(Boolean).join(" · ");
   if (!info && !onRegenerate) return null;
 
