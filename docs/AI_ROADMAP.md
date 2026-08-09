@@ -82,7 +82,7 @@ land and expose stable hunk ranges — see Wave D.
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #62 review ✅ Level A, #61 cite, #60 polish
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #61 cite ✅ → #62 review ✅ Level A → #60 polish
 
 **#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
@@ -90,6 +90,7 @@ land and expose stable hunk ranges — see Wave D.
 **Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).  
 **#56:** Studio left outline panel — heuristic `\part`/`\section`/`\subsection` tree + `\todo{}` / `% TODO` badges with jump-to-line (AI fallback deferred).  
 **Editor `/` inserts:** Insert-mode only — `/section` `/todo` `/math` `/list` /… via CM autocomplete (Vim normal `/` search untouched).  
+**#61 Level A:** Studio `\cite{` completion from note-local BibTeX / `\bibitem` (offline fuzzy match; no separate `.bib` file yet).  
 **#62 Level A:** Studio `/review` slash (+ optional Review doc-action pill) asks Vimothy for a whole-note grammar/style pass (skip math/verbatim), proposing via existing Confirm/diff (`@@@PATCH` preferred). Chunked multi-suggestion panel deferred.
 
 ### Wave D / triage
@@ -98,7 +99,7 @@ land and expose stable hunk ranges — see Wave D.
 |------|--------|
 | Ranged patch format (#87) | ✅ Level A shipped |
 | CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
-| Snapshot on Accept (#25) | P2 optional |
+| Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Before AI: …` via #25 |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
@@ -107,6 +108,8 @@ land and expose stable hunk ranges — see Wave D.
 **#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI deferred.  
 
 **#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
+
+**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Before AI: source · time`) of the buffer before apply. Auto-apply skips this; restore is room-wide via Version history.
 
 ## Out of scope
 

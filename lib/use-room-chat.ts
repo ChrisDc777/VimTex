@@ -658,9 +658,7 @@ export function useRoomChat({
     useDiffReview: aiFeatureEnabled(shell, "diffAcceptReject"),
     pendingEdit,
     editOutcomes,
-    acceptPendingEdit: () => {
-      review.acceptPending();
-    },
+    acceptPendingEdit: () => review.acceptPending(),
     rejectPendingEdit: () => {
       review.rejectPending();
     },
