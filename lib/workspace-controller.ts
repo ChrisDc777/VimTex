@@ -89,6 +89,7 @@ function isRoomChatMessage(m: unknown): m is RoomChatMessage {
  * `setCallbacks`; mutate the buffer via `transact`/`replaceAll`.
  */
 export class WorkspaceController {
+  readonly roomId: string;
   readonly ydoc: Y.Doc;
   readonly ytext: Y.Text;
   readonly ychat: Y.Array<RoomChatMessage>;
@@ -128,6 +129,7 @@ export class WorkspaceController {
       authToken = null,
       editSecret = null,
     } = options;
+    this.roomId = roomId;
     this.collaborationEnabled = collaborationEnabled;
     this.readOnly = Boolean(viewToken?.trim());
     this.localSeed = options.localSeed?.trim() ?? null;

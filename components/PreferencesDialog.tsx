@@ -266,6 +266,23 @@ export function PreferencesDialog({
                       }
                     />
                   </PrefRow>
+
+                  <PrefRow
+                    title="Snapshot on Accept"
+                    description="Before applying a confirmed AI edit, save a Version history checkpoint. Restoring a checkpoint replaces the shared note for everyone in the room."
+                  >
+                    <Segment
+                      label="Snapshot on Accept"
+                      options={[
+                        { value: "on", label: "On" },
+                        { value: "off", label: "Off" },
+                      ]}
+                      value={review.prefs.snapshotOnAccept ? "on" : "off"}
+                      onChange={(value) =>
+                        review.setSnapshotOnAccept(value === "on")
+                      }
+                    />
+                  </PrefRow>
                 </>
               ) : null}
 

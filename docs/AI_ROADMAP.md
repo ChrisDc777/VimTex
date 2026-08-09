@@ -97,7 +97,7 @@ land and expose stable hunk ranges — see Wave D.
 |------|--------|
 | Ranged patch format (#87) | ✅ Level A shipped |
 | CM line/gutter diff (#88) | ✅ Level A — gutter ± + line tint on pending before-lines |
-| Snapshot on Accept (#25) | P2 optional |
+| Snapshot on Accept (#89) | ✅ Optional pref (default off); labeled `Before AI: …` via #25 |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
@@ -106,6 +106,8 @@ land and expose stable hunk ranges — see Wave D.
 **#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI deferred.  
 
 **#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
+
+**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Before AI: source · time`) of the buffer before apply. Auto-apply skips this; restore is room-wide via Version history.
 
 ## Out of scope
 
