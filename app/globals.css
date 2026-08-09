@@ -2551,6 +2551,23 @@ body[data-pane-resizing] * {
   outline-offset: 2px;
 }
 
+.vt-chat-model-picker--studio {
+  color: var(--accent-breeze, var(--focus));
+  border: 1px solid color-mix(in srgb, var(--accent-breeze, var(--focus)) 35%, transparent);
+  background: color-mix(in srgb, var(--accent-breeze, var(--focus)) 8%, transparent);
+  padding: 4px 7px;
+}
+
+.vt-chat-model-picker--studio:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent-breeze, var(--focus)) 55%, transparent);
+  background: color-mix(in srgb, var(--accent-breeze, var(--focus)) 16%, transparent);
+}
+
+.vt-chat-model-picker--studio:focus-visible {
+  outline-color: var(--accent-breeze, var(--focus));
+}
+
 .vt-chat-model-picker__label {
   max-width: 6rem;
   overflow: hidden;
@@ -2566,6 +2583,22 @@ body[data-pane-resizing] * {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.vt-chat-model-menu--studio {
+  border: 1px solid color-mix(in srgb, var(--accent-breeze, var(--focus)) 28%, var(--hairline));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-breeze, var(--focus)) 12%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.vt-chat-model-menu--studio .vt-chat-model-menu__group-label {
+  color: var(--accent-breeze, var(--focus));
+}
+
+.vt-chat-model-menu--studio .vt-chat-model-menu__item--active,
+.vt-chat-model-menu--studio .vt-chat-model-menu__item:hover {
+  background: color-mix(in srgb, var(--accent-breeze, var(--focus)) 14%, var(--canvas-mid));
 }
 
 .vt-chat-model-menu__item {
