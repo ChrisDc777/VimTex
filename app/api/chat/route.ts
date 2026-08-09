@@ -22,6 +22,10 @@ import {
   normalizeAiUsage,
   type AiKeySource,
 } from "@/lib/ai-usage";
+import {
+  DEFAULT_AI_TEMPERATURE,
+  normalizeAiTemperature,
+} from "@/lib/ai-room-prefs";
 
 export const runtime = "nodejs";
 
@@ -47,6 +51,8 @@ type ChatRequestBody = {
   history?: unknown;
   /** Chat-only derivation coach (#84). */
   mode?: "coach" | string;
+  /** Sampling temperature 0–1 (#60). */
+  temperature?: number;
 };
 
 function appUrl(): string {
@@ -122,6 +128,7 @@ function parseBody(body: ChatRequestBody): {
   truncated: boolean;
   history: AiHistoryMessage[];
   coach?: boolean;
+  temperature?: number;
   error?: Response;
 } {
   const instruction =
@@ -250,6 +257,8 @@ function parseBody(body: ChatRequestBody): {
     history: parseHistory(body.history),
     coach:
       body.mode === "coach" || isDerivationCoachInstruction(instruction),
+    temperature:
+      normalizeAiTemperature(body.temperature) ?? DEFAULT_AI_TEMPERATURE,
   };
 }
 
@@ -283,6 +292,7 @@ export async function POST(req: Request) {
     truncated,
     history,
     coach,
+    temperature = DEFAULT_AI_TEMPERATURE,
   } = parsed;
 
   const lm =
@@ -315,7 +325,7 @@ export async function POST(req: Request) {
         model: lm,
         system,
         messages,
-        temperature: 0.4,
+        temperature,
         abortSignal: req.signal,
       });
 
@@ -359,7 +369,7 @@ export async function POST(req: Request) {
       model: lm,
       system,
       messages,
-      temperature: 0.4,
+      temperature,
       abortSignal: req.signal,
     });
 

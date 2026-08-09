@@ -9,8 +9,18 @@ import {
   type UiVariant,
 } from "@/lib/ui-variant";
 import type { AiApplyMode } from "@/lib/ai-review-prefs";
+import {
+  AI_ROOM_PREFS_EVENT,
+  AI_TEMPERATURE_PRESETS,
+  DEFAULT_AI_TEMPERATURE,
+  loadAiRoomPrefs,
+  nearestAiTemperaturePreset,
+  saveAiRoomPrefs,
+  type AiTemperaturePreset,
+} from "@/lib/ai-room-prefs";
 import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 type PrefSection = "editor" | "workspace" | "ai";
 
@@ -93,7 +103,39 @@ export function PreferencesDialog({
   const titleId = useId();
   const review = useAiReviewOptional();
   const chrome = useAiChromePrefs();
+  const workspace = useWorkspace();
+  const roomId = workspace?.roomId ?? null;
   const [section, setSection] = useState<PrefSection>("editor");
+  const [temperature, setTemperature] = useState<AiTemperaturePreset>(
+    DEFAULT_AI_TEMPERATURE as AiTemperaturePreset,
+  );
+
+  useEffect(() => {
+    if (!open || !roomId) return;
+    const prefs = loadAiRoomPrefs(roomId);
+    setTemperature(
+      nearestAiTemperaturePreset(prefs.temperature ?? DEFAULT_AI_TEMPERATURE),
+    );
+  }, [open, roomId]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    const onPrefs = (event: Event) => {
+      const detail = (event as CustomEvent<{ roomId?: string }>).detail;
+      if (detail?.roomId && detail.roomId !== roomId) return;
+      const prefs = loadAiRoomPrefs(roomId);
+      setTemperature(
+        nearestAiTemperaturePreset(prefs.temperature ?? DEFAULT_AI_TEMPERATURE),
+      );
+    };
+    window.addEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
+    return () => window.removeEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
+  }, [roomId]);
+
+  const applyTemperature = (value: AiTemperaturePreset) => {
+    setTemperature(value);
+    if (roomId) saveAiRoomPrefs(roomId, { temperature: value });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -284,6 +326,25 @@ export function PreferencesDialog({
                     />
                   </PrefRow>
                 </>
+              ) : null}
+
+              {roomId ? (
+                <PrefRow
+                  title="Creativity"
+                  description="Per-room sampling for Vimothy replies"
+                >
+                  <Segment
+                    label="Creativity"
+                    options={AI_TEMPERATURE_PRESETS.map((p) => ({
+                      value: String(p.value),
+                      label: p.label,
+                    }))}
+                    value={String(temperature)}
+                    onChange={(value) =>
+                      applyTemperature(Number(value) as AiTemperaturePreset)
+                    }
+                  />
+                </PrefRow>
               ) : null}
 
               <PrefRow

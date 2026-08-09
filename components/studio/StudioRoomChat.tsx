@@ -313,6 +313,7 @@ export function StudioRoomChat({
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
+        modelPickerVariant="studio"
       />
     </>
   );

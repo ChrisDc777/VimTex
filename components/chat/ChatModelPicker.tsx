@@ -26,6 +26,8 @@ type ChatModelPickerProps = {
   model: AiModelId;
   onChange: (model: AiModelId) => void;
   disabled?: boolean;
+  /** Studio uses breeze accent; Forge keeps muted chrome. */
+  variant?: "studio" | "forge";
 };
 
 type AnchorRect = {
@@ -154,6 +156,7 @@ export function ChatModelPicker({
   model,
   onChange,
   disabled,
+  variant = "forge",
 }: ChatModelPickerProps) {
   const [open, setOpen] = useState(false);
   const [hasOrKey, setHasOrKey] = useState(false);
@@ -258,11 +261,22 @@ export function ChatModelPicker({
     : undefined;
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div
+      ref={rootRef}
+      className={
+        variant === "studio"
+          ? "relative shrink-0 vt-chat-model-picker-wrap--studio"
+          : "relative shrink-0"
+      }
+    >
       <button
         type="button"
         disabled={disabled}
-        className="vt-chat-model-picker"
+        className={
+          variant === "studio"
+            ? "vt-chat-model-picker vt-chat-model-picker--studio"
+            : "vt-chat-model-picker"
+        }
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={menuId}
@@ -282,7 +296,11 @@ export function ChatModelPicker({
               role="listbox"
               aria-label="AI model"
               style={menuStyle}
-              className="vt-elevated--sm vt-dropdown vt-chat-model-menu"
+              className={
+                variant === "studio"
+                  ? "vt-elevated--sm vt-dropdown vt-chat-model-menu vt-chat-model-menu--studio"
+                  : "vt-elevated--sm vt-dropdown vt-chat-model-menu"
+              }
             >
               {AI_PROVIDERS.map((provider) => {
                 const providerLocked =

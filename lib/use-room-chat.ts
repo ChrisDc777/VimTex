@@ -42,6 +42,13 @@ import {
   mentionsAi,
   stripAiMention,
 } from "@/lib/chat-mentions";
+import {
+  AI_ROOM_PREFS_EVENT,
+  DEFAULT_AI_TEMPERATURE,
+  loadAiRoomPrefs,
+  resolveAiRoomModel,
+  saveAiRoomPrefs,
+} from "@/lib/ai-room-prefs";
 import { loadChatModel, saveChatModel } from "@/lib/chat-model-storage";
 import {
   newChatMessageId,
@@ -67,7 +74,10 @@ export type UseRoomChatOptions = {
   user: CollabUser;
   /** Shell that owns this chat — drives AI feature gate (#59). */
   shell: UiVariant;
-  /** Persist model choice (Forge). Studio may leave this false. */
+  /**
+   * Also mirror model to the global chat-model key (Forge).
+   * Per-room model always persists when a room id is available (#60).
+   */
   persistModel?: boolean;
   /** Live editor snapshot for context packing (#57). */
   getEditorContext?: () => EditorContextSnapshot | null;
@@ -87,9 +97,11 @@ export function useRoomChat({
   getEditorContext,
 }: UseRoomChatOptions) {
   const workspace = useWorkspace();
+  const roomId = workspace?.roomId ?? null;
   const review = useAiReview();
   const { prefs: chromePrefs } = useAiChromePrefs();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
+  const [temperature, setTemperatureState] = useState(DEFAULT_AI_TEMPERATURE);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -122,9 +134,26 @@ export function useRoomChat({
   const editOutcomes = review.outcomes;
 
   useEffect(() => {
-    if (!persistModel) return;
-    setModelState(loadChatModel());
-  }, [persistModel]);
+    const fallback = persistModel ? loadChatModel() : DEFAULT_AI_MODEL;
+    setModelState(resolveAiRoomModel(roomId, fallback) as AiModelId);
+    const roomTemp = loadAiRoomPrefs(roomId).temperature;
+    setTemperatureState(roomTemp ?? DEFAULT_AI_TEMPERATURE);
+  }, [roomId, persistModel]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    const onPrefs = (event: Event) => {
+      const detail = (event as CustomEvent<{ roomId?: string }>).detail;
+      if (detail?.roomId && detail.roomId !== roomId) return;
+      const prefs = loadAiRoomPrefs(roomId);
+      if (prefs.model) setModelState(prefs.model as AiModelId);
+      if (prefs.temperature !== undefined) {
+        setTemperatureState(prefs.temperature);
+      }
+    };
+    window.addEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
+    return () => window.removeEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
+  }, [roomId]);
 
   useEffect(() => {
     if (!open) return;
@@ -305,9 +334,18 @@ export function useRoomChat({
   const setModel = useCallback(
     (next: AiModelId) => {
       setModelState(next);
+      if (roomId) saveAiRoomPrefs(roomId, { model: next });
       if (persistModel) saveChatModel(next);
     },
-    [persistModel],
+    [persistModel, roomId],
+  );
+
+  const setTemperature = useCallback(
+    (next: number) => {
+      setTemperatureState(next);
+      if (roomId) saveAiRoomPrefs(roomId, { temperature: next });
+    },
+    [roomId],
   );
 
   const cancelAi = useCallback(() => {
@@ -418,6 +456,7 @@ export function useRoomChat({
           instruction,
           document: packed.document,
           model,
+          temperature,
           signal: ac.signal,
           selection: packed.selection,
           surrounding: packed.surrounding,
@@ -519,7 +558,7 @@ export function useRoomChat({
         setBusy(false);
       }
     },
-    [workspace, model, shell, review, busy, getEditorContext, messages],
+    [workspace, model, temperature, shell, review, busy, getEditorContext, messages],
   );
 
   const send = useCallback(async () => {
@@ -739,6 +778,8 @@ export function useRoomChat({
     messageContexts,
     model,
     setModel,
+    temperature,
+    setTemperature,
     input,
     messages,
     busy,

@@ -47,6 +47,8 @@ type ChatComposerProps = {
   /** Active editor selection attached to the next @vimothy turn. */
   selectionPreview?: SelectionContextPreview | null;
   onHideSelectionChip?: () => void;
+  /** Studio breeze accent on the model picker (#60). */
+  modelPickerVariant?: "studio" | "forge";
 };
 
 export function ChatComposer({
@@ -76,6 +78,7 @@ export function ChatComposer({
   readOnly = false,
   selectionPreview = null,
   onHideSelectionChip,
+  modelPickerVariant = "forge",
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
 
@@ -244,6 +247,7 @@ export function ChatComposer({
             model={model}
             onChange={onModelChange}
             disabled={busy}
+            variant={modelPickerVariant}
           />
           {busy && onCancel ? (
             <button
