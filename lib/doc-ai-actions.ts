@@ -7,7 +7,8 @@ export type DocAiActionId =
   | "fix-errors"
   | "add-abstract"
   | "to-latex"
-  | "summarize";
+  | "summarize"
+  | "review";
 
 export type DocAiAction = {
   id: DocAiActionId;
@@ -16,6 +17,8 @@ export type DocAiAction = {
   chatText: string;
   /** Build the model instruction from the live note (document is also in system prompt). */
   buildInstruction: (note: string) => string;
+  /** When true, only offered if grammarReview is enabled (#62). */
+  grammarReview?: boolean;
 };
 
 export const DOC_AI_ACTIONS: readonly DocAiAction[] = [
@@ -62,4 +65,29 @@ export const DOC_AI_ACTIONS: readonly DocAiAction[] = [
         "Do not change the note.",
       ].join("\n"),
   },
+  {
+    id: "review",
+    label: "Review",
+    chatText: "Review grammar & style",
+    grammarReview: true,
+    // Keep in sync with GRAMMAR_REVIEW_INSTRUCTION (lib/grammar-review.ts).
+    buildInstruction: () =>
+      [
+        "Proofread the entire note for grammar, spelling, punctuation, and style.",
+        "Skip math mode, verbatim/listings, and comments when possible — do not rewrite equations or code-like TeX.",
+        "Preserve meaning, structure, and KaTeX-friendly markup.",
+        "Propose edits via a ranged @@@PATCH (preferred) or a full-document edit only if a patch is impractical.",
+        "If the prose is already fine, say so briefly and do not emit edit markers.",
+      ].join("\n"),
+  },
 ] as const;
+
+/** Filter doc-action pills by capability flags. */
+export function filterDocAiActions(
+  actions: readonly DocAiAction[] = DOC_AI_ACTIONS,
+  opts?: { includeGrammarReview?: boolean },
+): DocAiAction[] {
+  const includeGrammarReview = opts?.includeGrammarReview ?? true;
+  if (includeGrammarReview) return [...actions];
+  return actions.filter((a) => !a.grammarReview);
+}

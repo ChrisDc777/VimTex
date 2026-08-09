@@ -11,7 +11,12 @@ import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { aiFeatureEnabled } from "@/lib/ai-features";
-import { DOC_AI_ACTIONS, type DocAiAction } from "@/lib/doc-ai-actions";
+import {
+  DOC_AI_ACTIONS,
+  filterDocAiActions,
+  type DocAiAction,
+} from "@/lib/doc-ai-actions";
+import { buildGrammarReviewInstruction } from "@/lib/grammar-review";
 import { renderNoteDiagnostics } from "@/lib/render-note";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
@@ -240,12 +245,17 @@ export function StudioRoomChat({
       chromePrefs.docActionPills &&
       !chat.readOnly ? (
         <DocActionPills
-          actions={DOC_AI_ACTIONS}
+          actions={filterDocAiActions(DOC_AI_ACTIONS, {
+            includeGrammarReview: aiFeatureEnabled("studio", "grammarReview"),
+          })}
           disabled={chat.busy}
           onRun={(action: DocAiAction) => {
             const note =
               getEditorContext?.()?.text ?? chat.workspace?.getText() ?? "";
-            let instruction = action.buildInstruction(note);
+            let instruction =
+              action.id === "review"
+                ? buildGrammarReviewInstruction()
+                : action.buildInstruction(note);
             if (action.id === "fix-errors") {
               const diags = renderNoteDiagnostics(note).slice(0, 20);
               if (diags.length > 0) {

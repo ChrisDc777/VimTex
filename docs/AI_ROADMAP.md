@@ -54,7 +54,7 @@ land and expose stable hunk ranges — see Wave D.
 | Doc actions | 🔄 | ❌ | #58 |
 | Templates (/letter…) | 🔄 | ❌ | #52 |
 | Outline + TODO scan | 🔄 | ❌ | #56 |
-| Grammar / critique review | 🔄 | ❌ | #62 |
+| Grammar / critique review | ✅ Lvl A | ❌ | #62 |
 
 ## Delivery waves
 
@@ -82,14 +82,16 @@ land and expose stable hunk ranges — see Wave D.
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #61 cite ✅ (Level A) → #62 review, #60 polish
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #61 cite ✅ → #62 review ✅ Level A → #60 polish
 
 **#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
 **#58 / #52:** Chat doc-action pills (fix errors, abstract, …) + `/letter` `/paper` `/cv` `/notes` scaffolds via diff.  
 **Chrome prefs:** Preferences AI section toggles for slash menu / doc pills / ghost (defaults: slash+ghost on, pills off).  
 **#56:** Studio left outline panel — heuristic `\part`/`\section`/`\subsection` tree + `\todo{}` / `% TODO` badges with jump-to-line (AI fallback deferred).  
-**Editor `/` inserts:** Insert-mode only — `/section` `/todo` `/math` `/list` /… via CM autocomplete (Vim normal `/` search untouched).
+**Editor `/` inserts:** Insert-mode only — `/section` `/todo` `/math` `/list` /… via CM autocomplete (Vim normal `/` search untouched).  
+**#61 Level A:** Studio `\cite{` completion from note-local BibTeX / `\bibitem` (offline fuzzy match; no separate `.bib` file yet).  
+**#62 Level A:** Studio `/review` slash (+ optional Review doc-action pill) asks Vimothy for a whole-note grammar/style pass (skip math/verbatim), proposing via existing Confirm/diff (`@@@PATCH` preferred). Chunked multi-suggestion panel deferred.
 
 ### Wave D / triage
 
