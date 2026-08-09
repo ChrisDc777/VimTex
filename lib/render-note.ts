@@ -22,10 +22,64 @@ const DELIMITERS: Array<{
   { open: "\\(", close: "\\)", display: false },
 ];
 
+/**
+ * Document / outline macros — must stay prose, not KaTeX auto-math.
+ * Otherwise `\section` / `\todo` light up the Studio diagnostics strip.
+ */
+const NON_MATH_TEX_COMMANDS = new Set([
+  "part",
+  "chapter",
+  "section",
+  "subsection",
+  "subsubsection",
+  "paragraph",
+  "subparagraph",
+  "todo",
+  "title",
+  "author",
+  "date",
+  "maketitle",
+  "documentclass",
+  "usepackage",
+  "label",
+  "ref",
+  "eqref",
+  "cite",
+  "citep",
+  "bibliography",
+  "bibliographystyle",
+  "tableofcontents",
+  "newpage",
+  "clearpage",
+  "pagebreak",
+  "item",
+]);
+
 function looksLikeTexCommandAt(text: string, index: number): boolean {
   if (text[index] !== "\\") return false;
   const next = text[index + 1];
   return next !== undefined && /[a-zA-Z]/.test(next);
+}
+
+function readTexCommandName(text: string, backslashIndex: number): string {
+  let i = backslashIndex + 1;
+  while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
+  return text.slice(backslashIndex + 1, i);
+}
+
+function isNonMathTexCommandAt(text: string, index: number): boolean {
+  if (!looksLikeTexCommandAt(text, index)) return false;
+  return NON_MATH_TEX_COMMANDS.has(
+    readTexCommandName(text, index).toLowerCase(),
+  );
+}
+
+/** End of a structural command + optional [opt]/{arg} suffixes (stays text). */
+function endOfNonMathTexCommand(text: string, start: number): number {
+  if (!isNonMathTexCommandAt(text, start)) return start;
+  let i = start + 1;
+  while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
+  return consumeTeXSuffix(text, i);
 }
 
 function consumeNumber(text: string, from: number): number {
@@ -144,6 +198,7 @@ function continueMathChars(text: string, from: number): number {
     if (i >= text.length) break;
 
     if (looksLikeTexCommandAt(text, i)) {
+      if (isNonMathTexCommandAt(text, i)) break;
       i += 1;
       while (i < text.length && /[a-zA-Z]/.test(text[i]!)) i += 1;
       i = consumeTeXSuffix(text, i);
@@ -379,6 +434,11 @@ function parseInlineAutoMath(line: string, baseOffset: number): NoteSegment[] {
   let textStart = 0;
 
   while (i < line.length) {
+    if (isNonMathTexCommandAt(line, i)) {
+      i = endOfNonMathTexCommand(line, i);
+      continue;
+    }
+
     const fromCommand = looksLikeTexCommandAt(line, i);
     const fromBare = !fromCommand && looksLikeBareMathAt(line, i);
     if (!fromCommand && !fromBare) {
