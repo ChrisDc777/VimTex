@@ -3,10 +3,10 @@
  * Priority when budget is tight: selection > surrounding > document.
  */
 
-/** Soft budget so JSON + instruction stay under the 64 KiB route limit. */
-export const AI_DOCUMENT_BUDGET = 48_000;
-export const AI_SELECTION_BUDGET = 8_000;
-export const AI_SURROUNDING_BUDGET = 4_000;
+/** Soft budget — raised with the 512 KiB chat route ceiling (#60). */
+export const AI_DOCUMENT_BUDGET = 280_000;
+export const AI_SELECTION_BUDGET = 24_000;
+export const AI_SURROUNDING_BUDGET = 12_000;
 export const AI_SURROUND_LINES = 8;
 
 export type EditorCaret = {

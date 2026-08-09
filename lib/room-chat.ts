@@ -13,6 +13,18 @@ export type RoomChatMessage = {
   createdAt: number;
   /** Optional full-document replacement from an AI turn. */
   documentEdit?: string | null;
+  /** Model id that produced this AI reply (#60). */
+  model?: string | null;
+  /** Provider label (openrouter / opencode / …). */
+  provider?: string | null;
+  /** Which API key served the turn. */
+  keySource?: "user" | "server" | null;
+  /** Token usage when the provider reported it. */
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  } | null;
 };
 
 export function newChatMessageId(): string {

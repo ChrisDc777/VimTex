@@ -11,9 +11,9 @@ export type AiHistoryMessage = {
   content: string;
 };
 
-export const DEFAULT_HISTORY_MAX_MESSAGES = 10;
-export const DEFAULT_HISTORY_MAX_CHARS = 12_000;
-export const MAX_HISTORY_MESSAGE_CHARS = 2_000;
+export const DEFAULT_HISTORY_MAX_MESSAGES = 20;
+export const DEFAULT_HISTORY_MAX_CHARS = 32_000;
+export const MAX_HISTORY_MESSAGE_CHARS = 4_000;
 
 export type TrimHistoryOptions = {
   maxMessages?: number;

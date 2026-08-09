@@ -453,6 +453,10 @@ export function useRoomChat({
           mentionAi: false,
           createdAt: Date.now(),
           documentEdit: proposedAfter,
+          model: data.model,
+          provider: data.provider,
+          keySource: data.keySource ?? null,
+          usage: data.usage ?? null,
         };
         ws.appendChatMessage(aiMsg);
 
@@ -663,6 +667,23 @@ export function useRoomChat({
     [busy, invokeAi],
   );
 
+  /** Re-run the user @vimothy turn that produced this AI reply (#60). */
+  const regenerateAi = useCallback(
+    (aiMsg: RoomChatMessage) => {
+      if (busy || aiMsg.role !== "ai") return;
+      const idx = messages.findIndex((m) => m.id === aiMsg.id);
+      if (idx < 0) return;
+      for (let i = idx - 1; i >= 0; i -= 1) {
+        const prev = messages[i];
+        if (prev?.role === "user" && prev.mentionAi) {
+          void invokeAi(prev);
+          return;
+        }
+      }
+    },
+    [busy, invokeAi, messages],
+  );
+
   const onInputChange = useCallback(
     (value: string, caret: number) => {
       setInput(value);
@@ -726,6 +747,7 @@ export function useRoomChat({
     send,
     runAiInstruction,
     retryAi,
+    regenerateAi,
     defaultMentionTag: AI_MENTION_TAG,
   };
 }

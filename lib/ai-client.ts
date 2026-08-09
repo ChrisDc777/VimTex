@@ -2,6 +2,12 @@ import { loadUserAiKey } from "@/lib/ai-keys";
 import type { EditorCaret } from "@/lib/ai-chat-context";
 import type { AiHistoryMessage } from "@/lib/ai-chat-history";
 import { backendForModel } from "@/lib/ai-providers";
+import {
+  normalizeAiUsage,
+  stripAiUsageTrailer,
+  type AiKeySource,
+  type AiTokenUsage,
+} from "@/lib/ai-usage";
 
 export type AiChatRequest = {
   instruction: string;
@@ -22,6 +28,8 @@ export type AiChatResult = {
   message: string;
   model: string;
   provider: string;
+  keySource?: AiKeySource;
+  usage?: AiTokenUsage | null;
 };
 
 export type AiChatStreamHandlers = {
@@ -83,11 +91,14 @@ export async function postAiChat(req: AiChatRequest): Promise<AiChatResult> {
     message: data.message,
     model: data.model,
     provider: data.provider,
+    keySource: data.keySource,
+    usage: normalizeAiUsage(data.usage),
   };
 }
 
 /**
  * Streaming chat (#29). Reads a plain text token stream from `/api/chat`.
+ * Usage may arrive as a trailing `@@@VIMTEX_USAGE` line (#60).
  */
 export async function streamAiChat(
   req: AiChatRequest,
@@ -123,17 +134,25 @@ export async function streamAiChat(
     const { done, value } = await reader.read();
     if (done) break;
     accumulated += decoder.decode(value, { stream: true });
-    handlers.onToken?.(accumulated);
+    const live = stripAiUsageTrailer(accumulated).message;
+    handlers.onToken?.(live);
   }
   accumulated += decoder.decode();
 
-  if (!accumulated.trim()) {
+  const { message, usage } = stripAiUsageTrailer(accumulated);
+  if (!message.trim()) {
     throw new Error("Model returned an empty reply.");
   }
 
+  const keyHeader = res.headers.get("X-Vimtex-Key");
+  const keySource: AiKeySource | undefined =
+    keyHeader === "user" || keyHeader === "server" ? keyHeader : undefined;
+
   return {
-    message: accumulated,
+    message,
     model: res.headers.get("X-Vimtex-Model") || req.model,
     provider: res.headers.get("X-Vimtex-Provider") || "openrouter",
+    keySource,
+    usage,
   };
 }

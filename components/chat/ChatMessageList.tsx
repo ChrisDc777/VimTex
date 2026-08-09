@@ -5,6 +5,7 @@ import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { SelectionContextPreview } from "@/lib/ai-chat-context";
 import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
+import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
 import { RefreshIcon } from "@/components/chat/icons";
 
@@ -24,6 +25,7 @@ type ChatMessageListProps = {
   listRef: React.RefObject<HTMLDivElement | null>;
   onScroll: () => void;
   onRetry: (msg: RoomChatMessage) => void;
+  onRegenerate?: (msg: RoomChatMessage) => void;
   onSuggestion: (text: string) => void;
   stickBottom: boolean;
   onScrollToBottom: () => void;
@@ -55,6 +57,7 @@ export function ChatMessageList({
   listRef,
   onScroll,
   onRetry,
+  onRegenerate,
   onSuggestion,
   stickBottom,
   onScrollToBottom,
@@ -136,6 +139,14 @@ export function ChatMessageList({
                       {messageContexts[message.id] ? (
                         <ChatContextAttachment
                           preview={messageContexts[message.id]!}
+                        />
+                      ) : null}
+
+                      {block.isAi ? (
+                        <AiReplyMeta
+                          message={message}
+                          busy={busy}
+                          onRegenerate={onRegenerate}
                         />
                       ) : null}
 

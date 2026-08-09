@@ -17,14 +17,20 @@ import {
   isServerKeyedModel,
   providerForModel,
 } from "@/lib/ai-providers";
+import {
+  formatAiUsageTrailer,
+  normalizeAiUsage,
+  type AiKeySource,
+} from "@/lib/ai-usage";
 
 export const runtime = "nodejs";
 
-const MAX_BODY_BYTES = 64 * 1024;
-const MAX_INSTRUCTION_CHARS = 4_000;
-const MAX_DOCUMENT_CHARS = 100_000;
-const MAX_SELECTION_CHARS = 8_000;
-const MAX_SURROUNDING_CHARS = 4_000;
+const MAX_BODY_BYTES = 512 * 1024;
+/** Soft ceilings — large enough for real notes; still guard the process. */
+const MAX_INSTRUCTION_CHARS = 12_000;
+const MAX_DOCUMENT_CHARS = 400_000;
+const MAX_SELECTION_CHARS = 32_000;
+const MAX_SURROUNDING_CHARS = 16_000;
 
 type ChatRequestBody = {
   instruction?: string;
@@ -107,6 +113,7 @@ function parseBody(body: ChatRequestBody): {
   document: string;
   model: string;
   apiKey: string;
+  keySource?: AiKeySource;
   providerLabel: string;
   stream: boolean;
   selection?: string;
@@ -201,8 +208,15 @@ function parseBody(body: ChatRequestBody): {
       ? (process.env.OPENCODE_API_KEY?.trim() ?? "")
       : (process.env.OPENROUTER_API_KEY?.trim() ?? "");
 
-  // Prefer the matching backend key. Never cross-wire OpenRouter ↔ OpenCode keys.
-  const apiKey = serverKeyed ? serverKey || userKey : userKey;
+  // Prefer the user's key when present (metered BYOK / avoids shared free-tier
+  // rate limits). Fall back to the server key for free/registry models.
+  // Never cross-wire OpenRouter ↔ OpenCode keys.
+  const keySource: AiKeySource = userKey
+    ? "user"
+    : serverKeyed
+      ? "server"
+      : "user";
+  const apiKey = userKey || (serverKeyed ? serverKey : "");
   if (!apiKey) {
     const hint =
       backend === "opencode"
@@ -226,6 +240,7 @@ function parseBody(body: ChatRequestBody): {
     document,
     model,
     apiKey,
+    keySource,
     providerLabel: meta.id,
     stream: Boolean(body.stream),
     selection: parseOptionalString(body.selection, MAX_SELECTION_CHARS),
@@ -259,6 +274,7 @@ export async function POST(req: Request) {
     document,
     model,
     apiKey,
+    keySource,
     providerLabel,
     stream,
     selection,
@@ -291,6 +307,8 @@ export async function POST(req: Request) {
     { role: "user" as const, content: instruction },
   ];
 
+  const keyHeader = keySource ?? "server";
+
   try {
     if (stream) {
       const result = streamText({
@@ -301,15 +319,35 @@ export async function POST(req: Request) {
         abortSignal: req.signal,
       });
 
-      return result.toTextStreamResponse({
+      const encoder = new TextEncoder();
+      const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          try {
+            for await (const chunk of result.textStream) {
+              controller.enqueue(encoder.encode(chunk));
+            }
+            const usage = normalizeAiUsage(await result.usage);
+            if (usage) {
+              controller.enqueue(encoder.encode(formatAiUsageTrailer(usage)));
+            }
+            controller.close();
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+
+      return new Response(body, {
         headers: {
+          "Content-Type": "text/plain; charset=utf-8",
           "X-Vimtex-Model": model,
           "X-Vimtex-Provider": providerLabel,
+          "X-Vimtex-Key": keyHeader,
         },
       });
     }
 
-    const { text } = await generateText({
+    const { text, usage: rawUsage } = await generateText({
       model: lm,
       system,
       messages,
@@ -324,10 +362,13 @@ export async function POST(req: Request) {
       );
     }
 
+    const usage = normalizeAiUsage(rawUsage);
     return Response.json({
       message: text,
       model,
       provider: providerLabel,
+      keySource: keyHeader,
+      ...(usage ? { usage } : {}),
     });
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {

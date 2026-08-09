@@ -54,7 +54,7 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
     label: "OpenRouter",
     keySource: "server",
     backend: "openrouter",
-    keyHint: "Free models via VimTex’s shared OpenRouter key.",
+    keyHint: "Free models — your OpenRouter key is preferred when set; else VimTex’s shared key.",
     models: OPENROUTER_FREE_MODELS,
   },
   {
@@ -62,7 +62,7 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
     label: "OpenCode",
     keySource: "server",
     backend: "opencode",
-    keyHint: "Free Zen models via OPENCODE_API_KEY.",
+    keyHint: "Free Zen models — your OpenCode key preferred when set; else OPENCODE_API_KEY.",
     models: OPENCODE_FREE_MODELS,
   },
   {
@@ -70,7 +70,7 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
     label: "Your key",
     keySource: "user",
     backend: "openrouter",
-    keyHint: "Billed to your OpenRouter key (browser only).",
+    keyHint: "Billed to your OpenRouter key; usage shown per reply.",
     models: [
       { id: "openai/gpt-4o-mini", label: "GPT-4o mini" },
       { id: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
