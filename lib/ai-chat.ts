@@ -1,4 +1,14 @@
-/** Markers the model uses to propose a full-buffer replacement. */
+import {
+  PATCH_EDIT_END,
+  PATCH_EDIT_START,
+  PATCH_FIND,
+  PATCH_THEN,
+  extractPatchBlock,
+  parsePatchBody,
+  type AiPatchProposal,
+} from "@/lib/ai-patch";
+
+/** Markers the model uses to propose a full-buffer replacement (fallback). */
 export const DOC_EDIT_START = "@@@DOCUMENT";
 export const DOC_EDIT_END = "@@@END";
 
@@ -12,8 +22,10 @@ export type ChatMessage = {
 export type ParsedAssistantReply = {
   /** User-visible chat text (edit block stripped). */
   message: string;
-  /** Full document replacement, if the model proposed one. */
+  /** Full document replacement, if the model proposed one (fallback). */
   documentEdit: string | null;
+  /** Ranged patch proposal (#87); preferred over documentEdit when present. */
+  patch: AiPatchProposal | null;
 };
 
 export type SystemPromptContext = {
@@ -75,13 +87,27 @@ ${ctx.document}
 - Help with math, LaTeX, and editing the note.
 - Keep chat replies concise.
 - When a primary selection is provided, prefer editing or explaining that region unless the instruction clearly targets the whole note.
-- When the instruction asks you to change the note (add formulas, rewrite, fix TeX, etc.), propose the FULL updated document by ending your reply with exactly:
+- When the instruction asks you to change the note (add formulas, rewrite, fix TeX, etc.), prefer a ranged patch ending your reply with:
+
+${PATCH_EDIT_START}
+${PATCH_FIND}
+<exact snippet from the current document — unique enough to match once>
+${PATCH_THEN}
+<replacement text for that snippet>
+${PATCH_FIND}
+<optional second snippet>
+${PATCH_THEN}
+<optional second replacement>
+${PATCH_EDIT_END}
+
+- FIND text must match the document exactly (including whitespace) and should appear only once. Use multiple FIND/THEN pairs for independent edits.
+- Use full-buffer replacement only when rewriting most of the note or a ranged patch is impractical:
 
 ${DOC_EDIT_START}
 <entire new document content>
 ${DOC_EDIT_END}
 
-- The content between the markers must be the complete note (not a diff). Preserve unrelated parts unless asked to rewrite everything.
+- Do not emit both a patch and a full-document block. Prefer the patch form.
 - If you are only answering a question and not changing the note, do not include the markers.
 - Prefer KaTeX-friendly TeX. Do not wrap the whole document in a LaTeX documentclass.
 - Math in chat replies: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks, **bold**, or markdown code fences — that breaks rendering.`);
@@ -89,10 +115,35 @@ ${DOC_EDIT_END}
   return sections.join("\n\n");
 }
 
+function stripEditMessage(
+  before: string,
+  after: string,
+  fallback: string,
+): string {
+  const message = [before.trim(), after.trim()].filter(Boolean).join("\n\n").trim();
+  return message || fallback;
+}
+
 export function parseAssistantReply(raw: string): ParsedAssistantReply {
+  const patchBlock = extractPatchBlock(raw);
+  if (patchBlock) {
+    const proposal = parsePatchBody(patchBlock.body);
+    if (proposal) {
+      return {
+        message: stripEditMessage(
+          patchBlock.before,
+          patchBlock.after,
+          "Updated the note.",
+        ),
+        documentEdit: null,
+        patch: proposal,
+      };
+    }
+  }
+
   const start = raw.indexOf(DOC_EDIT_START);
   if (start === -1) {
-    return { message: raw.trim(), documentEdit: null };
+    return { message: raw.trim(), documentEdit: null, patch: null };
   }
 
   const afterStart = start + DOC_EDIT_START.length;
@@ -102,14 +153,28 @@ export function parseAssistantReply(raw: string): ParsedAssistantReply {
 
   const end = raw.indexOf(DOC_EDIT_END, bodyStart);
   if (end === -1) {
-    return { message: raw.trim(), documentEdit: null };
+    return { message: raw.trim(), documentEdit: null, patch: null };
   }
 
   const documentEdit = raw.slice(bodyStart, end).replace(/\r?\n$/, "");
-  const before = raw.slice(0, start).trim();
-  const after = raw.slice(end + DOC_EDIT_END.length).trim();
-  const message = [before, after].filter(Boolean).join("\n\n").trim() ||
-    "Updated the note.";
+  return {
+    message: stripEditMessage(
+      raw.slice(0, start),
+      raw.slice(end + DOC_EDIT_END.length),
+      "Updated the note.",
+    ),
+    documentEdit,
+    patch: null,
+  };
+}
 
-  return { message, documentEdit };
+/** Earliest edit-marker index for streaming UI (hide payload while tokens arrive). */
+export function earliestEditMarkerIndex(text: string): number {
+  const markers = [PATCH_EDIT_START, DOC_EDIT_START];
+  let best = -1;
+  for (const m of markers) {
+    const i = text.indexOf(m);
+    if (i !== -1 && (best === -1 || i < best)) best = i;
+  }
+  return best;
 }

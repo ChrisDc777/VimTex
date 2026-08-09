@@ -1,8 +1,8 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Wave A landed (gate + diff + stream); review UX store + prefs  
+**Status:** Waves A–C landed; Wave D Level A ranged patches (#87) in progress  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
-**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29)
+**Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29), patches [#87](https://github.com/ChrisDc777/VimTex/issues/87)
 
 ## Product stance
 
@@ -33,7 +33,8 @@ ychat (shared prose + documentEdit blob; Accept stays local)
 
 Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` boolean. Chat is always the control surface; preview is optional when Split is on.
 
-**Deferred:** VS Code-style CM6 inline diff until **ranged patches** replace full-buffer `@@@DOCUMENT`.
+**Deferred:** VS Code-style CM6 inline/gutter diff (#88) until ranged patches
+land and expose stable hunk ranges — see Wave D.
 
 ## Shell matrix
 
@@ -91,13 +92,15 @@ Prefs (`lib/ai-review-prefs.ts`): `applyMode` confirm|auto; `showInPreview` bool
 
 | Idea | Action |
 |------|--------|
-| Ranged patch format | **P1** — unlocks multi-hunk + CM marks |
-| CM line/gutter diff | P2 after patches |
+| Ranged patch format (#87) | **P1** — Level A: `@@@PATCH` + `@@@FIND`/`@@@THEN` hunks; `@@@DOCUMENT` fallback; `AiReviewStore.kind`/`hunks` |
+| CM line/gutter diff (#88) | P2 after patches (consume hunk offsets) |
 | Snapshot on Accept (#25) | P2 optional |
 | AI profiles / per-room instructions | M5 / late M3 |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
 | Derivation coach / equation-scoped | M3 (#83/#84) |
+
+**#87 Level A (shipped path):** Model prefers ranged patches; chat parses `@@@PATCH`, applies unique FIND→THEN hunks against the pre-request buffer, and proposes via `AiReviewStore` with `kind: "patch"`. Accept/Reject remains whole-proposal (full `after`). Per-hunk Accept UI and CM decorations stay deferred to #88.
 
 ## Out of scope
 
