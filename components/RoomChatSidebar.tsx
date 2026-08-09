@@ -121,7 +121,7 @@ export function RoomChatSidebar({
         slashIndex={chat.slashIndex}
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
-        onSlashClose={() => chat.setSlashOpen(false)}
+        onSlashClose={() => chat.dismissSlashMenu()}
         slashCommandsEnabled={
           chat.shell === "studio" ||
           aiFeatureEnabled("forge", "derivationCoach")

@@ -302,7 +302,7 @@ export function StudioRoomChat({
         slashIndex={chat.slashIndex}
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
-        onSlashClose={() => chat.setSlashOpen(false)}
+        onSlashClose={() => chat.dismissSlashMenu()}
         slashCommandsEnabled={
           (chat.shell === "studio" && chromePrefs.slashMenu) ||
           (chat.shell === "forge" &&

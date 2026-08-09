@@ -50,6 +50,7 @@ import {
 import {
   filterSlashCommands,
   SLASH_COMMANDS,
+  stripTrailingSlashToken,
   type SlashCommand,
 } from "@/lib/slash-commands";
 import type { AiEditSource } from "@/lib/ai-review-store";
@@ -325,6 +326,24 @@ export function useRoomChat({
     setPendingSlash(null);
   }, []);
 
+  /** Close the `/` menu and remove the trailing `/token` so Esc stays dismissed. */
+  const dismissSlashMenu = useCallback(() => {
+    const el = inputRef.current;
+    const value = input;
+    const caret = el?.selectionStart ?? value.length;
+    const { next, caret: nextCaret } = stripTrailingSlashToken(value, caret);
+    if (next !== value) {
+      setInput(next);
+      requestAnimationFrame(() => {
+        const field = inputRef.current;
+        field?.setSelectionRange(nextCaret, nextCaret);
+        field?.focus();
+      });
+    }
+    setSlashOpen(false);
+    setSlashFilter("");
+  }, [input]);
+
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
       const ws = workspace;
@@ -561,6 +580,7 @@ export function useRoomChat({
     setPendingSlash(null);
     setMentionOpen(false);
     setSlashOpen(false);
+    setSlashFilter("");
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
@@ -715,6 +735,7 @@ export function useRoomChat({
     },
     pendingSlash,
     clearPendingSlash,
+    dismissSlashMenu,
     messageContexts,
     model,
     setModel,

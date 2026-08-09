@@ -1,23 +1,15 @@
 /**
  * Studio slash-command registry (#63).
- * Chat-composer first; editor insert-mode `/` deferred (Vim conflict).
+ * Keep the chat `/` menu short — only high-traffic actions.
  */
 
 export type SlashCommandId =
   | "explain"
   | "rewrite"
   | "fix"
-  | "proofread"
   | "review"
   | "derive"
-  | "summarize"
-  | "math"
-  | "format"
-  | "expand"
-  | "letter"
-  | "paper"
-  | "cv"
-  | "notes";
+  | "math";
 
 export type SlashCommand = {
   id: SlashCommandId;
@@ -34,6 +26,7 @@ export type SlashCommand = {
   derivationCoach?: boolean;
 };
 
+/** Primary chat `/` commands (intentionally small). */
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
   {
     id: "explain",
@@ -55,13 +48,6 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     hint: "Fix TeX / diagnostics in selection",
     instruction:
       "Fix TeX / KaTeX issues in the selection (or nearby errors). Propose a full-document edit with the corrected note.",
-  },
-  {
-    id: "proofread",
-    title: "Proofread",
-    hint: "Grammar and style pass",
-    instruction:
-      "Proofread the selection for grammar and style. Propose a full-document edit only when wording should change.",
   },
   {
     id: "review",
@@ -93,64 +79,11 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     ].join("\n"),
   },
   {
-    id: "summarize",
-    title: "Summarize",
-    hint: "Summarize selection or section",
-    instruction:
-      "Summarize the selected text (or the current section around the caret) in a few sentences. Do not change the note.",
-  },
-  {
     id: "math",
     title: "To math",
     hint: "Plain English → LaTeX math",
     instruction:
       "Convert the selected plain-English description into KaTeX-friendly LaTeX math. Propose a full-document edit replacing the selection.",
-  },
-  {
-    id: "format",
-    title: "Format",
-    hint: "Tidy spacing and environments",
-    instruction:
-      "Tidy the selected TeX (spacing, alignment, begin/end structure) without changing meaning. Propose a full-document edit.",
-  },
-  {
-    id: "expand",
-    title: "Expand",
-    hint: "Expand shorthand to full TeX",
-    instruction:
-      "Expand abbreviations or shorthand in the selection into full LaTeX. Propose a full-document edit.",
-  },
-  {
-    id: "letter",
-    title: "Letter",
-    hint: "Scaffold a letter",
-    template: true,
-    instruction:
-      "Replace the note with a short, compilable KaTeX-friendly letter skeleton (greeting, body, closing). Prefer plain TeX macros over a full documentclass unless helpful. Propose a full-document edit.",
-  },
-  {
-    id: "paper",
-    title: "Paper",
-    hint: "Scaffold a paper",
-    template: true,
-    instruction:
-      "Replace the note with a short article/paper skeleton: title, abstract, sections, and a sample equation. KaTeX-friendly; no heavy preamble. Propose a full-document edit.",
-  },
-  {
-    id: "cv",
-    title: "CV",
-    hint: "Scaffold a CV",
-    template: true,
-    instruction:
-      "Replace the note with a compact CV/resume skeleton (name, contact, education, experience). KaTeX-friendly. Propose a full-document edit.",
-  },
-  {
-    id: "notes",
-    title: "Notes",
-    hint: "Scaffold lecture notes",
-    template: true,
-    instruction:
-      "Replace the note with a lecture-notes skeleton: title, outline, and a few section headings with placeholder math. KaTeX-friendly. Propose a full-document edit.",
   },
 ] as const;
 
@@ -184,4 +117,17 @@ export function filterSlashCommands(
       c.title.toLowerCase().startsWith(q) ||
       c.title.toLowerCase().includes(q),
   );
+}
+
+/** Strip a trailing `/` or `/partial` token before the caret. */
+export function stripTrailingSlashToken(
+  value: string,
+  caret: number,
+): { next: string; caret: number } {
+  const before = value.slice(0, caret);
+  const after = value.slice(caret);
+  const match = before.match(/(^|[\s])\/[a-zA-Z]*$/);
+  if (!match) return { next: value, caret };
+  const trimmedBefore = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1");
+  return { next: trimmedBefore + after, caret: trimmedBefore.length };
 }
