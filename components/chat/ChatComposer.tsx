@@ -115,27 +115,29 @@ export function ChatComposer({
       }
     }
 
-    if (slashOpen && filteredSlashCommands.length > 0 && onSlashSelect) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        onSlashIndexChange?.(
-          (slashIndex + 1) % filteredSlashCommands.length,
-        );
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        onSlashIndexChange?.(
-          (slashIndex - 1 + filteredSlashCommands.length) %
-            filteredSlashCommands.length,
-        );
-        return;
-      }
-      if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        const cmd = filteredSlashCommands[slashIndex];
-        if (cmd) onSlashSelect(cmd);
-        return;
+    if (slashOpen && onSlashSelect) {
+      if (filteredSlashCommands.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          onSlashIndexChange?.(
+            (slashIndex + 1) % filteredSlashCommands.length,
+          );
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          onSlashIndexChange?.(
+            (slashIndex - 1 + filteredSlashCommands.length) %
+              filteredSlashCommands.length,
+          );
+          return;
+        }
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          const cmd = filteredSlashCommands[slashIndex];
+          if (cmd) onSlashSelect(cmd);
+          return;
+        }
       }
       if (e.key === "Escape") {
         e.preventDefault();
@@ -143,7 +145,7 @@ export function ChatComposer({
         return;
       }
       // Space dismisses without running a command (#63).
-      if (e.key === " ") {
+      if (e.key === " " && filteredSlashCommands.length > 0) {
         onSlashClose?.();
         return;
       }

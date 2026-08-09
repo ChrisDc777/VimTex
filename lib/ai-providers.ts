@@ -79,8 +79,8 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
   },
 ];
 
-export const DEFAULT_PROVIDER: AiProviderId = "openrouter";
-export const DEFAULT_AI_MODEL: AiModelId = "google/gemma-4-26b-a4b-it:free";
+export const DEFAULT_PROVIDER: AiProviderId = "opencode";
+export const DEFAULT_AI_MODEL: AiModelId = "deepseek-v4-flash-free";
 
 export const CUSTOM_MODEL_PATTERN = /^[a-zA-Z0-9/._:-]{1,64}$/;
 

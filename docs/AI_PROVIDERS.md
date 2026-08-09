@@ -41,7 +41,7 @@ type AiProvider = {
 - `opencode` — free [OpenCode Zen](https://opencode.ai/docs/zen/) models via `OPENCODE_API_KEY` (or a browser OpenCode key).
 - `byok-openrouter` — heavier OpenRouter models; requires a user key in the picker.
 
-Default: `google/gemma-4-26b-a4b-it:free`. Dead slugs such as `tencent/hy3:free` are removed.
+Default: `deepseek-v4-flash-free` (OpenCode). Dead slugs such as `tencent/hy3:free` are removed.
 
 ### Key resolution (server)
 
