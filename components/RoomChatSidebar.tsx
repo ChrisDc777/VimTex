@@ -81,6 +81,7 @@ export function RoomChatSidebar({
         listRef={chat.listRef}
         onScroll={chat.onListScroll}
         onRetry={chat.retryAi}
+        onRegenerate={chat.regenerateAi}
         onSuggestion={chat.insertSuggestion}
         stickBottom={chat.stickBottom}
         onScrollToBottom={chat.scrollToBottom}

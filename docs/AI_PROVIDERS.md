@@ -53,11 +53,18 @@ Default: `google/gemma-4-26b-a4b-it:free`. Dead slugs such as `tencent/hy3:free`
 
 The provider/backend is **derived from `model`**:
 
-- OpenRouter free → `OPENROUTER_API_KEY`, else browser OpenRouter key
-- OpenCode free → `OPENCODE_API_KEY`, else browser OpenCode key
-- BYOK OpenRouter → browser OpenRouter key required
+- Prefer the **browser key** when present (same backend), so BYOK meters usage and
+  avoids burning the shared free-tier rate limit.
+- Else fall back to `OPENROUTER_API_KEY` / `OPENCODE_API_KEY` for free registry models.
+- BYOK-only models still require a browser OpenRouter key.
 
-Keys are never cross-wired between backends.
+Keys are never cross-wired between backends. Responses include `keySource`
+(`user` | `server`) and optional `usage` token counts (#60).
+
+### Payload ceilings (#60)
+
+Chat route accepts larger notes (≈512 KiB body, ≈280k document budget). Soft
+history windows were raised; providers may still enforce their own rate limits.
 
 ### Model validation
 

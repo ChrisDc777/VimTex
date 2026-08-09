@@ -2,6 +2,7 @@
 
 import { useEffect, type MutableRefObject } from "react";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
+import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
 import { DocActionPills } from "@/components/chat/DocActionPills";
@@ -172,6 +173,13 @@ export function StudioRoomChat({
               </div>
               {chat.messageContexts[m.id] ? (
                 <ChatContextAttachment preview={chat.messageContexts[m.id]!} />
+              ) : null}
+              {isAi ? (
+                <AiReplyMeta
+                  message={m}
+                  busy={chat.busy}
+                  onRegenerate={chat.regenerateAi}
+                />
               ) : null}
               {isAi && m.documentEdit != null ? (
                 chat.pendingEdit?.messageId === m.id ? (

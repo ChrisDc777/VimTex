@@ -2149,6 +2149,52 @@ body[data-pane-resizing] * {
   color: var(--success);
 }
 
+.vt-chat-ai-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 0;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--mute);
+}
+
+.vt-chat-ai-meta__info {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vt-chat-ai-meta__regen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--mute);
+  cursor: pointer;
+  font: inherit;
+}
+
+.vt-chat-ai-meta__regen:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.vt-chat-ai-meta__regen:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.vt-chat-ai-meta__regen svg {
+  width: 11px;
+  height: 11px;
+}
+
 .vt-chat-code {
   margin: 6px 0;
   padding: 10px 12px;
