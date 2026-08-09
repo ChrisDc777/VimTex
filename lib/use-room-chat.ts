@@ -456,9 +456,7 @@ export function useRoomChat({
           model: data.model,
           provider: data.provider,
           keySource: data.keySource ?? null,
-          // Only persist usage for BYOK; app-provided keys stay unmetered.
-          usage:
-            data.keySource === "user" && data.usage ? data.usage : null,
+          usage: data.usage ?? null,
         };
         ws.appendChatMessage(aiMsg);
 
