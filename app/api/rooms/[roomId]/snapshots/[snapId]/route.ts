@@ -5,11 +5,6 @@ import * as Y from "yjs";
 export const runtime = "nodejs";
 
 const require = createRequire(import.meta.url);
-const { getYDoc } = require("../../../../../../scripts/y-ws/utils.js") as {
-  getYDoc: (name: string, gc?: boolean) => Y.Doc & {
-    getText: (name: string) => Y.Text;
-  };
-};
 const {
   readSnapshotUpdate,
   deleteSnapshot,
@@ -50,22 +45,20 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Snapshot not found." }, { status: 404 });
   }
 
-  // Replace the live doc content by applying a full-state update into a fresh
-  // doc then copying the "codemirror" text (chat history is preserved).
+  // Decode checkpoint → note text (chat history is not restored).
+  // The Version history UI applies `text` on the connected client Y.Doc so the
+  // editor always updates (Next API and the WS server can load separate module
+  // graphs; mutating getYDoc here alone is not reliable).
   const snapshotDoc = new Y.Doc();
   Y.applyUpdate(snapshotDoc, update);
   const restoredText = snapshotDoc.getText("codemirror").toString();
   snapshotDoc.destroy();
 
-  const live = getYDoc(roomId);
-  const ytext = live.getText("codemirror");
-  live.transact(() => {
-    const len = ytext.length;
-    if (len > 0) ytext.delete(0, len);
-    if (restoredText.length > 0) ytext.insert(0, restoredText);
-  }, "snapshot-restore");
-
-  return NextResponse.json({ ok: true, length: restoredText.length });
+  return NextResponse.json({
+    ok: true,
+    text: restoredText,
+    length: restoredText.length,
+  });
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {

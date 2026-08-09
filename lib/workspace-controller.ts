@@ -304,7 +304,7 @@ export class WorkspaceController {
   }
 
   /** Replace the entire buffer (syncs to all peers). */
-  replaceAll(content: string): void {
+  replaceAll(content: string, origin = "ai-edit"): void {
     if (this.readOnly) return;
     this.transact(
       (ytext) => {
@@ -312,13 +312,18 @@ export class WorkspaceController {
         if (len > 0) ytext.delete(0, len);
         if (content.length > 0) ytext.insert(0, content);
       },
-      "ai-edit",
+      origin,
     );
   }
 
   /** Alias for replaceAll — used by room @ai edits. */
   applyAiEdit(content: string): void {
     this.replaceAll(content);
+  }
+
+  /** Apply a Version history checkpoint to the live note (syncs to peers). */
+  restoreSnapshotText(content: string): void {
+    this.replaceAll(content, "snapshot-restore");
   }
 
   appendChatMessage(msg: RoomChatMessage): void {
