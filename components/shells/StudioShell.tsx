@@ -574,6 +574,7 @@ export function StudioShell({
                     aiFeatureEnabled("studio", "equationScopedAi") &&
                     hasEquationScope
                   }
+                  showCoach={aiFeatureEnabled("studio", "derivationCoach")}
                   onAction={(action: SelectionAiAction) => {
                     const ctx = editorRef.current?.getEditorContext();
                     if (

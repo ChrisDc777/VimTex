@@ -9,6 +9,7 @@ export type SlashCommandId =
   | "fix"
   | "proofread"
   | "review"
+  | "derive"
   | "summarize"
   | "math"
   | "format"
@@ -29,6 +30,8 @@ export type SlashCommand = {
   template?: boolean;
   /** When true, only offered if grammarReview is enabled (#62). */
   grammarReview?: boolean;
+  /** When true, only offered if derivationCoach is enabled (#84). */
+  derivationCoach?: boolean;
 };
 
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
@@ -72,6 +75,21 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
       "Preserve meaning, structure, and KaTeX-friendly markup.",
       "Propose edits via a ranged @@@PATCH (preferred) or a full-document edit only if a patch is impractical.",
       "If the prose is already fine, say so briefly and do not emit edit markers.",
+    ].join("\n"),
+  },
+  {
+    id: "derive",
+    title: "Derive",
+    hint: "Step-by-step coach (chat only)",
+    derivationCoach: true,
+    // Keep in sync with wrapDerivationCoachInstruction() (lib/derivation-coach.ts).
+    instruction: [
+      "[derivation-coach]",
+      "Act as a derivation coach for the selected expression or the math near the caret (or the whole note if neither is clear).",
+      "Walk through the reasoning step by step in chat.",
+      "Do not emit @@@PATCH, @@@DOCUMENT, or any other note-edit markers — never change the buffer.",
+      "Ask short clarifying questions when the goal is ambiguous.",
+      "Prefer KaTeX-friendly \\( \\) / \\[ \\] in the chat reply.",
     ].join("\n"),
   },
   {
@@ -140,15 +158,23 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
 export function filterSlashCommands(
   query: string,
   commands: readonly SlashCommand[] = SLASH_COMMANDS,
-  opts?: { includeTemplates?: boolean; includeGrammarReview?: boolean },
+  opts?: {
+    includeTemplates?: boolean;
+    includeGrammarReview?: boolean;
+    includeDerivationCoach?: boolean;
+  },
 ): SlashCommand[] {
   const includeTemplates = opts?.includeTemplates ?? true;
   const includeGrammarReview = opts?.includeGrammarReview ?? true;
+  const includeDerivationCoach = opts?.includeDerivationCoach ?? true;
   let pool = includeTemplates
     ? [...commands]
     : commands.filter((c) => !c.template);
   if (!includeGrammarReview) {
     pool = pool.filter((c) => !c.grammarReview);
+  }
+  if (!includeDerivationCoach) {
+    pool = pool.filter((c) => !c.derivationCoach);
   }
   const q = query.trim().toLowerCase();
   if (!q) return pool;

@@ -30,6 +30,7 @@ import {
   aiMayMutateDocument,
 } from "@/lib/ai-features";
 import { buildGrammarReviewInstruction } from "@/lib/grammar-review";
+import { isDerivationCoachInstruction } from "@/lib/derivation-coach";
 import {
   DEFAULT_AI_MODEL,
   providerForModel,
@@ -48,6 +49,7 @@ import {
 } from "@/lib/room-chat";
 import {
   filterSlashCommands,
+  SLASH_COMMANDS,
   type SlashCommand,
 } from "@/lib/slash-commands";
 import type { AiEditSource } from "@/lib/ai-review-store";
@@ -203,12 +205,22 @@ export function useRoomChat({
   );
 
   const filteredSlashCommands = useMemo(() => {
-    if (!aiFeatureEnabled(shell, "slashCommands")) return [];
-    if (!chromePrefs.slashMenu) return [];
-    return filterSlashCommands(slashFilter, undefined, {
-      includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
-      includeGrammarReview: aiFeatureEnabled(shell, "grammarReview"),
-    });
+    if (aiFeatureEnabled(shell, "slashCommands")) {
+      if (!chromePrefs.slashMenu) return [];
+      return filterSlashCommands(slashFilter, undefined, {
+        includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
+        includeGrammarReview: aiFeatureEnabled(shell, "grammarReview"),
+        includeDerivationCoach: aiFeatureEnabled(shell, "derivationCoach"),
+      });
+    }
+    // Forge: /derive only (#84) — no mutating slash surface.
+    if (aiFeatureEnabled(shell, "derivationCoach")) {
+      return filterSlashCommands(
+        slashFilter,
+        SLASH_COMMANDS.filter((c) => c.derivationCoach),
+      );
+    }
+    return [];
   }, [shell, slashFilter, chromePrefs.slashMenu]);
 
   const updateComposerMenus = useCallback(
@@ -230,10 +242,11 @@ export function useRoomChat({
       setMentionOpen(false);
       setMentionFilter("");
 
-      if (
-        !aiFeatureEnabled(shell, "slashCommands") ||
-        !chromePrefs.slashMenu
-      ) {
+      const slashAllowed =
+        (aiFeatureEnabled(shell, "slashCommands") && chromePrefs.slashMenu) ||
+        (!aiFeatureEnabled(shell, "slashCommands") &&
+          aiFeatureEnabled(shell, "derivationCoach"));
+      if (!slashAllowed) {
         setSlashOpen(false);
         setSlashFilter("");
         return;
@@ -381,6 +394,7 @@ export function useRoomChat({
               beforeMessageId: userMsg.id,
             })
           : undefined;
+        const coach = isDerivationCoachInstruction(instruction);
         const req = {
           instruction,
           document: packed.document,
@@ -391,6 +405,7 @@ export function useRoomChat({
           caret: packed.caret,
           truncated: packed.truncated,
           ...(history && history.length > 0 ? { history } : {}),
+          ...(coach ? { mode: "coach" as const } : {}),
         };
         const data = useStream
           ? await streamAiChat(req, {
@@ -406,11 +421,14 @@ export function useRoomChat({
         if (ac.signal.aborted) return;
 
         const parsed = parseAssistantReply(data.message ?? "");
-        let proposedAfter: string | null = parsed.documentEdit;
+        // Coach mode: never propose or attach note mutations (#84).
+        let proposedAfter: string | null = coach
+          ? null
+          : parsed.documentEdit;
         let editKind: "document" | "patch" = "document";
         let appliedHunks: AppliedAiPatchHunk[] | undefined;
 
-        if (parsed.patch) {
+        if (!coach && parsed.patch) {
           const applied = applyAiPatch(beforeSnapshot, parsed.patch);
           if (applied.ok) {
             proposedAfter = applied.after;
@@ -605,7 +623,11 @@ export function useRoomChat({
   /** Attach slash command as a chip; optional context + Enter runs it. */
   const runSlashCommand = useCallback(
     (cmd: SlashCommand) => {
-      if (!aiFeatureEnabled(shell, "slashCommands")) return;
+      const slashAllowed =
+        aiFeatureEnabled(shell, "slashCommands") ||
+        (cmd.derivationCoach &&
+          aiFeatureEnabled(shell, "derivationCoach"));
+      if (!slashAllowed) return;
       const el = inputRef.current;
       const value = input;
       const caret = el?.selectionStart ?? value.length;

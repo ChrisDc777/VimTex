@@ -1,15 +1,17 @@
 /**
- * Preset Studio selection / equation actions (#28, #83).
+ * Preset Studio selection / equation actions (#28, #83, #84).
  * Kept tiny and stable — copy is the product surface.
  */
 
+import { wrapDerivationCoachInstruction } from "@/lib/derivation-coach";
 import { EQUATION_REWRITE_INSTRUCTION } from "@/lib/render-note";
 
 export type SelectionAiActionId =
   | "explain"
   | "simplify"
   | "fix"
-  | "rewriteEq";
+  | "rewriteEq"
+  | "coach";
 
 export type SelectionAiAction = {
   id: SelectionAiActionId;
@@ -47,6 +49,12 @@ export const SELECTION_AI_ACTIONS: readonly SelectionAiAction[] = [
     id: "rewriteEq",
     label: "Rewrite eq",
     instruction: EQUATION_REWRITE_INSTRUCTION,
+    preferEquationScope: true,
+  },
+  {
+    id: "coach",
+    label: "Coach",
+    instruction: wrapDerivationCoachInstruction(),
     preferEquationScope: true,
   },
 ] as const;

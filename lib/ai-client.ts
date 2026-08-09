@@ -14,6 +14,8 @@ export type AiChatRequest = {
   truncated?: boolean;
   /** Prior @vimothy turns (#54). */
   history?: AiHistoryMessage[];
+  /** Chat-only derivation coach (#84). */
+  mode?: "coach";
 };
 
 export type AiChatResult = {
@@ -35,6 +37,7 @@ function requestBody({
   caret,
   truncated,
   history,
+  mode,
   stream,
 }: AiChatRequest & { stream?: boolean }) {
   const backend = backendForModel(model);
@@ -49,6 +52,7 @@ function requestBody({
     ...(caret ? { caret } : {}),
     ...(truncated ? { truncated: true } : {}),
     ...(history && history.length > 0 ? { history } : {}),
+    ...(mode ? { mode } : {}),
     ...(stream ? { stream: true } : {}),
   };
 }
