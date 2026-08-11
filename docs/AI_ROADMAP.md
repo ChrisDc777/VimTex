@@ -1,6 +1,6 @@
 # VimTex — AI roadmap (Studio vs Forge)
 
-**Status:** Waves A–D Level A landed; #60 usage + limits in progress  
+**Status:** Waves A–D Level A landed; #57 Level C shipped; #60 room prefs shipped  
 **Epics:** [#26](https://github.com/ChrisDc777/VimTex/issues/26) (M3 milestone), [#64](https://github.com/ChrisDc777/VimTex/issues/64) (Studio AI tracking root)  
 **Related:** Forge gate [#59](https://github.com/ChrisDc777/VimTex/issues/59), diff [#27](https://github.com/ChrisDc777/VimTex/issues/27), stream [#29](https://github.com/ChrisDc777/VimTex/issues/29), patches [#87](https://github.com/ChrisDc777/VimTex/issues/87)
 
@@ -75,9 +75,9 @@ land and expose stable hunk ranges — see Wave D.
 
 ### Wave B — Scoped power
 
-#57 context (A+B) → #28 selection actions → #53 diagnostics → #54 memory
+#57 context (A+B+C) → #28 selection actions → #53 diagnostics → #54 memory
 
-**#57 Level A+B:** caret pack + Studio selection context + Sel chip + math unwrap for LLM backticks/fences.  
+**#57 Level A+B+C:** caret pack + Studio selection context + Sel chip + math unwrap; Level C adds Studio-only live diagnostics, TeX outline, and note-local citation keys into the system prompt (Forge stays file-only).  
 **#28:** Studio selection bar (Explain / Simplify / Fix TeX) — editor-anchored, not more chat chrome.  
 **#53:** Studio diagnostics strip with Explain / Fix → chat + surrounding lines. Forge Problem panel stays list-only.  
 **#54 Level A:** Studio sends last N @vimothy turns with each request (trimmed); route stays stateless. Forge stays single-shot.
@@ -105,6 +105,7 @@ land and expose stable hunk ranges — see Wave D.
 | Equation-scoped rewrite (#83) | ✅ Level A — caret/selection in math → Equation bar + Rewrite eq |
 | Derivation coach (#84) | ✅ Level A — `/derive` (+ Coach action); `mode=coach` forbids patches; Forge `/derive` only |
 | AI profiles / per-room instructions | M5 / late M3 |
+| Project retrieval / RAG (#57 Level D) | M5+ — explicitly optional; overkill for v1 (single-note rooms) |
 | Section summaries | Skip / P3 |
 | Peer-aware apply | M3 late |
 
