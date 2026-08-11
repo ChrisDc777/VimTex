@@ -35,6 +35,12 @@ export type SystemPromptContext = {
   surrounding?: string;
   caret?: { line: number; column: number; offset: number };
   truncated?: boolean;
+  /** Live math diagnostics (#57 Level C). */
+  diagnostics?: string;
+  /** TeX section outline (#57 Level C). */
+  outline?: string;
+  /** Note-local citation keys (#57 Level C). */
+  citations?: string;
   /** Chat-only derivation coach (#84) — no patch/document edit format. */
   coach?: boolean;
 };
@@ -72,6 +78,33 @@ ${ctx.surrounding}
   if (ctx.caret) {
     sections.push(
       `Caret position: line ${ctx.caret.line}, column ${ctx.caret.column} (offset ${ctx.caret.offset}).`,
+    );
+  }
+
+  if (ctx.diagnostics?.trim()) {
+    sections.push(
+      `Live math diagnostics (ground /fix answers in these when relevant):
+-----
+${ctx.diagnostics}
+-----`,
+    );
+  }
+
+  if (ctx.outline?.trim()) {
+    sections.push(
+      `Document outline (section structure — use for orientation, not as a substitute for the buffer):
+-----
+${ctx.outline}
+-----`,
+    );
+  }
+
+  if (ctx.citations?.trim()) {
+    sections.push(
+      `Citation keys in this note (prefer these for \\cite{…}):
+-----
+${ctx.citations}
+-----`,
     );
   }
 

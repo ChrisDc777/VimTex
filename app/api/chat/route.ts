@@ -35,6 +35,9 @@ const MAX_INSTRUCTION_CHARS = 12_000;
 const MAX_DOCUMENT_CHARS = 400_000;
 const MAX_SELECTION_CHARS = 32_000;
 const MAX_SURROUNDING_CHARS = 16_000;
+const MAX_DIAGNOSTICS_CHARS = 4_000;
+const MAX_OUTLINE_CHARS = 4_000;
+const MAX_CITATIONS_CHARS = 2_000;
 
 type ChatRequestBody = {
   instruction?: string;
@@ -53,6 +56,10 @@ type ChatRequestBody = {
   mode?: "coach" | string;
   /** Sampling temperature 0–1 (#60). */
   temperature?: number;
+  /** #57 Level C auxiliary context (Studio). */
+  diagnostics?: string;
+  outline?: string;
+  citations?: string;
 };
 
 function appUrl(): string {
@@ -129,6 +136,9 @@ function parseBody(body: ChatRequestBody): {
   history: AiHistoryMessage[];
   coach?: boolean;
   temperature?: number;
+  diagnostics?: string;
+  outline?: string;
+  citations?: string;
   error?: Response;
 } {
   const instruction =
@@ -259,6 +269,9 @@ function parseBody(body: ChatRequestBody): {
       body.mode === "coach" || isDerivationCoachInstruction(instruction),
     temperature:
       normalizeAiTemperature(body.temperature) ?? DEFAULT_AI_TEMPERATURE,
+    diagnostics: parseOptionalString(body.diagnostics, MAX_DIAGNOSTICS_CHARS),
+    outline: parseOptionalString(body.outline, MAX_OUTLINE_CHARS),
+    citations: parseOptionalString(body.citations, MAX_CITATIONS_CHARS),
   };
 }
 
@@ -293,6 +306,9 @@ export async function POST(req: Request) {
     history,
     coach,
     temperature = DEFAULT_AI_TEMPERATURE,
+    diagnostics,
+    outline,
+    citations,
   } = parsed;
 
   const lm =
@@ -309,6 +325,9 @@ export async function POST(req: Request) {
     surrounding,
     caret,
     truncated,
+    diagnostics,
+    outline,
+    citations,
     coach: Boolean(coach),
   });
 

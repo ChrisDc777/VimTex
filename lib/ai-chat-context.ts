@@ -1,6 +1,7 @@
 /**
- * Chat context packing for #57 (levels A–B).
- * Priority when budget is tight: selection > surrounding > document.
+ * Chat context packing for #57 (levels A–C).
+ * Priority when budget is tight: selection > surrounding > outline > document.
+ * Level C aux (diagnostics / outline / citations) is Studio-only.
  */
 
 /** Soft budget — raised with the 512 KiB chat route ceiling (#60). */
@@ -34,6 +35,12 @@ export type PackedAiContext = {
   selection?: string;
   surrounding?: string;
   caret?: EditorCaret;
+  /** Live math diagnostics (#57 Level C). */
+  diagnostics?: string;
+  /** TeX section outline (#57 Level C). */
+  outline?: string;
+  /** Note-local citation keys (#57 Level C). */
+  citations?: string;
   /** True when the document field was truncated. */
   truncated: boolean;
 };
@@ -46,6 +53,15 @@ export type PackAiContextOptions = {
   caret?: EditorCaret;
   /** Studio: include selection/surrounding. Forge: file-only. */
   includeSelectionContext: boolean;
+  /**
+   * Studio: include diagnostics / outline / citations.
+   * Forge: omit (even when Problem-panel explain exists).
+   */
+  includeAuxiliaryContext?: boolean;
+  /** Prebuilt Level C blocks (from buildAuxiliaryAiContext). */
+  diagnostics?: string;
+  outline?: string;
+  citations?: string;
   documentBudget?: number;
 };
 
@@ -182,7 +198,7 @@ export function clip(text: string, budget: number): string {
 
 /**
  * Build the context payload for `/api/chat`.
- * Selection context is omitted when `includeSelectionContext` is false (Forge).
+ * Selection and Level C aux are omitted when their include flags are false (Forge).
  */
 export function packAiChatContext(
   opts: PackAiContextOptions,
@@ -209,6 +225,18 @@ export function packAiChatContext(
     }
     if (opts.caret) {
       packed.caret = opts.caret;
+    }
+  }
+
+  if (opts.includeAuxiliaryContext) {
+    if (opts.diagnostics?.trim()) {
+      packed.diagnostics = opts.diagnostics.trim();
+    }
+    if (opts.outline?.trim()) {
+      packed.outline = opts.outline.trim();
+    }
+    if (opts.citations?.trim()) {
+      packed.citations = opts.citations.trim();
     }
   }
 
