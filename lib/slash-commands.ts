@@ -1,18 +1,28 @@
 /**
  * Studio slash-command registry (#63).
- * Keep the chat `/` menu short — only high-traffic actions.
+ * Core menu stays short; optional extras + user customs live in Preferences.
  */
 
-export type SlashCommandId =
+export type BuiltinSlashCommandId =
   | "explain"
   | "rewrite"
   | "fix"
   | "review"
   | "derive"
-  | "math";
+  | "math"
+  | "summarize"
+  | "format"
+  | "expand"
+  | "letter"
+  | "paper"
+  | "cv"
+  | "notes";
+
+/** Built-in id, or a custom slug from prefs. */
+export type SlashCommandId = BuiltinSlashCommandId | (string & {});
 
 export type SlashCommand = {
-  id: SlashCommandId;
+  id: string;
   /** Shown as /id */
   title: string;
   hint: string;
@@ -24,10 +34,25 @@ export type SlashCommand = {
   grammarReview?: boolean;
   /** When true, only offered if derivationCoach is enabled (#84). */
   derivationCoach?: boolean;
+  /**
+   * Hidden from the `/` menu by default (prefs can re-enable).
+   * Trimmed earlier to keep the menu short.
+   */
+  optional?: boolean;
+  /** User-defined command from Preferences. */
+  custom?: boolean;
 };
 
-/** Primary chat `/` commands (intentionally small). */
-export const SLASH_COMMANDS: readonly SlashCommand[] = [
+/** User-authored slash entry (stored in chrome prefs). */
+export type CustomSlashCommand = {
+  id: string;
+  title: string;
+  hint: string;
+  instruction: string;
+};
+
+/** Primary chat `/` commands (on by default). */
+const CORE_SLASH_COMMANDS: readonly SlashCommand[] = [
   {
     id: "explain",
     title: "Explain",
@@ -85,7 +110,127 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     instruction:
       "Convert the selected plain-English description into KaTeX-friendly LaTeX math. Propose a full-document edit replacing the selection.",
   },
+];
+
+/**
+ * Previously trimmed from the menu (prefs can restore).
+ * Note: old `/proofread` became whole-note `/review`.
+ */
+const OPTIONAL_SLASH_COMMANDS: readonly SlashCommand[] = [
+  {
+    id: "summarize",
+    title: "Summarize",
+    hint: "Summarize selection or section",
+    optional: true,
+    instruction:
+      "Summarize the selected text (or the current section around the caret) in a few sentences. Do not change the note.",
+  },
+  {
+    id: "format",
+    title: "Format",
+    hint: "Tidy spacing and environments",
+    optional: true,
+    instruction:
+      "Tidy the selected TeX (spacing, alignment, begin/end structure) without changing meaning. Propose a full-document edit.",
+  },
+  {
+    id: "expand",
+    title: "Expand",
+    hint: "Expand shorthand to full TeX",
+    optional: true,
+    instruction:
+      "Expand abbreviations or shorthand in the selection into full LaTeX. Propose a full-document edit.",
+  },
+  {
+    id: "letter",
+    title: "Letter",
+    hint: "Scaffold a letter",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a short, compilable KaTeX-friendly letter skeleton (greeting, body, closing). Prefer plain TeX macros over a full documentclass unless helpful. Propose a full-document edit.",
+  },
+  {
+    id: "paper",
+    title: "Paper",
+    hint: "Scaffold a paper",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a short article/paper skeleton: title, abstract, sections, and a sample equation. KaTeX-friendly; no heavy preamble. Propose a full-document edit.",
+  },
+  {
+    id: "cv",
+    title: "CV",
+    hint: "Scaffold a CV",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a compact CV/resume skeleton (name, contact, education, experience). KaTeX-friendly. Propose a full-document edit.",
+  },
+  {
+    id: "notes",
+    title: "Notes",
+    hint: "Scaffold lecture notes",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a lecture-notes skeleton: title, outline, and a few section headings with placeholder math. KaTeX-friendly. Propose a full-document edit.",
+  },
+];
+
+/** Full built-in registry (core + optional). */
+export const SLASH_COMMANDS: readonly SlashCommand[] = [
+  ...CORE_SLASH_COMMANDS,
+  ...OPTIONAL_SLASH_COMMANDS,
 ] as const;
+
+/** Ids shown in the `/` menu when prefs are at defaults. */
+export const DEFAULT_ENABLED_SLASH_IDS: readonly BuiltinSlashCommandId[] =
+  CORE_SLASH_COMMANDS.map((c) => c.id as BuiltinSlashCommandId);
+
+export function defaultEnabledSlashIds(): BuiltinSlashCommandId[] {
+  return [...DEFAULT_ENABLED_SLASH_IDS];
+}
+
+export function isKnownSlashCommandId(id: string): id is BuiltinSlashCommandId {
+  return SLASH_COMMANDS.some((c) => c.id === id);
+}
+
+const CUSTOM_ID_RE = /^[a-z][a-z0-9-]{0,23}$/;
+
+/** Normalize a custom `/id` slug; returns null if invalid or reserved. */
+export function normalizeCustomSlashId(raw: string): string | null {
+  const id = raw.trim().toLowerCase().replace(/^\/+/, "");
+  if (!CUSTOM_ID_RE.test(id)) return null;
+  if (isKnownSlashCommandId(id)) return null;
+  return id;
+}
+
+export function customToSlashCommand(c: CustomSlashCommand): SlashCommand {
+  return {
+    id: c.id,
+    title: c.title.trim() || c.id,
+    hint: c.hint.trim() || "Custom command",
+    instruction: c.instruction.trim(),
+    custom: true,
+  };
+}
+
+/** Merge built-ins with user customs (customs win on id collision). */
+export function mergeSlashCommands(
+  builtins: readonly SlashCommand[] = SLASH_COMMANDS,
+  customs: readonly CustomSlashCommand[] = [],
+): SlashCommand[] {
+  const byId = new Map<string, SlashCommand>();
+  for (const c of builtins) byId.set(c.id, c);
+  for (const c of customs) {
+    const normalized = normalizeCustomSlashId(c.id);
+    if (!normalized || !c.instruction.trim()) continue;
+    byId.set(normalized, customToSlashCommand({ ...c, id: normalized }));
+  }
+  return [...byId.values()];
+}
 
 /** Filter by id / title prefix (case-insensitive). */
 export function filterSlashCommands(
@@ -95,6 +240,8 @@ export function filterSlashCommands(
     includeTemplates?: boolean;
     includeGrammarReview?: boolean;
     includeDerivationCoach?: boolean;
+    /** When set, only these built-in ids appear (customs always included). */
+    enabledIds?: readonly string[] | ReadonlySet<string>;
   },
 ): SlashCommand[] {
   const includeTemplates = opts?.includeTemplates ?? true;
@@ -108,6 +255,13 @@ export function filterSlashCommands(
   }
   if (!includeDerivationCoach) {
     pool = pool.filter((c) => !c.derivationCoach);
+  }
+  if (opts?.enabledIds) {
+    const enabled =
+      opts.enabledIds instanceof Set
+        ? opts.enabledIds
+        : new Set(opts.enabledIds);
+    pool = pool.filter((c) => c.custom || enabled.has(c.id));
   }
   const q = query.trim().toLowerCase();
   if (!q) return pool;
@@ -146,7 +300,7 @@ export function parseSlashCommandsInText(
   let match: RegExpExecArray | null;
   while ((match = SLASH_TOKEN_RE.exec(text)) !== null) {
     const id = (match[2] ?? "").toLowerCase();
-    const cmd = byId.get(id as SlashCommandId);
+    const cmd = byId.get(id);
     if (!cmd || seen.has(cmd.id)) continue;
     seen.add(cmd.id);
     found.push(cmd);

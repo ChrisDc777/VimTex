@@ -29,6 +29,7 @@ import { StudioOutlinePanel } from "@/components/studio/StudioOutlinePanel";
 import { StudioAiDiffBridge } from "@/components/studio/StudioAiDiffBridge";
 import { SelectionActionBar } from "@/components/editor/SelectionActionBar";
 import { StudioDiagnosticsBar } from "@/components/diagnostics/StudioDiagnosticsBar";
+import { formatShortcut } from "@/components/ShortcutHint";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { VimEditorHandle } from "@/components/VimEditor";
 import {
@@ -440,34 +441,36 @@ export function StudioShell({
               type="button"
               aria-pressed={outlineOpen}
               aria-label={outlineOpen ? "Close outline" : "Open outline"}
-              title="Document outline"
+              title={outlineOpen ? "Close outline" : "Document outline"}
               disabled={!ready}
               onClick={() => setOutlineOpen((v) => !v)}
               className={
                 outlineOpen
-                  ? "vt-pill vt-pill--solid gap-1.5"
-                  : "vt-pill vt-pill--ghost gap-1.5"
+                  ? "vt-pill vt-pill--solid vt-pill--icon"
+                  : "vt-pill vt-pill--ghost vt-pill--icon"
               }
             >
               <OutlineIcon />
-              <span className="hidden sm:inline">Outline</span>
             </button>
           ) : null}
           <button
             type="button"
             aria-pressed={chatOpen}
             aria-label={chatOpen ? "Close chat" : "Open chat"}
-            title="Room chat"
+            title={
+              chatOpen
+                ? `Close chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
+                : `Room chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
+            }
             disabled={!ready}
             onClick={() => setChatOpen((v) => !v)}
             className={
               chatOpen
-                ? "vt-pill vt-pill--solid gap-1.5"
-                : "vt-pill vt-pill--ghost gap-1.5"
+                ? "vt-pill vt-pill--solid vt-pill--icon"
+                : "vt-pill vt-pill--ghost vt-pill--icon"
             }
           >
             <ChatIcon />
-            <span className="hidden sm:inline">Chat</span>
           </button>
           <ViewToggle value={viewMode} onChange={handleViewMode} />
           <SnippetMenu

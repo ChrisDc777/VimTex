@@ -118,9 +118,13 @@ export function providerLogo(id: AiProviderId, props?: LogoProps) {
   return <OpenRouterLogo {...props} />;
 }
 
-/** BYOK curated models: brand marks to showcase compatibility. */
+/** BYOK curated models: brand marks to showcase compatibility.
+ * OpenCode Zen free slugs (no `/`) use the provider logo instead.
+ */
 export function modelBrandLogo(modelId: string, props?: LogoProps) {
   const id = modelId.toLowerCase();
+  // Bare OpenCode ids like deepseek-v4-flash-free → caller uses OpenCode mark.
+  if (!id.includes("/")) return null;
   if (id.includes("claude") || id.includes("anthropic")) {
     return <ClaudeLogo {...props} />;
   }

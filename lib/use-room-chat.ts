@@ -58,6 +58,7 @@ import {
 import {
   filterSlashCommands,
   insertSlashCommandToken,
+  mergeSlashCommands,
   parseSlashCommandsInText,
   SLASH_COMMANDS,
   type SlashCommand,
@@ -244,23 +245,35 @@ export function useRoomChat({
   );
 
   const filteredSlashCommands = useMemo(() => {
+    const pool = mergeSlashCommands(
+      SLASH_COMMANDS,
+      chromePrefs.customSlashCommands,
+    );
     if (aiFeatureEnabled(shell, "slashCommands")) {
       if (!chromePrefs.slashMenu) return [];
-      return filterSlashCommands(slashFilter, undefined, {
+      return filterSlashCommands(slashFilter, pool, {
         includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
         includeGrammarReview: aiFeatureEnabled(shell, "grammarReview"),
         includeDerivationCoach: aiFeatureEnabled(shell, "derivationCoach"),
+        enabledIds: chromePrefs.enabledSlashCommands,
       });
     }
     // Forge: /derive only (#84) — no mutating slash surface.
     if (aiFeatureEnabled(shell, "derivationCoach")) {
       return filterSlashCommands(
         slashFilter,
-        SLASH_COMMANDS.filter((c) => c.derivationCoach),
+        pool.filter((c) => c.derivationCoach),
+        { enabledIds: chromePrefs.enabledSlashCommands },
       );
     }
     return [];
-  }, [shell, slashFilter, chromePrefs.slashMenu]);
+  }, [
+    shell,
+    slashFilter,
+    chromePrefs.slashMenu,
+    chromePrefs.enabledSlashCommands,
+    chromePrefs.customSlashCommands,
+  ]);
 
   const updateComposerMenus = useCallback(
     (value: string, caret: number) => {
@@ -619,9 +632,12 @@ export function useRoomChat({
     const clientId = ws.getClientId();
     if (clientId == null) return;
 
-    const slashPool = aiFeatureEnabled(shell, "slashCommands")
-      ? SLASH_COMMANDS
-      : SLASH_COMMANDS.filter((c) => c.derivationCoach);
+    const slashPool = mergeSlashCommands(
+      aiFeatureEnabled(shell, "slashCommands")
+        ? SLASH_COMMANDS
+        : SLASH_COMMANDS.filter((c) => c.derivationCoach),
+      chromePrefs.customSlashCommands,
+    );
     const slashes = parseSlashCommandsInText(trimmed, slashPool);
 
     const text = trimmed;
@@ -704,6 +720,7 @@ export function useRoomChat({
     user.color,
     user.name,
     shell,
+    chromePrefs.customSlashCommands,
   ]);
 
   // Keep ref in sync so the post-invoke drain can call the latest send.

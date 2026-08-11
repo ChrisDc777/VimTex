@@ -1,6 +1,6 @@
 "use client";
 
-import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
+import { formatShortcut, ShortcutHint } from "@/components/ShortcutHint";
 import { PeerChips } from "@/components/presence/PeerChips";
 import type { CollabStatus, PeerInfo, VimMode } from "@/lib/types";
 
@@ -52,9 +52,15 @@ export function StudioStatusBar({
       <ShortcutHint
         className="hidden sm:inline-flex"
         shortcuts={[
-          { keys: `${MOD_LABEL} K`, label: "palette" },
-          { keys: `${MOD_LABEL}⇧C`, label: "chat" },
-          { keys: `${MOD_LABEL}⇧V`, label: "view" },
+          { keys: formatShortcut({ mod: true, key: "K" }), label: "palette" },
+          {
+            keys: formatShortcut({ mod: true, shift: true, key: "C" }),
+            label: "chat",
+          },
+          {
+            keys: formatShortcut({ mod: true, shift: true, key: "V" }),
+            label: "view",
+          },
           { keys: "/", label: "commands" },
           { keys: "i /", label: "insert block" },
           { keys: "?", label: "tips" },
