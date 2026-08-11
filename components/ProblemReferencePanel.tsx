@@ -10,6 +10,7 @@ import {
   type ClipboardEvent,
 } from "react";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
+import { formatShortcut } from "@/components/ShortcutHint";
 import { renderNoteDiagnostics } from "@/lib/render-note";
 import {
   clearReferenceImage,
@@ -128,7 +129,7 @@ export function ProblemReferencePanel({
       await applyImageBlob(blob);
     } catch {
       setError(
-        "Could not read the clipboard. Choose an image or paste with Ctrl+V in this panel.",
+        `Could not read the clipboard. Choose an image or paste with ${formatShortcut({ mod: true, key: "V" })} in this panel.`,
       );
     } finally {
       setLoading(false);

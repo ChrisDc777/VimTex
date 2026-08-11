@@ -6,7 +6,7 @@ import {
   formatVimMode,
   statusDotClass,
 } from "@/lib/status-labels";
-import { MOD_LABEL, ShortcutHint } from "@/components/ShortcutHint";
+import { formatShortcut, ShortcutHint } from "@/components/ShortcutHint";
 import { PeerChips } from "@/components/presence/PeerChips";
 import type { CollabStatus, PeerInfo, VimMode } from "@/lib/types";
 
@@ -82,7 +82,10 @@ export function StatusBar({
 
       <ShortcutHint
         shortcuts={[
-          { keys: `${MOD_LABEL} ,`, label: "preferences" },
+          {
+            keys: formatShortcut({ mod: true, key: "," }),
+            label: "preferences",
+          },
           { keys: "?", label: "tips" },
         ]}
       />

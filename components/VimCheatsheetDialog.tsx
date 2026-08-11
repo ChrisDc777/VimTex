@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useMemo } from "react";
+import { formatShortcut } from "@/components/ShortcutHint";
 
 type VimCheatsheetDialogProps = {
   open: boolean;
@@ -9,27 +10,46 @@ type VimCheatsheetDialogProps = {
   onOpenOnboarding?: () => void;
 };
 
-const GENERAL_ROWS: Array<{ keys: string; action: string }> = [
-  { keys: "Ctrl/Cmd+K", action: "Open command palette" },
-  { keys: "Ctrl/Cmd+,", action: "Open preferences" },
-  { keys: "Ctrl/Cmd+Shift+C", action: "Toggle Studio chat" },
-  { keys: "Ctrl/Cmd+Shift+V", action: "Toggle Live / Split view" },
-  { keys: "?", action: "Open this shortcuts & tips panel" },
-  { keys: "/", action: "Slash commands in Studio chat" },
-  { keys: "i then /", action: "Insert section / todo / math block" },
-  { keys: "@vimothy", action: "Ask Vimothy in Studio chat" },
-];
+function generalRows(): Array<{ keys: string; action: string }> {
+  return [
+    {
+      keys: formatShortcut({ mod: true, key: "K" }),
+      action: "Open command palette",
+    },
+    {
+      keys: formatShortcut({ mod: true, key: "," }),
+      action: "Open preferences",
+    },
+    {
+      keys: formatShortcut({ mod: true, shift: true, key: "C" }),
+      action: "Toggle Studio chat",
+    },
+    {
+      keys: formatShortcut({ mod: true, shift: true, key: "V" }),
+      action: "Toggle Live / Split view",
+    },
+    { keys: "?", action: "Open this shortcuts & tips panel" },
+    { keys: "/", action: "Slash commands in Studio chat" },
+    { keys: "i then /", action: "Insert section / todo / math block" },
+    { keys: "@vimothy", action: "Ask Vimothy in Studio chat" },
+  ];
+}
 
-const VIM_ROWS: Array<{ keys: string; action: string }> = [
-  { keys: "Esc", action: "Normal mode" },
-  { keys: "i / a / o", action: "Insert (before / after / new line)" },
-  { keys: "hjkl", action: "Move left / down / up / right" },
-  { keys: "w / b", action: "Next / previous word" },
-  { keys: "dd / yy / p", action: "Delete / yank / paste line" },
-  { keys: "u / Ctrl-r", action: "Undo / redo" },
-  { keys: "v", action: "Visual select" },
-  { keys: ":w mental model", action: "Autosave / share — no file write needed" },
-];
+function vimRows(): Array<{ keys: string; action: string }> {
+  return [
+    { keys: "Esc", action: "Normal mode" },
+    { keys: "i / a / o", action: "Insert (before / after / new line)" },
+    { keys: "hjkl", action: "Move left / down / up / right" },
+    { keys: "w / b", action: "Next / previous word" },
+    { keys: "dd / yy / p", action: "Delete / yank / paste line" },
+    { keys: "u / Ctrl-r", action: "Undo / redo" },
+    { keys: "v", action: "Visual select" },
+    {
+      keys: ":w mental model",
+      action: "Autosave / share — no file write needed",
+    },
+  ];
+}
 
 function RowList({ rows }: { rows: Array<{ keys: string; action: string }> }) {
   return (
@@ -53,6 +73,8 @@ export function VimCheatsheetDialog({
   onOpenOnboarding,
 }: VimCheatsheetDialogProps) {
   const titleId = useId();
+  const general = useMemo(() => generalRows(), []);
+  const vim = useMemo(() => vimRows(), []);
 
   useEffect(() => {
     if (!open) return;
@@ -91,9 +113,9 @@ export function VimCheatsheetDialog({
         </p>
         <div className="mt-4">
           <p className="vt-caption text-mute">General</p>
-          <RowList rows={GENERAL_ROWS} />
+          <RowList rows={general} />
           <p className="vt-caption mt-4 text-mute">Vim keys</p>
-          <RowList rows={VIM_ROWS} />
+          <RowList rows={vim} />
         </div>
         <div className="mt-5 flex items-center gap-3">
           {onOpenOnboarding ? (

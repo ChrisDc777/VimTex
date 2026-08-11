@@ -9,7 +9,7 @@ import {
   normalizeCustomSlashId,
   type BuiltinSlashCommandId,
   type CustomSlashCommand,
-} from "@/lib/slash-commands";
+} from "./slash-commands.ts";
 
 export type SlashTokenStyle = "gradient" | "simple";
 
