@@ -131,6 +131,8 @@ export function RoomChatSidebar({
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
+        queuedLabel={chat.queuedLabel}
+        onClearQueuedSend={chat.clearQueuedSend}
       />
     </div>
   );

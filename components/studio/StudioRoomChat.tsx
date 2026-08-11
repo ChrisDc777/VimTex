@@ -314,6 +314,8 @@ export function StudioRoomChat({
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
         modelPickerVariant="studio"
+        queuedLabel={chat.queuedLabel}
+        onClearQueuedSend={chat.clearQueuedSend}
       />
     </>
   );
