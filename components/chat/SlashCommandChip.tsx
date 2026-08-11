@@ -5,37 +5,22 @@ import type { SlashCommand } from "@/lib/slash-commands";
 type SlashCommandChipProps = {
   command: SlashCommand;
   onClear: () => void;
-  /** Position in the chips row — drives alternating accent color. */
-  chipIndex?: number;
 };
 
 /**
- * Pending slash command attached to the next send (Claude/Cursor-style chip).
- * Even indices use the breeze (blue) accent; odd indices use sunset (orange-red).
+ * Cursor-style inline slash token: just `/id` in the composer, removable.
+ * Color is a breeze×sunset blend (warm peach), same for every command.
  */
-export function SlashCommandChip({
-  command,
-  onClear,
-  chipIndex = 0,
-}: SlashCommandChipProps) {
-  const accent = chipIndex % 2 === 0 ? "breeze" : "sunset";
+export function SlashCommandChip({ command, onClear }: SlashCommandChipProps) {
   return (
-    <div
-      className={`vt-slash-chip vt-slash-chip--${accent}`}
-      title={command.hint}
-      aria-label={`Command /${command.id}: ${command.title}`}
+    <button
+      type="button"
+      className="vt-slash-token"
+      title={`${command.title} — ${command.hint} (click or Backspace to remove)`}
+      aria-label={`Remove /${command.id}`}
+      onClick={onClear}
     >
-      <span className="vt-slash-chip__id">/{command.id}</span>
-      <span className="vt-slash-chip__title">{command.title}</span>
-      <button
-        type="button"
-        className="vt-slash-chip__clear"
-        onClick={onClear}
-        aria-label="Remove command"
-        title="Remove"
-      >
-        ×
-      </button>
-    </div>
+      /{command.id}
+    </button>
   );
 }

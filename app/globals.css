@@ -2469,6 +2469,16 @@ body[data-pane-resizing] * {
     opacity var(--duration-fast) var(--ease-out);
 }
 
+/* Tokens + textarea sit on one wrapping line (Cursor-style). */
+.vt-chat-composer__input-area {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
 .vt-chat-composer__shell--focused {
   border-color: color-mix(in srgb, var(--focus) 55%, var(--hairline));
 }
@@ -2986,63 +2996,41 @@ body[data-pane-resizing] * {
   color: var(--ink);
 }
 
-/* Slash command chips row */
-.vt-slash-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0 0 6px;
-}
-
-.vt-slash-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-size: 11px;
-  line-height: 1.4;
-  border: 1px solid transparent;
-  cursor: default;
+/*
+ * Cursor-style slash tokens: bare `/id` text inside the composer.
+ * Color = breeze × sunset blend (warm peach) — same for every command.
+ */
+.vt-slash-token {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: color-mix(
+    in srgb,
+    var(--accent-breeze, #a0c3ec) 38%,
+    var(--accent-sunset, #ff7a17)
+  );
+  cursor: pointer;
   user-select: none;
 }
-
-/* Breeze (blue) */
-.vt-slash-chip--breeze {
-  color: var(--accent-breeze, var(--focus));
-  border-color: color-mix(in srgb, var(--accent-breeze, var(--focus)) 40%, transparent);
-  background: color-mix(in srgb, var(--accent-breeze, var(--focus)) 10%, transparent);
+.vt-slash-token:hover {
+  opacity: 0.75;
 }
-
-/* Sunset (orange-red) */
-.vt-slash-chip--sunset {
-  color: var(--accent-sunset, #ff7a17);
-  border-color: color-mix(in srgb, var(--accent-sunset, #ff7a17) 40%, transparent);
-  background: color-mix(in srgb, var(--accent-sunset, #ff7a17) 10%, transparent);
-}
-
-.vt-slash-chip__id {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.vt-slash-chip__title {
-  opacity: 0.85;
-}
-
-.vt-slash-chip__clear {
-  border: none;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 1px;
-  opacity: 0.65;
-}
-.vt-slash-chip__clear:hover {
-  opacity: 1;
+.vt-slash-token:focus-visible {
+  outline: 2px solid
+    color-mix(
+      in srgb,
+      var(--accent-breeze, #a0c3ec) 38%,
+      var(--accent-sunset, #ff7a17)
+    );
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .vt-chat-context-attach {
