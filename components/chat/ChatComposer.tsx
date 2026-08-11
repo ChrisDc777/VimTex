@@ -149,10 +149,16 @@ export function ChatComposer({
           );
           return;
         }
-        if (e.key === "Enter" || e.key === "Tab") {
+        if (e.key === "Enter") {
           e.preventDefault();
           const cmd = filteredSlashCommands[slashIndex];
           if (cmd) onSlashSelect(cmd);
+          return;
+        }
+        // Tab dismisses the menu so the user can keep typing freely.
+        if (e.key === "Tab") {
+          e.preventDefault();
+          onSlashClose?.();
           return;
         }
       }
@@ -211,20 +217,21 @@ export function ChatComposer({
       ) : null}
 
       {replyTarget && onClearReply ? (
-        <div className="vt-chat-reply-chip">
-          <span className="vt-chat-reply-chip__badge">Reply</span>
-          <span className="vt-chat-reply-chip__author">
-            {replyTarget.role === "ai" ? "Vimothy" : replyTarget.authorName}
-          </span>
-          <span className="vt-chat-reply-chip__preview">
-            {replyTarget.text.replace(/\s+/g, " ").slice(0, 64)}
-          </span>
+        <div className="vt-chat-reply-bar">
+          <div className="vt-chat-reply-bar__quote">
+            <span className="vt-chat-reply-bar__author">
+              {replyTarget.role === "ai" ? "Vimothy" : replyTarget.authorName}
+            </span>
+            <span className="vt-chat-reply-bar__preview">
+              {replyTarget.text.replace(/\s+/g, " ").slice(0, 72)}
+            </span>
+          </div>
           {replyTarget.role === "ai" ? (
-            <span className="vt-chat-reply-chip__hint">continues AI</span>
+            <span className="vt-chat-reply-bar__hint">continues AI</span>
           ) : null}
           <button
             type="button"
-            className="vt-chat-reply-chip__clear"
+            className="vt-chat-reply-bar__clear"
             onClick={onClearReply}
             aria-label="Cancel reply"
           >

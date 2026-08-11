@@ -67,7 +67,7 @@ function highlightMentions(text: string): ReactNode[] {
   let key = 0;
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) {
-      parts.push(...formatInlineCode(text.slice(last, match.index), key));
+      parts.push(...highlightSlashCommands(text.slice(last, match.index), key));
       key += 100;
     }
     parts.push(
@@ -78,9 +78,38 @@ function highlightMentions(text: string): ReactNode[] {
     last = match.index + match[0].length;
   }
   if (last < text.length) {
+    parts.push(...highlightSlashCommands(text.slice(last), key));
+  }
+  return parts.length > 0 ? parts : highlightSlashCommands(text, 0);
+}
+
+/** Color `/command` tokens inline in bubbles — not a separate attachment row. */
+function highlightSlashCommands(text: string, keyBase: number): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /(^|[\s])(\/[a-z][a-z0-9-]*)\b/gi;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = keyBase;
+  while ((match = re.exec(text)) !== null) {
+    const lead = match[1] ?? "";
+    const token = match[2] ?? "";
+    const start = match.index;
+    if (start > last) {
+      parts.push(...formatInlineCode(text.slice(last, start), key));
+      key += 40;
+    }
+    if (lead) parts.push(lead);
+    parts.push(
+      <span key={key++} className="vt-chat-slash-inline">
+        {token}
+      </span>,
+    );
+    last = start + match[0].length;
+  }
+  if (last < text.length) {
     parts.push(...formatInlineCode(text.slice(last), key));
   }
-  return parts.length > 0 ? parts : formatInlineCode(text, 0);
+  return parts.length > 0 ? parts : formatInlineCode(text, keyBase);
 }
 
 function formatInlineCode(text: string, keyBase: number): ReactNode[] {

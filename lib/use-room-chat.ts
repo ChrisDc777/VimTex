@@ -689,17 +689,8 @@ export function useRoomChat({
     if (slashes.length > 0 && slashInstruction) {
       instructionOverridesRef.current[userMsg.id] = slashInstruction;
       editSourceOverridesRef.current[userMsg.id] = "slash";
-      const labelStr = slashes.map((s) => `/${s.id}`).join(" ");
-      const previewStr = slashes.map((s) => s.title).join(" + ");
-      setMessageContexts((prev) => ({
-        ...prev,
-        [userMsg.id]: {
-          label: labelStr,
-          preview: previewStr,
-          lineFrom: 0,
-          lineTo: 0,
-        },
-      }));
+      // Slash ids already live in the bubble text — don't duplicate as an
+      // attachment row under the message.
     }
 
     setInput("");

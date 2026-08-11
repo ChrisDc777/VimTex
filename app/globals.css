@@ -2336,19 +2336,21 @@ body[data-pane-resizing] * {
   align-items: center;
   gap: 4px;
   align-self: flex-start;
-  padding: 4px 8px;
+  margin: 0;
+  padding: 2px 4px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--focus);
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .vt-chat-retry:hover:not(:disabled) {
-  background: var(--canvas-mid);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--canvas-mid) 80%, transparent);
 }
 
 .vt-chat-retry:disabled {
@@ -2359,6 +2361,11 @@ body[data-pane-resizing] * {
 .vt-chat-retry:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+.vt-chat-retry svg {
+  width: 12px;
+  height: 12px;
 }
 
 .vt-chat-empty {
@@ -3089,53 +3096,48 @@ body[data-pane-resizing] * {
   border-radius: 3px;
 }
 
-.vt-chat-reply-chip {
+.vt-chat-reply-bar {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
   max-width: 100%;
   margin: 0 0 8px;
-  padding: 5px 8px;
-  border: 1px solid color-mix(in srgb, var(--focus) 28%, var(--hairline));
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--focus) 8%, transparent);
-  font-size: 11px;
-  line-height: 1.3;
+  padding: 0 0 0 10px;
+  border-left: 2px solid color-mix(in srgb, var(--focus) 50%, var(--hairline));
+  font-size: 12px;
+  line-height: 1.35;
   color: var(--mute);
 }
 
-.vt-chat-reply-chip__badge {
-  flex-shrink: 0;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--focus);
-}
-
-.vt-chat-reply-chip__author {
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.vt-chat-reply-chip__preview {
+.vt-chat-reply-bar__quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   min-width: 0;
+  flex: 1;
+}
+
+.vt-chat-reply-bar__author {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ink) 75%, var(--mute));
+}
+
+.vt-chat-reply-bar__preview {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   opacity: 0.9;
 }
 
-.vt-chat-reply-chip__hint {
+.vt-chat-reply-bar__hint {
   flex-shrink: 0;
-  font-size: 10px;
+  align-self: center;
+  font-size: 11px;
   color: var(--focus);
   opacity: 0.85;
 }
 
-.vt-chat-reply-chip__clear {
+.vt-chat-reply-bar__clear {
   flex-shrink: 0;
   margin-left: auto;
   border: 0;
@@ -3147,7 +3149,7 @@ body[data-pane-resizing] * {
   padding: 0 2px;
 }
 
-.vt-chat-reply-chip__clear:hover {
+.vt-chat-reply-bar__clear:hover {
   color: var(--ink);
 }
 
@@ -3179,7 +3181,7 @@ body[data-pane-resizing] * {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 2px;
+  padding: 2px 0 0;
   opacity: 0.65;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
@@ -3195,18 +3197,20 @@ body[data-pane-resizing] * {
   }
 }
 
+/* Match Retry: plain text action, not a pill/chip. */
 .vt-chat-msg__action {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  margin: 0;
   border: 0;
   background: transparent;
   padding: 2px 4px;
   border-radius: var(--radius-sm);
-  color: var(--mute);
+  color: var(--focus);
   cursor: pointer;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
@@ -3220,9 +3224,28 @@ body[data-pane-resizing] * {
   cursor: default;
 }
 
+.vt-chat-msg__action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .vt-chat-msg__action svg {
   width: 12px;
   height: 12px;
+}
+
+.vt-chat-slash-inline {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: linear-gradient(
+    115deg,
+    var(--accent-breeze, #a0c3ec) 0%,
+    color-mix(in srgb, var(--accent-breeze, #a0c3ec) 45%, var(--accent-sunset, #ff7a17)) 48%,
+    var(--accent-sunset, #ff7a17) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .vt-chat-context-attach {

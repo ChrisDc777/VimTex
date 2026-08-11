@@ -14,7 +14,8 @@ type LogoProps = {
 const BRAND = {
   openrouter: "#C8FF00",
   opencode: "#F1ECEC",
-  openai: "#10A37F",
+  /** OpenAI mark as white on Studio chrome (not brand green). */
+  openai: "#FFFFFF",
   claude: "#D97757",
   deepseek: "#4D6BFE",
 } as const;
@@ -126,8 +127,9 @@ export function modelBrandLogo(modelId: string, props?: LogoProps) {
   if (id.includes("gpt") || id.includes("openai") || id.startsWith("openai/")) {
     return <OpenAiLogo {...props} />;
   }
-  if (id.includes("deepseek")) {
-    return <DeepSeekLogo {...props} />;
+  // OpenRouter-routed DeepSeek (and other non-branded BYOK) → OpenRouter mark.
+  if (id.includes("deepseek") || id.includes("/")) {
+    return <OpenRouterLogo {...props} />;
   }
   return null;
 }
