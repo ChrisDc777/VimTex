@@ -1908,6 +1908,104 @@ body[data-pane-resizing] * {
   opacity: 0.7;
 }
 
+.vt-prefs-custom-slash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vt-prefs-custom-slash-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.vt-prefs-custom-slash-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--mute);
+}
+
+.vt-prefs-custom-slash-remove {
+  border: 0;
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+}
+
+.vt-prefs-custom-slash-remove:hover {
+  color: var(--error, #d47272);
+}
+
+.vt-prefs-custom-slash-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vt-prefs-custom-slash-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 6px;
+}
+
+.vt-prefs-custom-slash-input,
+.vt-prefs-custom-slash-textarea {
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--canvas-mid);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.vt-prefs-custom-slash-textarea {
+  resize: vertical;
+  min-height: 2.75rem;
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+}
+
+.vt-prefs-custom-slash-input:focus-visible,
+.vt-prefs-custom-slash-textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.vt-prefs-custom-slash-error {
+  margin: 0;
+  font-size: 11px;
+  color: var(--error, #d47272);
+}
+
+.vt-prefs-custom-slash-add {
+  align-self: flex-start;
+  border: 1px solid color-mix(in srgb, var(--focus) 40%, var(--hairline));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--focus) 12%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.vt-prefs-custom-slash-add:hover {
+  background: color-mix(in srgb, var(--focus) 18%, transparent);
+}
+
 .vt-pricing-dialog__header {
   display: flex;
   flex-shrink: 0;
@@ -2103,7 +2201,7 @@ body[data-pane-resizing] * {
 .vt-chat-block__agent {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -2112,17 +2210,29 @@ body[data-pane-resizing] * {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
-  border: 1px solid;
+  border: none;
+  background: var(--ai-agent-accent, #ff7a17);
+  color: #0a0a0a;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-agent-accent, #ff7a17) 35%, transparent);
 }
 
 .vt-ai-agent-mark--md {
+  width: 20px;
+  height: 20px;
   font-size: 11px;
+}
+
+.vt-chat-block--ai .vt-chat-block__author {
+  color: var(--ai-agent-accent, #ff7a17);
+  font-weight: 600;
 }
 
 .vt-chat-block--self .vt-chat-block__meta {
@@ -2205,15 +2315,12 @@ body[data-pane-resizing] * {
 .vt-chat-block--ai .vt-chat-msg__bubble {
   background: color-mix(
     in srgb,
-    var(--ai-agent-accent, var(--accent-sunset, #ff7a17)) 8%,
+    var(--ai-agent-accent, #ff7a17) 10%,
     var(--canvas-card)
   );
   border: 1px solid
-    color-mix(
-      in srgb,
-      var(--ai-agent-accent, var(--accent-sunset, #ff7a17)) 22%,
-      var(--hairline)
-    );
+    color-mix(in srgb, var(--ai-agent-accent, #ff7a17) 28%, var(--hairline));
+  border-left: 2px solid var(--ai-agent-accent, #ff7a17);
   color: var(--ink);
   font-size: 15px;
 }

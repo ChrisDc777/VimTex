@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { groupChatMessages } from "@/lib/chat-message-blocks";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { SelectionContextPreview } from "@/lib/ai-chat-context";
@@ -121,12 +122,16 @@ export function ChatMessageList({
             <article key={block.key} className={blockClass}>
               <div className="vt-chat-block__meta">
                 {block.isAi ? (
-                  <span className="vt-chat-block__agent">
-                    <AiAgentMark agent={DEFAULT_AI_AGENT} />
-                    <span
-                      className="vt-chat-block__author"
-                      style={{ color: DEFAULT_AI_AGENT.accent }}
-                    >
+                  <span
+                    className="vt-chat-block__agent"
+                    style={
+                      {
+                        ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
+                      } as CSSProperties
+                    }
+                  >
+                    <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
+                    <span className="vt-chat-block__author">
                       {DEFAULT_AI_AGENT.name}
                     </span>
                   </span>
@@ -243,13 +248,17 @@ export function ChatMessageList({
             aria-live="polite"
             aria-busy="true"
           >
-            <div className="vt-chat-block__meta">
+            <div
+              className="vt-chat-block__meta"
+              style={
+                {
+                  ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
+                } as CSSProperties
+              }
+            >
               <span className="vt-chat-block__agent">
-                <AiAgentMark agent={DEFAULT_AI_AGENT} />
-                <span
-                  className="vt-chat-block__author"
-                  style={{ color: DEFAULT_AI_AGENT.accent }}
-                >
+                <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
+                <span className="vt-chat-block__author">
                   {DEFAULT_AI_AGENT.name}
                 </span>
               </span>

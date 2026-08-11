@@ -9,10 +9,7 @@ export type AiAgentProfile = {
   name: string;
   /** Single-letter mark in the avatar. */
   monogram: string;
-  /**
-   * Accent for name / mark. Prefer a CSS variable so Studio/Forge themes
-   * can retint without code changes.
-   */
+  /** Solid accent color (hex) for mark fill + name. */
   accent: string;
 };
 
@@ -21,7 +18,7 @@ export const VIMOTHY_AGENT: AiAgentProfile = {
   id: "vimothy",
   name: "Vimothy",
   monogram: "V",
-  accent: "var(--ai-agent-accent, var(--accent-sunset, #ff7a17))",
+  accent: "#ff7a17",
 };
 
 export const DEFAULT_AI_AGENT = VIMOTHY_AGENT;

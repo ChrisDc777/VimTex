@@ -1,9 +1,9 @@
 /**
  * Studio slash-command registry (#63).
- * Core menu stays short; optional extras can be re-enabled in Preferences.
+ * Core menu stays short; optional extras + user customs live in Preferences.
  */
 
-export type SlashCommandId =
+export type BuiltinSlashCommandId =
   | "explain"
   | "rewrite"
   | "fix"
@@ -18,8 +18,11 @@ export type SlashCommandId =
   | "cv"
   | "notes";
 
+/** Built-in id, or a custom slug from prefs. */
+export type SlashCommandId = BuiltinSlashCommandId | (string & {});
+
 export type SlashCommand = {
-  id: SlashCommandId;
+  id: string;
   /** Shown as /id */
   title: string;
   hint: string;
@@ -36,6 +39,16 @@ export type SlashCommand = {
    * Trimmed earlier to keep the menu short.
    */
   optional?: boolean;
+  /** User-defined command from Preferences. */
+  custom?: boolean;
+};
+
+/** User-authored slash entry (stored in chrome prefs). */
+export type CustomSlashCommand = {
+  id: string;
+  title: string;
+  hint: string;
+  instruction: string;
 };
 
 /** Primary chat `/` commands (on by default). */
@@ -166,22 +179,57 @@ const OPTIONAL_SLASH_COMMANDS: readonly SlashCommand[] = [
   },
 ];
 
-/** Full registry (core + optional). */
+/** Full built-in registry (core + optional). */
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
   ...CORE_SLASH_COMMANDS,
   ...OPTIONAL_SLASH_COMMANDS,
 ] as const;
 
 /** Ids shown in the `/` menu when prefs are at defaults. */
-export const DEFAULT_ENABLED_SLASH_IDS: readonly SlashCommandId[] =
-  CORE_SLASH_COMMANDS.map((c) => c.id);
+export const DEFAULT_ENABLED_SLASH_IDS: readonly BuiltinSlashCommandId[] =
+  CORE_SLASH_COMMANDS.map((c) => c.id as BuiltinSlashCommandId);
 
-export function defaultEnabledSlashIds(): SlashCommandId[] {
+export function defaultEnabledSlashIds(): BuiltinSlashCommandId[] {
   return [...DEFAULT_ENABLED_SLASH_IDS];
 }
 
-export function isKnownSlashCommandId(id: string): id is SlashCommandId {
+export function isKnownSlashCommandId(id: string): id is BuiltinSlashCommandId {
   return SLASH_COMMANDS.some((c) => c.id === id);
+}
+
+const CUSTOM_ID_RE = /^[a-z][a-z0-9-]{0,23}$/;
+
+/** Normalize a custom `/id` slug; returns null if invalid or reserved. */
+export function normalizeCustomSlashId(raw: string): string | null {
+  const id = raw.trim().toLowerCase().replace(/^\/+/, "");
+  if (!CUSTOM_ID_RE.test(id)) return null;
+  if (isKnownSlashCommandId(id)) return null;
+  return id;
+}
+
+export function customToSlashCommand(c: CustomSlashCommand): SlashCommand {
+  return {
+    id: c.id,
+    title: c.title.trim() || c.id,
+    hint: c.hint.trim() || "Custom command",
+    instruction: c.instruction.trim(),
+    custom: true,
+  };
+}
+
+/** Merge built-ins with user customs (customs win on id collision). */
+export function mergeSlashCommands(
+  builtins: readonly SlashCommand[] = SLASH_COMMANDS,
+  customs: readonly CustomSlashCommand[] = [],
+): SlashCommand[] {
+  const byId = new Map<string, SlashCommand>();
+  for (const c of builtins) byId.set(c.id, c);
+  for (const c of customs) {
+    const normalized = normalizeCustomSlashId(c.id);
+    if (!normalized || !c.instruction.trim()) continue;
+    byId.set(normalized, customToSlashCommand({ ...c, id: normalized }));
+  }
+  return [...byId.values()];
 }
 
 /** Filter by id / title prefix (case-insensitive). */
@@ -192,7 +240,7 @@ export function filterSlashCommands(
     includeTemplates?: boolean;
     includeGrammarReview?: boolean;
     includeDerivationCoach?: boolean;
-    /** When set, only these command ids appear in the menu. */
+    /** When set, only these built-in ids appear (customs always included). */
     enabledIds?: readonly string[] | ReadonlySet<string>;
   },
 ): SlashCommand[] {
@@ -213,7 +261,7 @@ export function filterSlashCommands(
       opts.enabledIds instanceof Set
         ? opts.enabledIds
         : new Set(opts.enabledIds);
-    pool = pool.filter((c) => enabled.has(c.id));
+    pool = pool.filter((c) => c.custom || enabled.has(c.id));
   }
   const q = query.trim().toLowerCase();
   if (!q) return pool;
@@ -252,7 +300,7 @@ export function parseSlashCommandsInText(
   let match: RegExpExecArray | null;
   while ((match = SLASH_TOKEN_RE.exec(text)) !== null) {
     const id = (match[2] ?? "").toLowerCase();
-    const cmd = byId.get(id as SlashCommandId);
+    const cmd = byId.get(id);
     if (!cmd || seen.has(cmd.id)) continue;
     seen.add(cmd.id);
     found.push(cmd);

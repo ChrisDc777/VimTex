@@ -21,7 +21,12 @@ import {
 import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
-import { SLASH_COMMANDS } from "@/lib/slash-commands";
+import {
+  normalizeCustomSlashId,
+  SLASH_COMMANDS,
+  type CustomSlashCommand,
+} from "@/lib/slash-commands";
+import type { BuiltinSlashCommandId } from "@/lib/slash-commands";
 import type { SlashTokenStyle } from "@/lib/ai-chrome-prefs";
 
 type PrefSection = "editor" | "workspace" | "ai";
@@ -87,6 +92,84 @@ function PrefRow({
         <p className="mt-0.5 text-xs text-mute">{description}</p>
       </div>
       <div className="shrink-0 self-end sm:self-auto">{children}</div>
+    </div>
+  );
+}
+
+function CustomSlashForm({
+  onSave,
+}: {
+  onSave: (cmd: CustomSlashCommand) => boolean;
+}) {
+  const [id, setId] = useState("");
+  const [title, setTitle] = useState("");
+  const [instruction, setInstruction] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = () => {
+    const normalized = normalizeCustomSlashId(id);
+    if (!normalized) {
+      setError("Use a free id like outline (a–z, digits, -)");
+      return;
+    }
+    if (!instruction.trim()) {
+      setError("Instruction is required");
+      return;
+    }
+    const ok = onSave({
+      id: normalized,
+      title: title.trim() || normalized,
+      hint: "Custom command",
+      instruction: instruction.trim(),
+    });
+    if (!ok) {
+      setError("Could not save — check the id");
+      return;
+    }
+    setId("");
+    setTitle("");
+    setInstruction("");
+    setError(null);
+  };
+
+  return (
+    <div className="vt-prefs-custom-slash-form">
+      <div className="vt-prefs-custom-slash-fields">
+        <input
+          type="text"
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          placeholder="/id"
+          spellCheck={false}
+          autoComplete="off"
+          className="vt-prefs-custom-slash-input"
+          aria-label="Custom slash id"
+        />
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="vt-prefs-custom-slash-input"
+          aria-label="Custom slash title"
+        />
+      </div>
+      <textarea
+        value={instruction}
+        onChange={(e) => setInstruction(e.target.value)}
+        placeholder="Instruction sent to Vimothy…"
+        rows={2}
+        className="vt-prefs-custom-slash-textarea"
+        aria-label="Custom slash instruction"
+      />
+      {error ? <p className="vt-prefs-custom-slash-error">{error}</p> : null}
+      <button
+        type="button"
+        className="vt-prefs-custom-slash-add"
+        onClick={submit}
+      >
+        Add custom /
+      </button>
     </div>
   );
 }
@@ -401,7 +484,7 @@ export function PreferencesDialog({
                     <div className="vt-prefs-slash-grid">
                       {SLASH_COMMANDS.map((cmd) => {
                         const on = chrome.prefs.enabledSlashCommands.includes(
-                          cmd.id,
+                          cmd.id as BuiltinSlashCommandId,
                         );
                         return (
                           <label
@@ -418,7 +501,7 @@ export function PreferencesDialog({
                               checked={on}
                               onChange={(e) =>
                                 chrome.setSlashCommandEnabled(
-                                  cmd.id,
+                                  cmd.id as BuiltinSlashCommandId,
                                   e.target.checked,
                                 )
                               }
@@ -434,6 +517,36 @@ export function PreferencesDialog({
                           </label>
                         );
                       })}
+                    </div>
+
+                    <div className="mt-1 flex flex-col gap-2">
+                      <p className="text-xs text-mute">
+                        Custom commands — saved in this browser
+                      </p>
+                      {chrome.prefs.customSlashCommands.length > 0 ? (
+                        <ul className="vt-prefs-custom-slash-list">
+                          {chrome.prefs.customSlashCommands.map((c) => (
+                            <li key={c.id} className="vt-prefs-custom-slash-row">
+                              <span className="vt-prefs-slash-chip__id">
+                                /{c.id}
+                              </span>
+                              <span className="vt-prefs-custom-slash-title">
+                                {c.title}
+                              </span>
+                              <button
+                                type="button"
+                                className="vt-prefs-custom-slash-remove"
+                                onClick={() => chrome.deleteCustomSlash(c.id)}
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      <CustomSlashForm
+                        onSave={(cmd) => chrome.upsertCustomSlash(cmd)}
+                      />
                     </div>
                   </div>
                 </>

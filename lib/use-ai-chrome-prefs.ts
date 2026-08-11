@@ -5,11 +5,16 @@ import {
   AI_CHROME_PREFS_EVENT,
   applySlashTokenStyleToDocument,
   loadAiChromePrefs,
+  removeCustomSlashCommand,
   saveAiChromePref,
+  saveCustomSlashCommand,
   toggleEnabledSlashCommand,
   type AiChromePrefs,
 } from "@/lib/ai-chrome-prefs";
-import type { SlashCommandId } from "@/lib/slash-commands";
+import type {
+  BuiltinSlashCommandId,
+  CustomSlashCommand,
+} from "@/lib/slash-commands";
 
 export function useAiChromePrefs() {
   const [prefs, setPrefs] = useState<AiChromePrefs>(() => loadAiChromePrefs());
@@ -38,12 +43,29 @@ export function useAiChromePrefs() {
   );
 
   const setSlashCommandEnabled = useCallback(
-    (id: SlashCommandId, enabled: boolean) => {
+    (id: BuiltinSlashCommandId, enabled: boolean) => {
       toggleEnabledSlashCommand(id, enabled);
       setPrefs(loadAiChromePrefs());
     },
     [],
   );
 
-  return { prefs, setPref, setSlashCommandEnabled };
+  const upsertCustomSlash = useCallback((command: CustomSlashCommand) => {
+    const ok = saveCustomSlashCommand(command);
+    setPrefs(loadAiChromePrefs());
+    return ok;
+  }, []);
+
+  const deleteCustomSlash = useCallback((id: string) => {
+    removeCustomSlashCommand(id);
+    setPrefs(loadAiChromePrefs());
+  }, []);
+
+  return {
+    prefs,
+    setPref,
+    setSlashCommandEnabled,
+    upsertCustomSlash,
+    deleteCustomSlash,
+  };
 }
