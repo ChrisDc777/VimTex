@@ -74,7 +74,7 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
     models: [
       { id: "openai/gpt-4o-mini", label: "GPT-4o mini" },
       { id: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
-      { id: "deepseek/deepseek-chat", label: "DeepSeek V3" },
+      { id: "deepseek/deepseek-v4-flash-0731", label: "DeepSeek V4 Flash 0731" },
     ],
   },
 ];

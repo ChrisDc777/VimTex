@@ -2456,32 +2456,36 @@ body[data-pane-resizing] * {
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Forge: flat muted shell. Studio polish lives under .ui-studio. */
+/*
+ * Shared composer: input stacked above toolbar so typing has room.
+ * Forge stays flat/muted; Studio overrides under .ui-studio.
+ */
 .vt-chat-composer__shell {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  padding: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 10px 8px;
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
-  background: var(--canvas);
+  border-radius: var(--radius-md);
+  background: var(--canvas-mid);
   transition:
     border-color var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Tokens + textarea sit on one wrapping line (Cursor-style). */
 .vt-chat-composer__input-area {
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px 6px;
   min-width: 0;
+  padding: 2px 2px 0;
 }
 
 .vt-chat-composer__shell--focused {
-  border-color: color-mix(in srgb, var(--focus) 55%, var(--hairline));
+  border-color: color-mix(in srgb, var(--focus) 40%, var(--hairline));
 }
 
 .vt-chat-composer__shell[data-busy="true"] {
@@ -2489,20 +2493,20 @@ body[data-pane-resizing] * {
 }
 
 .vt-chat-composer__field {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
-  min-height: 24px;
-  max-height: 96px;
+  min-height: 40px;
+  max-height: 140px;
   resize: none;
   overflow-y: auto;
   scrollbar-width: none;
   border: none;
   background: transparent;
   color: var(--ink);
-  padding: 2px 4px;
+  padding: 2px 2px 4px;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
-  font-size: 16px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.45;
   outline: none;
 }
 
@@ -2512,7 +2516,7 @@ body[data-pane-resizing] * {
 
 @media (min-width: 640px) {
   .vt-chat-composer__field {
-    font-size: 14px;
+    font-size: 13px;
   }
 }
 
@@ -2530,6 +2534,9 @@ body[data-pane-resizing] * {
   justify-content: flex-end;
   gap: 4px;
   flex-shrink: 0;
+  padding-top: 2px;
+  margin-top: 0;
+  border-top: 1px solid color-mix(in srgb, var(--hairline) 70%, transparent);
 }
 
 .vt-chat-model-picker {

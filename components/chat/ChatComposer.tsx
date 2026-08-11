@@ -256,6 +256,7 @@ export function ChatComposer({
             : "vt-chat-composer__shell"
         }
         data-busy={busy ? "true" : undefined}
+        data-variant={modelPickerVariant}
       >
         <div className="vt-chat-composer__input-area">
           {pendingSlashes.map((cmd, i) => (
@@ -273,7 +274,7 @@ export function ChatComposer({
               onInputChange(value, e.target.selectionStart ?? value.length);
               const el = e.currentTarget;
               el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+              el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
             }}
             onKeyUp={(e) => {
               const el = e.currentTarget;
@@ -286,7 +287,7 @@ export function ChatComposer({
             onFocus={() => setShellFocused(true)}
             onBlur={() => setShellFocused(false)}
             onKeyDown={onKeyDown}
-            rows={1}
+            rows={2}
             placeholder={
               pendingSlashes.length > 0
                 ? "Add context… (optional)"
