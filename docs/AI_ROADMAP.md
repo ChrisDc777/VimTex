@@ -133,7 +133,7 @@ Mode would be persisted per-room alongside model/temperature in `ai-room-prefs.t
 ### Slash-command preferences (action bar toggles)
 - Let users toggle individual selection-action-bar entries on/off in Preferences → AI.
 - Allow adding custom slash commands (id + instruction template) — stored in `ai-room-prefs.ts`.
-- Chip color style picker: "Studio accent" (current breeze/sunset alternating) vs "Muted" (plain border).
+- Chip color style picker: "Studio blend" (current breeze×sunset peach text) vs "Muted".
 Implementation note: `SLASH_COMMANDS` registry is in `lib/slash-commands.ts`; custom entries would need a separate `customSlashCommands` pref key.
 
 ### Provider logos in the Studio model picker

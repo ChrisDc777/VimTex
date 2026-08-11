@@ -191,19 +191,6 @@ export function ChatComposer({
 
   return (
     <div className="vt-chat-composer-wrap">
-      {pendingSlashes.length > 0 ? (
-        <div className="vt-slash-chips">
-          {pendingSlashes.map((cmd, i) => (
-            <SlashCommandChip
-              key={cmd.id}
-              command={cmd}
-              chipIndex={i}
-              onClear={() => onRemoveSlashChip?.(i)}
-            />
-          ))}
-        </div>
-      ) : null}
-
       {selectionPreview && (mentionsAi(input) || pendingSlashes.length > 0) ? (
         <ChatContextChip
           preview={selectionPreview}
@@ -235,38 +222,47 @@ export function ChatComposer({
         }
         data-busy={busy ? "true" : undefined}
       >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => {
-            const value = e.target.value;
-            onInputChange(value, e.target.selectionStart ?? value.length);
-            const el = e.currentTarget;
-            el.style.height = "auto";
-            el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
-          }}
-          onKeyUp={(e) => {
-            const el = e.currentTarget;
-            onInputChange(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onClick={(e) => {
-            const el = e.currentTarget;
-            onInputChange(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onFocus={() => setShellFocused(true)}
-          onBlur={() => setShellFocused(false)}
-          onKeyDown={onKeyDown}
-          rows={1}
-          placeholder={
-            pendingSlashes.length > 0
-              ? "Add context… (optional)"
-              : slashCommandsEnabled
-                ? "Message…  (/ for commands)"
-                : "Message…"
-          }
-          enterKeyHint="send"
-          className="vt-chat-composer__field"
-        />
+        <div className="vt-chat-composer__input-area">
+          {pendingSlashes.map((cmd, i) => (
+            <SlashCommandChip
+              key={cmd.id}
+              command={cmd}
+              onClear={() => onRemoveSlashChip?.(i)}
+            />
+          ))}
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              const value = e.target.value;
+              onInputChange(value, e.target.selectionStart ?? value.length);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+            }}
+            onKeyUp={(e) => {
+              const el = e.currentTarget;
+              onInputChange(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              onInputChange(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onFocus={() => setShellFocused(true)}
+            onBlur={() => setShellFocused(false)}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder={
+              pendingSlashes.length > 0
+                ? "Add context… (optional)"
+                : slashCommandsEnabled
+                  ? "Message…  (/ for commands)"
+                  : "Message…"
+            }
+            enterKeyHint="send"
+            className="vt-chat-composer__field"
+          />
+        </div>
         <div className="vt-chat-composer__toolbar">
           <ChatModelPicker
             model={model}
