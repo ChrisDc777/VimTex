@@ -591,9 +591,10 @@ export function useRoomChat({
 
     if (slash) {
       const extra = stripAiMention(trimmed).trim();
+      // Short bubble: /fix (+ optional user context). Full prompt via override.
       text = extra
-        ? `@${AI_MENTION_TAG} ${extra}`
-        : `@${AI_MENTION_TAG} ${slash.title}`;
+        ? `@${AI_MENTION_TAG} /${slash.id}\n${extra}`
+        : `@${AI_MENTION_TAG} /${slash.id}`;
       mention = true;
       slashInstruction =
         slash.id === "review"
