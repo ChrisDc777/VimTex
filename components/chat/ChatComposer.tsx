@@ -39,9 +39,11 @@ type ChatComposerProps = {
   onSlashClose?: () => void;
   /** Studio-only: show / hint in placeholder. */
   slashCommandsEnabled?: boolean;
-  /** Attached slash command (chip); cleared via onClearPendingSlash. */
-  pendingSlash?: SlashCommand | null;
+  /** Attached slash commands (chips); all cleared via onClearPendingSlash. */
+  pendingSlashes?: SlashCommand[];
   onClearPendingSlash?: () => void;
+  /** Remove a single slash chip by index (Backspace on empty = last). */
+  onRemoveSlashChip?: (index: number) => void;
   /** View-only rooms: hide send UI, show explanation. */
   readOnly?: boolean;
   /** Active editor selection attached to the next @vimothy turn. */
@@ -76,8 +78,9 @@ export function ChatComposer({
   onSlashIndexChange,
   onSlashClose,
   slashCommandsEnabled = false,
-  pendingSlash = null,
+  pendingSlashes = [],
   onClearPendingSlash,
+  onRemoveSlashChip,
   readOnly = false,
   selectionPreview = null,
   onHideSelectionChip,
@@ -159,9 +162,21 @@ export function ChatComposer({
       }
     }
 
-    if (e.key === "Escape" && pendingSlash && onClearPendingSlash) {
+    if (e.key === "Escape" && pendingSlashes.length > 0 && onClearPendingSlash) {
       e.preventDefault();
       onClearPendingSlash();
+      return;
+    }
+
+    // Backspace on an empty input pops the last slash chip.
+    if (
+      e.key === "Backspace" &&
+      !input &&
+      pendingSlashes.length > 0 &&
+      onRemoveSlashChip
+    ) {
+      e.preventDefault();
+      onRemoveSlashChip(pendingSlashes.length - 1);
       return;
     }
 
@@ -172,18 +187,24 @@ export function ChatComposer({
   };
 
   // While AI is busy the user can draft; pressing Send queues the message.
-  const canSend = Boolean(pendingSlash) || input.trim().length > 0;
+  const canSend = pendingSlashes.length > 0 || input.trim().length > 0;
 
   return (
     <div className="vt-chat-composer-wrap">
-      {pendingSlash && onClearPendingSlash ? (
-        <SlashCommandChip
-          command={pendingSlash}
-          onClear={onClearPendingSlash}
-        />
+      {pendingSlashes.length > 0 ? (
+        <div className="vt-slash-chips">
+          {pendingSlashes.map((cmd, i) => (
+            <SlashCommandChip
+              key={cmd.id}
+              command={cmd}
+              chipIndex={i}
+              onClear={() => onRemoveSlashChip?.(i)}
+            />
+          ))}
+        </div>
       ) : null}
 
-      {selectionPreview && (mentionsAi(input) || pendingSlash) ? (
+      {selectionPreview && (mentionsAi(input) || pendingSlashes.length > 0) ? (
         <ChatContextChip
           preview={selectionPreview}
           onClear={onHideSelectionChip}
@@ -237,7 +258,7 @@ export function ChatComposer({
           onKeyDown={onKeyDown}
           rows={1}
           placeholder={
-            pendingSlash
+            pendingSlashes.length > 0
               ? "Add context… (optional)"
               : slashCommandsEnabled
                 ? "Message…  (/ for commands)"
@@ -299,7 +320,7 @@ export function ChatComposer({
         <p className="vt-chat-composer__hint">
           Vimothy is responding… type to queue a follow-up
         </p>
-      ) : slashCommandsEnabled && !pendingSlash && !input.trim() ? (
+      ) : slashCommandsEnabled && pendingSlashes.length === 0 && !input.trim() ? (
         <p className="vt-chat-composer__hint">
           Type <span className="font-mono">/</span> for commands ·{" "}
           <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy

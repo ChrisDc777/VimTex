@@ -126,8 +126,9 @@ export function RoomChatSidebar({
           chat.shell === "studio" ||
           aiFeatureEnabled("forge", "derivationCoach")
         }
-        pendingSlash={chat.pendingSlash}
+        pendingSlashes={chat.pendingSlashes}
         onClearPendingSlash={chat.clearPendingSlash}
+        onRemoveSlashChip={chat.removeSlashChip}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
