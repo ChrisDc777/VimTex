@@ -126,3 +126,24 @@ export function CopyIcon({ className }: { className?: string }) {
     </SafeSvg>
   );
 }
+
+export function CheckIcon({ className }: { className?: string }) {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <path
+        d="M3.5 7.25 5.75 9.5 10.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
+}

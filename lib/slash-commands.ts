@@ -1,6 +1,6 @@
 /**
  * Studio slash-command registry (#63).
- * Keep the chat `/` menu short — only high-traffic actions.
+ * Core menu stays short; optional extras can be re-enabled in Preferences.
  */
 
 export type SlashCommandId =
@@ -9,7 +9,14 @@ export type SlashCommandId =
   | "fix"
   | "review"
   | "derive"
-  | "math";
+  | "math"
+  | "summarize"
+  | "format"
+  | "expand"
+  | "letter"
+  | "paper"
+  | "cv"
+  | "notes";
 
 export type SlashCommand = {
   id: SlashCommandId;
@@ -24,10 +31,15 @@ export type SlashCommand = {
   grammarReview?: boolean;
   /** When true, only offered if derivationCoach is enabled (#84). */
   derivationCoach?: boolean;
+  /**
+   * Hidden from the `/` menu by default (prefs can re-enable).
+   * Trimmed earlier to keep the menu short.
+   */
+  optional?: boolean;
 };
 
-/** Primary chat `/` commands (intentionally small). */
-export const SLASH_COMMANDS: readonly SlashCommand[] = [
+/** Primary chat `/` commands (on by default). */
+const CORE_SLASH_COMMANDS: readonly SlashCommand[] = [
   {
     id: "explain",
     title: "Explain",
@@ -85,7 +97,92 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     instruction:
       "Convert the selected plain-English description into KaTeX-friendly LaTeX math. Propose a full-document edit replacing the selection.",
   },
+];
+
+/**
+ * Previously trimmed from the menu (prefs can restore).
+ * Note: old `/proofread` became whole-note `/review`.
+ */
+const OPTIONAL_SLASH_COMMANDS: readonly SlashCommand[] = [
+  {
+    id: "summarize",
+    title: "Summarize",
+    hint: "Summarize selection or section",
+    optional: true,
+    instruction:
+      "Summarize the selected text (or the current section around the caret) in a few sentences. Do not change the note.",
+  },
+  {
+    id: "format",
+    title: "Format",
+    hint: "Tidy spacing and environments",
+    optional: true,
+    instruction:
+      "Tidy the selected TeX (spacing, alignment, begin/end structure) without changing meaning. Propose a full-document edit.",
+  },
+  {
+    id: "expand",
+    title: "Expand",
+    hint: "Expand shorthand to full TeX",
+    optional: true,
+    instruction:
+      "Expand abbreviations or shorthand in the selection into full LaTeX. Propose a full-document edit.",
+  },
+  {
+    id: "letter",
+    title: "Letter",
+    hint: "Scaffold a letter",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a short, compilable KaTeX-friendly letter skeleton (greeting, body, closing). Prefer plain TeX macros over a full documentclass unless helpful. Propose a full-document edit.",
+  },
+  {
+    id: "paper",
+    title: "Paper",
+    hint: "Scaffold a paper",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a short article/paper skeleton: title, abstract, sections, and a sample equation. KaTeX-friendly; no heavy preamble. Propose a full-document edit.",
+  },
+  {
+    id: "cv",
+    title: "CV",
+    hint: "Scaffold a CV",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a compact CV/resume skeleton (name, contact, education, experience). KaTeX-friendly. Propose a full-document edit.",
+  },
+  {
+    id: "notes",
+    title: "Notes",
+    hint: "Scaffold lecture notes",
+    optional: true,
+    template: true,
+    instruction:
+      "Replace the note with a lecture-notes skeleton: title, outline, and a few section headings with placeholder math. KaTeX-friendly. Propose a full-document edit.",
+  },
+];
+
+/** Full registry (core + optional). */
+export const SLASH_COMMANDS: readonly SlashCommand[] = [
+  ...CORE_SLASH_COMMANDS,
+  ...OPTIONAL_SLASH_COMMANDS,
 ] as const;
+
+/** Ids shown in the `/` menu when prefs are at defaults. */
+export const DEFAULT_ENABLED_SLASH_IDS: readonly SlashCommandId[] =
+  CORE_SLASH_COMMANDS.map((c) => c.id);
+
+export function defaultEnabledSlashIds(): SlashCommandId[] {
+  return [...DEFAULT_ENABLED_SLASH_IDS];
+}
+
+export function isKnownSlashCommandId(id: string): id is SlashCommandId {
+  return SLASH_COMMANDS.some((c) => c.id === id);
+}
 
 /** Filter by id / title prefix (case-insensitive). */
 export function filterSlashCommands(
@@ -95,6 +192,8 @@ export function filterSlashCommands(
     includeTemplates?: boolean;
     includeGrammarReview?: boolean;
     includeDerivationCoach?: boolean;
+    /** When set, only these command ids appear in the menu. */
+    enabledIds?: readonly string[] | ReadonlySet<string>;
   },
 ): SlashCommand[] {
   const includeTemplates = opts?.includeTemplates ?? true;
@@ -108,6 +207,13 @@ export function filterSlashCommands(
   }
   if (!includeDerivationCoach) {
     pool = pool.filter((c) => !c.derivationCoach);
+  }
+  if (opts?.enabledIds) {
+    const enabled =
+      opts.enabledIds instanceof Set
+        ? opts.enabledIds
+        : new Set(opts.enabledIds);
+    pool = pool.filter((c) => enabled.has(c.id));
   }
   const q = query.trim().toLowerCase();
   if (!q) return pool;

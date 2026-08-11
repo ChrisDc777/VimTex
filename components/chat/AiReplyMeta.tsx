@@ -52,14 +52,13 @@ export function AiReplyMeta({
       {onRegenerate ? (
         <button
           type="button"
-          className="vt-chat-ai-meta__regen"
+          className="vt-chat-ai-meta__regen vt-chat-msg__action--icon"
           disabled={busy}
           onClick={() => onRegenerate(message)}
           aria-label="Regenerate reply"
           title="Regenerate"
         >
           <RefreshIcon />
-          Regen
         </button>
       ) : null}
     </div>

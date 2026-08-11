@@ -21,6 +21,8 @@ import {
 import { useAiReviewOptional } from "@/components/ai/AiReviewProvider";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
+import { SLASH_COMMANDS } from "@/lib/slash-commands";
+import type { SlashTokenStyle } from "@/lib/ai-chrome-prefs";
 
 type PrefSection = "editor" | "workspace" | "ai";
 
@@ -363,6 +365,79 @@ export function PreferencesDialog({
                   }
                 />
               </PrefRow>
+
+              {chrome.prefs.slashMenu ? (
+                <>
+                  <PrefRow
+                    title="/ token color"
+                    description="Inline slash command tint in the composer"
+                  >
+                    <Segment
+                      label="Slash token color"
+                      options={[
+                        { value: "gradient", label: "Gradient" },
+                        { value: "simple", label: "Simple" },
+                      ]}
+                      value={chrome.prefs.slashTokenStyle}
+                      onChange={(value) =>
+                        chrome.setPref(
+                          "slashTokenStyle",
+                          value as SlashTokenStyle,
+                        )
+                      }
+                    />
+                  </PrefRow>
+
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-ink">
+                        Slash commands
+                      </p>
+                      <p className="mt-0.5 text-xs text-mute">
+                        Core stay on by default. Extras were trimmed earlier —
+                        turn them back on here.
+                      </p>
+                    </div>
+                    <div className="vt-prefs-slash-grid">
+                      {SLASH_COMMANDS.map((cmd) => {
+                        const on = chrome.prefs.enabledSlashCommands.includes(
+                          cmd.id,
+                        );
+                        return (
+                          <label
+                            key={cmd.id}
+                            className={
+                              on
+                                ? "vt-prefs-slash-chip vt-prefs-slash-chip--on"
+                                : "vt-prefs-slash-chip"
+                            }
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={on}
+                              onChange={(e) =>
+                                chrome.setSlashCommandEnabled(
+                                  cmd.id,
+                                  e.target.checked,
+                                )
+                              }
+                            />
+                            <span className="vt-prefs-slash-chip__id">
+                              /{cmd.id}
+                            </span>
+                            {cmd.optional ? (
+                              <span className="vt-prefs-slash-chip__extra">
+                                extra
+                              </span>
+                            ) : null}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : null}
 
               <PrefRow
                 title="Document action pills"

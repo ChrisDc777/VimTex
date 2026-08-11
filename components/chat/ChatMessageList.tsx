@@ -4,11 +4,13 @@ import { groupChatMessages } from "@/lib/chat-message-blocks";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { SelectionContextPreview } from "@/lib/ai-chat-context";
 import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
+import { AiAgentMark } from "@/components/chat/AiAgentMark";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { RefreshIcon } from "@/components/chat/icons";
+import { DEFAULT_AI_AGENT } from "@/lib/ai-agents";
 
 const EMPTY_SUGGESTIONS = [
   "@vimothy fix the equation in section 2",
@@ -118,14 +120,24 @@ export function ChatMessageList({
           return (
             <article key={block.key} className={blockClass}>
               <div className="vt-chat-block__meta">
-                <span
-                  className="vt-chat-block__author"
-                  style={{
-                    color: block.isAi ? "var(--primary)" : block.authorColor,
-                  }}
-                >
-                  {block.isSelf ? "You" : block.isAi ? "Vimothy" : block.authorName}
-                </span>
+                {block.isAi ? (
+                  <span className="vt-chat-block__agent">
+                    <AiAgentMark agent={DEFAULT_AI_AGENT} />
+                    <span
+                      className="vt-chat-block__author"
+                      style={{ color: DEFAULT_AI_AGENT.accent }}
+                    >
+                      {DEFAULT_AI_AGENT.name}
+                    </span>
+                  </span>
+                ) : (
+                  <span
+                    className="vt-chat-block__author"
+                    style={{ color: block.authorColor }}
+                  >
+                    {block.isSelf ? "You" : block.authorName}
+                  </span>
+                )}
                 <span className="vt-chat-block__time">
                   {formatRelativeTime(block.startedAt, now)}
                 </span>
@@ -232,7 +244,15 @@ export function ChatMessageList({
             aria-busy="true"
           >
             <div className="vt-chat-block__meta">
-              <span className="vt-chat-block__author">Vimothy</span>
+              <span className="vt-chat-block__agent">
+                <AiAgentMark agent={DEFAULT_AI_AGENT} />
+                <span
+                  className="vt-chat-block__author"
+                  style={{ color: DEFAULT_AI_AGENT.accent }}
+                >
+                  {DEFAULT_AI_AGENT.name}
+                </span>
+              </span>
               <span className="vt-chat-block__time">streaming</span>
             </div>
             {streamingText?.trim() ? (

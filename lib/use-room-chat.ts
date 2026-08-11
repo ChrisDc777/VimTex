@@ -250,6 +250,7 @@ export function useRoomChat({
         includeTemplates: aiFeatureEnabled(shell, "templatesGen"),
         includeGrammarReview: aiFeatureEnabled(shell, "grammarReview"),
         includeDerivationCoach: aiFeatureEnabled(shell, "derivationCoach"),
+        enabledIds: chromePrefs.enabledSlashCommands,
       });
     }
     // Forge: /derive only (#84) — no mutating slash surface.
@@ -257,10 +258,16 @@ export function useRoomChat({
       return filterSlashCommands(
         slashFilter,
         SLASH_COMMANDS.filter((c) => c.derivationCoach),
+        { enabledIds: chromePrefs.enabledSlashCommands },
       );
     }
     return [];
-  }, [shell, slashFilter, chromePrefs.slashMenu]);
+  }, [
+    shell,
+    slashFilter,
+    chromePrefs.slashMenu,
+    chromePrefs.enabledSlashCommands,
+  ]);
 
   const updateComposerMenus = useCallback(
     (value: string, caret: number) => {

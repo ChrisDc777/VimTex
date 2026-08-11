@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CopyIcon, ReplyIcon } from "@/components/chat/icons";
+import { CheckIcon, CopyIcon, ReplyIcon } from "@/components/chat/icons";
 import type { RoomChatMessage } from "@/lib/room-chat";
 
 type ChatMessageActionsProps = {
@@ -12,7 +12,7 @@ type ChatMessageActionsProps = {
 
 /**
  * Hover/focus action row under a chat bubble.
- * Reply continues the thread; AI replies auto-invoke Vimothy on send.
+ * Icon-only; labels live in title / aria-label.
  */
 export function ChatMessageActions({
   message,
@@ -35,19 +35,18 @@ export function ChatMessageActions({
     <div className="vt-chat-msg__actions">
       <button
         type="button"
-        className="vt-chat-msg__action"
+        className="vt-chat-msg__action vt-chat-msg__action--icon"
         disabled={disabled}
         onClick={() => void copy()}
-        aria-label="Copy message"
-        title="Copy"
+        aria-label={copied ? "Copied" : "Copy message"}
+        title={copied ? "Copied" : "Copy"}
       >
-        <CopyIcon />
-        {copied ? "Copied" : "Copy"}
+        {copied ? <CheckIcon /> : <CopyIcon />}
       </button>
       {onReply ? (
         <button
           type="button"
-          className="vt-chat-msg__action"
+          className="vt-chat-msg__action vt-chat-msg__action--icon"
           disabled={disabled}
           onClick={() => onReply(message)}
           aria-label={
@@ -56,7 +55,6 @@ export function ChatMessageActions({
           title="Reply"
         >
           <ReplyIcon />
-          Reply
         </button>
       ) : null}
     </div>

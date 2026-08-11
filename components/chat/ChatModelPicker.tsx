@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -46,6 +47,11 @@ type KeyEditorProps = {
   hasKey: boolean;
   onChanged: () => void;
 };
+
+function shortTriggerLabel(label: string): string {
+  if (label.length <= 16) return label;
+  return `${label.slice(0, 15)}…`;
+}
 
 function KeyEditor({
   backend,
@@ -168,9 +174,11 @@ export function ChatModelPicker({
   const [showCustom, setShowCustom] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
   const [customModels, setCustomModels] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
 
   const refreshKeys = () => {
@@ -204,7 +212,11 @@ export function ChatModelPicker({
     document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
+    const focusTimer = window.setTimeout(() => {
+      searchRef.current?.focus();
+    }, 0);
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener("pointerdown", close);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll, true);
@@ -216,6 +228,25 @@ export function ChatModelPicker({
   const currentLabel =
     currentProvider.models.find((m) => m.id === model)?.label ?? model;
   const coloredLogos = variant === "studio";
+  const q = query.trim().toLowerCase();
+
+  const filteredProviders = useMemo(() => {
+    if (!q) return AI_PROVIDERS;
+    return AI_PROVIDERS.map((provider) => ({
+      ...provider,
+      models: provider.models.filter(
+        (m) =>
+          m.label.toLowerCase().includes(q) ||
+          m.id.toLowerCase().includes(q) ||
+          provider.label.toLowerCase().includes(q),
+      ),
+    })).filter((provider) => provider.models.length > 0);
+  }, [q]);
+
+  const filteredCustom = useMemo(() => {
+    if (!q) return customModels;
+    return customModels.filter((slug) => slug.toLowerCase().includes(q));
+  }, [customModels, q]);
 
   const toggleOpen = () => {
     const next = !open;
@@ -225,6 +256,8 @@ export function ChatModelPicker({
         ?.getBoundingClientRect();
       if (!rect) return;
       setAnchor({ top: rect.top, right: rect.right });
+      setQuery("");
+      setShowCustom(false);
     }
     setOpen(next);
   };
@@ -259,11 +292,17 @@ export function ChatModelPicker({
         right: Math.max(8, window.innerWidth - anchor.right),
         bottom: window.innerHeight - anchor.top + 6,
         zIndex: 999,
-        width: "min(13.5rem, calc(100vw - 2rem))",
-        maxHeight: "min(48vh, 18rem)",
+        width: "min(15.5rem, calc(100vw - 2rem))",
+        maxHeight: "min(56vh, 22rem)",
         overflowY: "auto",
       }
     : undefined;
+
+  const showByokCustom =
+    !q ||
+    "custom".includes(q) ||
+    "your key".includes(q) ||
+    filteredCustom.length > 0;
 
   return (
     <div
@@ -293,7 +332,9 @@ export function ChatModelPicker({
           {modelBrandLogo(model, { colored: coloredLogos }) ??
             providerLogo(currentProvider.id, { colored: coloredLogos })}
         </span>
-        <span className="vt-chat-model-picker__label">{currentLabel}</span>
+        <span className="vt-chat-model-picker__label">
+          {shortTriggerLabel(currentLabel)}
+        </span>
         <ChevronIcon className={open ? "rotate-180" : ""} />
       </button>
 
@@ -311,16 +352,44 @@ export function ChatModelPicker({
                   : "vt-elevated--sm vt-dropdown vt-chat-model-menu"
               }
             >
-              {AI_PROVIDERS.map((provider) => {
+              <div className="vt-chat-model-menu__search">
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search models…"
+                  className="vt-chat-model-menu__search-input"
+                  aria-label="Search models"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              {filteredProviders.map((provider) => {
                 const providerLocked =
                   provider.keySource === "user" && !hasOrKey;
                 return (
                   <div key={provider.id} className="vt-chat-model-menu__group">
                     <p className="vt-chat-model-menu__group-label">
-                      <span className="vt-chat-model-menu__group-logo" aria-hidden>
+                      <span
+                        className="vt-chat-model-menu__group-logo"
+                        aria-hidden
+                      >
                         {providerLogo(provider.id, { colored: coloredLogos })}
                       </span>
                       {provider.label}
+                      {provider.id === "byok-openrouter" ? (
+                        <span
+                          className={
+                            hasOrKey
+                              ? "vt-chat-model-menu__key-dot vt-chat-model-menu__key-dot--on"
+                              : "vt-chat-model-menu__key-dot"
+                          }
+                          title={hasOrKey ? "OpenRouter key set" : "No key"}
+                          aria-hidden
+                        />
+                      ) : null}
                     </p>
                     <ul className="vt-chat-model-menu__list">
                       {provider.models.map((m) => {
@@ -360,7 +429,7 @@ export function ChatModelPicker({
                         );
                       })}
                       {provider.id === "byok-openrouter"
-                        ? customModels.map((slug) => (
+                        ? filteredCustom.map((slug) => (
                             <li
                               key={slug}
                               className="vt-chat-model-menu__custom"
@@ -400,62 +469,98 @@ export function ChatModelPicker({
                 );
               })}
 
-              <div className="vt-chat-model-menu__group">
-                <p className="vt-chat-model-menu__group-label">Keys</p>
-                <KeyEditor
-                  backend="openrouter"
-                  label="OpenRouter key"
-                  placeholder="sk-or-v1-…"
-                  hasKey={hasOrKey}
-                  onChanged={refreshKeys}
-                />
-                <KeyEditor
-                  backend="opencode"
-                  label="OpenCode key"
-                  placeholder="opencode…"
-                  hasKey={hasOcKey}
-                  onChanged={refreshKeys}
-                />
-              </div>
+              {filteredProviders.length === 0 && filteredCustom.length === 0 ? (
+                <p className="vt-chat-model-menu__empty">No models match</p>
+              ) : null}
 
-              <div className="vt-chat-model-menu__group">
-                <div className="vt-chat-model-menu__key">
-                  {showCustom ? (
-                    <div className="vt-chat-model-menu__key-row">
-                      <input
-                        type="text"
-                        value={customDraft}
-                        onChange={(e) => setCustomDraft(e.target.value)}
-                        placeholder="provider/model"
-                        autoComplete="off"
-                        spellCheck={false}
-                        className="vt-chat-model-menu__key-input"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddCustom();
-                          }
-                        }}
+              {!q ? (
+                <div className="vt-chat-model-menu__group">
+                  <p className="vt-chat-model-menu__group-label">
+                    Keys
+                    <span className="vt-chat-model-menu__key-dots" aria-hidden>
+                      <span
+                        className={
+                          hasOrKey
+                            ? "vt-chat-model-menu__key-dot vt-chat-model-menu__key-dot--on"
+                            : "vt-chat-model-menu__key-dot"
+                        }
+                        title={
+                          hasOrKey
+                            ? "OpenRouter key set"
+                            : "OpenRouter key missing"
+                        }
                       />
+                      <span
+                        className={
+                          hasOcKey
+                            ? "vt-chat-model-menu__key-dot vt-chat-model-menu__key-dot--on"
+                            : "vt-chat-model-menu__key-dot"
+                        }
+                        title={
+                          hasOcKey
+                            ? "OpenCode key set"
+                            : "OpenCode key missing"
+                        }
+                      />
+                    </span>
+                  </p>
+                  <KeyEditor
+                    backend="openrouter"
+                    label="OpenRouter key"
+                    placeholder="sk-or-v1-…"
+                    hasKey={hasOrKey}
+                    onChanged={refreshKeys}
+                  />
+                  <KeyEditor
+                    backend="opencode"
+                    label="OpenCode key"
+                    placeholder="opencode…"
+                    hasKey={hasOcKey}
+                    onChanged={refreshKeys}
+                  />
+                </div>
+              ) : null}
+
+              {showByokCustom && !q ? (
+                <div className="vt-chat-model-menu__group">
+                  <div className="vt-chat-model-menu__key">
+                    {showCustom ? (
+                      <div className="vt-chat-model-menu__key-row">
+                        <input
+                          type="text"
+                          value={customDraft}
+                          onChange={(e) => setCustomDraft(e.target.value)}
+                          placeholder="provider/model"
+                          autoComplete="off"
+                          spellCheck={false}
+                          className="vt-chat-model-menu__key-input"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddCustom();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="vt-chat-model-menu__key-save"
+                          onClick={handleAddCustom}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
-                        className="vt-chat-model-menu__key-save"
-                        onClick={handleAddCustom}
+                        className="vt-chat-model-menu__key-link"
+                        onClick={() => setShowCustom(true)}
                       >
-                        Add
+                        Custom model…
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="vt-chat-model-menu__key-link"
-                      onClick={() => setShowCustom(true)}
-                    >
-                      Custom model…
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>,
             document.body,
           )

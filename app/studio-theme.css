@@ -25,6 +25,8 @@
   --accent-sunset-soft: #ffc285;
   --accent-breeze: #a0c3ec;
   --accent-midnight: #0d1726;
+  /* Vimothy / AI agent mark — warm against breeze chrome */
+  --ai-agent-accent: var(--accent-sunset);
 
   --focus: var(--accent-breeze);
   --focus-soft: color-mix(in srgb, var(--accent-breeze) 55%, transparent);
