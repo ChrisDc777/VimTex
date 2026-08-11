@@ -119,6 +119,35 @@ land and expose stable hunk ranges — see Wave D.
 
 **#84 Level A:** `/derive` (Studio full slash menu + Forge derive-only) and Studio **Coach** selection action run chat-only coaching. API `mode=coach` swaps the system prompt to forbid `@@@PATCH`/`@@@DOCUMENT`; the client ignores any accidental edit markers. Works in view-only rooms (chat still runs). Homework-no-answer mode deferred.
 
+## Later milestone ideas (M5+)
+
+The items below were brainstormed during the Wave B/C sprint and are explicitly **not** in M3/M4. File issues or add to M5 when the time comes.
+
+### Cursor-style Ask / Plan chips
+Composer "mode chips" (Ask / Plan / Edit) above the input — analogous to Cursor's agent-mode picker.
+- **Ask** = current chat default (no mutations).
+- **Plan** = structured breakdown turn before any patch; model outlines steps first.
+- **Edit** = full doc or ranged apply; confirms via `AiReviewStore`.
+Mode would be persisted per-room alongside model/temperature in `ai-room-prefs.ts`.
+
+### Slash-command preferences (action bar toggles)
+- Let users toggle individual selection-action-bar entries on/off in Preferences → AI.
+- Allow adding custom slash commands (id + instruction template) — stored in `ai-room-prefs.ts`.
+- Chip color style picker: "Studio accent" (current breeze/sunset alternating) vs "Muted" (plain border).
+Implementation note: `SLASH_COMMANDS` registry is in `lib/slash-commands.ts`; custom entries would need a separate `customSlashCommands` pref key.
+
+### Provider logos in the Studio model picker
+Show the provider logo (or abbreviated wordmark) alongside the model name in `ChatModelPicker`.
+- Candidates: OpenRouter, OpenCode, Anthropic, OpenAI.
+- Consider bundling a small `lib/provider-logos.ts` map of `providerId → SVG string | React component`.
+- Logo style: 16 × 16 monochrome, inheriting `currentColor`.
+- Font: OpenCode uses a distinctive font; optionally replicate it via a webfont subset for that entry.
+- Additional provider types to support when added: Mistral, Cohere, Together, any HuggingFace-hosted endpoint via OpenRouter.
+
+### Project retrieval / RAG (#57 Level D)
+Already noted — explicitly optional, overkill for single-note v1 rooms.
+Revisit when multi-document projects or workspaces land (M5+).
+
 ## Out of scope
 
 - Accounts (#78/#37), multi-node Yjs, full LaTeX projects
