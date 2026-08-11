@@ -308,8 +308,9 @@ export function StudioRoomChat({
           (chat.shell === "forge" &&
             aiFeatureEnabled("forge", "derivationCoach"))
         }
-        pendingSlash={chat.pendingSlash}
+        pendingSlashes={chat.pendingSlashes}
         onClearPendingSlash={chat.clearPendingSlash}
+        onRemoveSlashChip={chat.removeSlashChip}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

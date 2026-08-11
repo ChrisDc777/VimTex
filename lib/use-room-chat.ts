@@ -363,17 +363,22 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
-  /** Pending slash command — shown as a chip; runs on Enter with optional context. */
-  const [pendingSlash, setPendingSlash] = useState<SlashCommand | null>(null);
+  /** Pending slash commands — shown as chips; all run on Enter with optional context. */
+  const [pendingSlashes, setPendingSlashes] = useState<SlashCommand[]>([]);
   /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
   const queuedSendRef = useRef<{
     input: string;
-    slash: SlashCommand | null;
+    slashes: SlashCommand[];
   } | null>(null);
   const [queuedLabel, setQueuedLabel] = useState<string | null>(null);
 
   const clearPendingSlash = useCallback(() => {
-    setPendingSlash(null);
+    setPendingSlashes([]);
+  }, []);
+
+  /** Remove one slash chip by index; Backspace on empty input pops the last. */
+  const removeSlashChip = useCallback((index: number) => {
+    setPendingSlashes((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const clearQueuedSend = useCallback(() => {
@@ -591,7 +596,7 @@ export function useRoomChat({
           queuedSendRef.current = null;
           setQueuedLabel(null);
           setInput(queued.input);
-          if (queued.slash) setPendingSlash(queued.slash);
+          if (queued.slashes.length > 0) setPendingSlashes(queued.slashes);
           // Let state settle then fire automatically.
           requestAnimationFrame(() => {
             sendRef.current?.();
@@ -611,20 +616,23 @@ export function useRoomChat({
 
     // While busy: queue this input (replaces any prior queued send).
     if (busy) {
-      const slash = pendingSlash;
+      const slashes = pendingSlashes;
       const trimmed = input.trim();
-      if (!trimmed && !slash) return;
-      const label = slash ? `/${slash.id}` : trimmed.slice(0, 40);
-      queuedSendRef.current = { input, slash };
+      if (!trimmed && slashes.length === 0) return;
+      const label =
+        slashes.length > 0
+          ? slashes.map((s) => `/${s.id}`).join(" ")
+          : trimmed.slice(0, 40);
+      queuedSendRef.current = { input, slashes };
       setQueuedLabel(label);
       setInput("");
-      setPendingSlash(null);
+      setPendingSlashes([]);
       return;
     }
 
-    const slash = pendingSlash;
+    const slashes = pendingSlashes;
     const trimmed = input.trim();
-    if (!trimmed && !slash) return;
+    if (!trimmed && slashes.length === 0) return;
 
     const clientId = ws.getClientId();
     if (clientId == null) return;
@@ -633,19 +641,24 @@ export function useRoomChat({
     let mention = mentionsAi(text);
     let slashInstruction: string | null = null;
 
-    if (slash) {
+    if (slashes.length > 0) {
       const extra = stripAiMention(trimmed).trim();
-      // Short bubble: /fix (+ optional user context). Full prompt via override.
+      // Short bubble: /fix /rewrite … (+ optional user context). Full prompt via override.
+      const ids = slashes.map((s) => `/${s.id}`).join(" ");
       text = extra
-        ? `@${AI_MENTION_TAG} /${slash.id}\n${extra}`
-        : `@${AI_MENTION_TAG} /${slash.id}`;
+        ? `@${AI_MENTION_TAG} ${ids}\n${extra}`
+        : `@${AI_MENTION_TAG} ${ids}`;
       mention = true;
-      slashInstruction =
-        slash.id === "review"
-          ? buildGrammarReviewInstruction(extra || undefined)
-          : extra
-            ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
-            : slash.instruction;
+      // Build a combined instruction for all slash commands.
+      const parts = slashes.map((slash) => {
+        if (slash.id === "review") {
+          return buildGrammarReviewInstruction(extra || undefined);
+        }
+        return extra
+          ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
+          : slash.instruction;
+      });
+      slashInstruction = parts.join("\n\n---\n\n");
     }
 
     const userMsg: RoomChatMessage = {
@@ -659,14 +672,16 @@ export function useRoomChat({
       createdAt: Date.now(),
     };
 
-    if (slash && slashInstruction) {
+    if (slashes.length > 0 && slashInstruction) {
       instructionOverridesRef.current[userMsg.id] = slashInstruction;
       editSourceOverridesRef.current[userMsg.id] = "slash";
+      const labelStr = slashes.map((s) => `/${s.id}`).join(" ");
+      const previewStr = slashes.map((s) => s.title).join(" + ");
       setMessageContexts((prev) => ({
         ...prev,
         [userMsg.id]: {
-          label: `/${slash.id}`,
-          preview: slash.title,
+          label: labelStr,
+          preview: previewStr,
           lineFrom: 0,
           lineTo: 0,
         },
@@ -674,7 +689,7 @@ export function useRoomChat({
     }
 
     setInput("");
-    setPendingSlash(null);
+    setPendingSlashes([]);
     setMentionOpen(false);
     setSlashOpen(false);
     setSlashFilter("");
@@ -690,7 +705,7 @@ export function useRoomChat({
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, workspace, input, pendingSlash, invokeAi, user.color, user.name]);
+  }, [busy, workspace, input, pendingSlashes, invokeAi, user.color, user.name]);
 
   // Keep ref in sync so the post-invoke drain can call the latest send.
   useEffect(() => {
@@ -768,7 +783,11 @@ export function useRoomChat({
         ? `@${AI_MENTION_TAG} ${rest} `
         : `@${AI_MENTION_TAG} `;
       setInput(next);
-      setPendingSlash(cmd);
+      setPendingSlashes((prev) => {
+        // Avoid duplicate chips for the same command.
+        if (prev.some((s) => s.id === cmd.id)) return prev;
+        return [...prev, cmd];
+      });
       setSlashOpen(false);
       setSlashFilter("");
       requestAnimationFrame(() => {
@@ -835,8 +854,9 @@ export function useRoomChat({
       selectionChipHiddenRef.current = true;
       setSelectionChipHidden(true);
     },
-    pendingSlash,
+    pendingSlashes,
     clearPendingSlash,
+    removeSlashChip,
     dismissSlashMenu,
     messageContexts,
     model,
