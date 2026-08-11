@@ -105,7 +105,12 @@ export function useRoomChat({
   const [temperature, setTemperatureState] = useState(DEFAULT_AI_TEMPERATURE);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusyState] = useState(false);
+  const busyRef = useRef(false);
+  const setBusy = useCallback((next: boolean) => {
+    busyRef.current = next;
+    setBusyState(next);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [errorForId, setErrorForId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -354,15 +359,26 @@ export function useRoomChat({
     abortRef.current = null;
     setStreamingText(null);
     setBusy(false);
-  }, []);
+  }, [setBusy]);
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
   /** Pending slash command — shown as a chip; runs on Enter with optional context. */
   const [pendingSlash, setPendingSlash] = useState<SlashCommand | null>(null);
+  /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
+  const queuedSendRef = useRef<{
+    input: string;
+    slash: SlashCommand | null;
+  } | null>(null);
+  const [queuedLabel, setQueuedLabel] = useState<string | null>(null);
 
   const clearPendingSlash = useCallback(() => {
     setPendingSlash(null);
+  }, []);
+
+  const clearQueuedSend = useCallback(() => {
+    queuedSendRef.current = null;
+    setQueuedLabel(null);
   }, []);
 
   /** Close the `/` menu and remove the trailing `/token` so Esc stays dismissed. */
@@ -398,8 +414,8 @@ export function useRoomChat({
         return;
       }
 
-      if (busy) {
-        setError("AI is already running — cancel it or wait.");
+      if (busyRef.current) {
+        setError("AI is busy — cancel it first to run a new request.");
         setErrorForId(userMsg.id);
         return;
       }
@@ -569,14 +585,42 @@ export function useRoomChat({
         if (abortRef.current === ac) abortRef.current = null;
         setStreamingText(null);
         setBusy(false);
+        // Drain one queued send after the AI finishes.
+        const queued = queuedSendRef.current;
+        if (queued) {
+          queuedSendRef.current = null;
+          setQueuedLabel(null);
+          setInput(queued.input);
+          if (queued.slash) setPendingSlash(queued.slash);
+          // Let state settle then fire automatically.
+          requestAnimationFrame(() => {
+            sendRef.current?.();
+          });
+        }
       }
     },
     [workspace, model, temperature, shell, review, busy, getEditorContext, messages],
   );
 
+  // Stable ref so the drain callback can call send without a stale closure.
+  const sendRef = useRef<(() => void) | null>(null);
+
   const send = useCallback(async () => {
     const ws = workspace;
-    if (busy || !ws || ws.readOnly) return;
+    if (!ws || ws.readOnly) return;
+
+    // While busy: queue this input (replaces any prior queued send).
+    if (busy) {
+      const slash = pendingSlash;
+      const trimmed = input.trim();
+      if (!trimmed && !slash) return;
+      const label = slash ? `/${slash.id}` : trimmed.slice(0, 40);
+      queuedSendRef.current = { input, slash };
+      setQueuedLabel(label);
+      setInput("");
+      setPendingSlash(null);
+      return;
+    }
 
     const slash = pendingSlash;
     const trimmed = input.trim();
@@ -647,6 +691,11 @@ export function useRoomChat({
       await invokeAi(userMsg);
     }
   }, [busy, workspace, input, pendingSlash, invokeAi, user.color, user.name]);
+
+  // Keep ref in sync so the post-invoke drain can call the latest send.
+  useEffect(() => {
+    sendRef.current = send;
+  });
 
   /** Programmatic @vimothy turn (#28 / #53 / #63). */
   const runAiInstruction = useCallback(
@@ -821,6 +870,8 @@ export function useRoomChat({
     insertSuggestion,
     onInputChange,
     send,
+    queuedLabel,
+    clearQueuedSend,
     runAiInstruction,
     retryAi,
     regenerateAi,

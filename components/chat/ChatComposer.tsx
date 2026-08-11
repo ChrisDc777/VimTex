@@ -49,6 +49,9 @@ type ChatComposerProps = {
   onHideSelectionChip?: () => void;
   /** Studio breeze accent on the model picker (#60). */
   modelPickerVariant?: "studio" | "forge";
+  /** Input queued for after the AI finishes (one-shot hold). */
+  queuedLabel?: string | null;
+  onClearQueuedSend?: () => void;
 };
 
 export function ChatComposer({
@@ -79,6 +82,8 @@ export function ChatComposer({
   selectionPreview = null,
   onHideSelectionChip,
   modelPickerVariant = "forge",
+  queuedLabel = null,
+  onClearQueuedSend,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
 
@@ -166,8 +171,8 @@ export function ChatComposer({
     }
   };
 
-  const canSend =
-    !busy && (Boolean(pendingSlash) || input.trim().length > 0);
+  // While AI is busy the user can draft; pressing Send queues the message.
+  const canSend = Boolean(pendingSlash) || input.trim().length > 0;
 
   return (
     <div className="vt-chat-composer-wrap">
@@ -239,7 +244,6 @@ export function ChatComposer({
                 : "Message…"
           }
           enterKeyHint="send"
-          disabled={busy}
           className="vt-chat-composer__field"
         />
         <div className="vt-chat-composer__toolbar">
@@ -269,7 +273,7 @@ export function ChatComposer({
                   ? "vt-chat-send vt-chat-send--active"
                   : "vt-chat-send"
               }
-              aria-label="Send message"
+              aria-label={busy ? "Queue message" : "Send message"}
             >
               <SendIcon />
             </button>
@@ -277,8 +281,24 @@ export function ChatComposer({
         </div>
       </div>
 
-      {busy ? (
-        <p className="vt-chat-composer__hint">Vimothy is responding…</p>
+      {queuedLabel && onClearQueuedSend ? (
+        <div className="vt-chat-composer__queued">
+          <span className="vt-chat-composer__queued-label">
+            Queued: <span className="font-mono">{queuedLabel}</span>
+          </span>
+          <button
+            type="button"
+            className="vt-chat-composer__queued-clear"
+            onClick={onClearQueuedSend}
+            aria-label="Cancel queued message"
+          >
+            ×
+          </button>
+        </div>
+      ) : busy ? (
+        <p className="vt-chat-composer__hint">
+          Vimothy is responding… type to queue a follow-up
+        </p>
       ) : slashCommandsEnabled && !pendingSlash && !input.trim() ? (
         <p className="vt-chat-composer__hint">
           Type <span className="font-mono">/</span> for commands ·{" "}
