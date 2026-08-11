@@ -137,11 +137,10 @@ Mode would be persisted per-room alongside model/temperature in `ai-room-prefs.t
 Implementation note: `SLASH_COMMANDS` registry is in `lib/slash-commands.ts`; custom entries would need a separate `customSlashCommands` pref key.
 
 ### Provider logos in the Studio model picker
-Show the provider logo (or abbreviated wordmark) alongside the model name in `ChatModelPicker`.
-- Candidates: OpenRouter, OpenCode, Anthropic, OpenAI.
-- Consider bundling a small `lib/provider-logos.ts` map of `providerId → SVG string | React component`.
-- Logo style: 16 × 16 monochrome, inheriting `currentColor`.
-- Font: OpenCode uses a distinctive font; optionally replicate it via a webfont subset for that entry.
+Shipped for OpenRouter / OpenCode group headers (+ closed picker trigger) and
+Claude / GPT / DeepSeek marks on curated “Your key” models.
+- Logo style: 16 × 16 monochrome, inheriting `currentColor` (`components/chat/provider-logos.tsx`).
+- OpenCode wordmark font still deferred until the marks feel right.
 - Additional provider types to support when added: Mistral, Cohere, Together, any HuggingFace-hosted endpoint via OpenRouter.
 
 ### Project retrieval / RAG (#57 Level D)

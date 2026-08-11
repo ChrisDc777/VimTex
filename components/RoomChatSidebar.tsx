@@ -82,6 +82,7 @@ export function RoomChatSidebar({
         onScroll={chat.onListScroll}
         onRetry={chat.retryAi}
         onRegenerate={chat.regenerateAi}
+        onReply={chat.startReply}
         onSuggestion={chat.insertSuggestion}
         stickBottom={chat.stickBottom}
         onScrollToBottom={chat.scrollToBottom}
@@ -134,6 +135,8 @@ export function RoomChatSidebar({
         onHideSelectionChip={chat.hideSelectionChip}
         queuedLabel={chat.queuedLabel}
         onClearQueuedSend={chat.clearQueuedSend}
+        replyTarget={chat.replyTarget}
+        onClearReply={chat.clearReply}
       />
     </div>
   );

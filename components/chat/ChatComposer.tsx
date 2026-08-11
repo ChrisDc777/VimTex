@@ -15,6 +15,7 @@ import { MentionMenu } from "@/components/chat/MentionMenu";
 import { SlashCommandChip } from "@/components/chat/SlashCommandChip";
 import { SlashMenu } from "@/components/chat/SlashMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
+import type { RoomChatMessage } from "@/lib/room-chat";
 
 type ChatComposerProps = {
   input: string;
@@ -54,6 +55,9 @@ type ChatComposerProps = {
   /** Input queued for after the AI finishes (one-shot hold). */
   queuedLabel?: string | null;
   onClearQueuedSend?: () => void;
+  /** Soft reply target (AI reply continues without @mention). */
+  replyTarget?: RoomChatMessage | null;
+  onClearReply?: () => void;
 };
 
 export function ChatComposer({
@@ -87,6 +91,8 @@ export function ChatComposer({
   modelPickerVariant = "forge",
   queuedLabel = null,
   onClearQueuedSend,
+  replyTarget = null,
+  onClearReply,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
 
@@ -168,6 +174,12 @@ export function ChatComposer({
       return;
     }
 
+    if (e.key === "Escape" && replyTarget && onClearReply) {
+      e.preventDefault();
+      onClearReply();
+      return;
+    }
+
     // Backspace on an empty input pops the last slash chip.
     if (
       e.key === "Backspace" &&
@@ -196,6 +208,29 @@ export function ChatComposer({
           preview={selectionPreview}
           onClear={onHideSelectionChip}
         />
+      ) : null}
+
+      {replyTarget && onClearReply ? (
+        <div className="vt-chat-reply-chip">
+          <span className="vt-chat-reply-chip__badge">Reply</span>
+          <span className="vt-chat-reply-chip__author">
+            {replyTarget.role === "ai" ? "Vimothy" : replyTarget.authorName}
+          </span>
+          <span className="vt-chat-reply-chip__preview">
+            {replyTarget.text.replace(/\s+/g, " ").slice(0, 64)}
+          </span>
+          {replyTarget.role === "ai" ? (
+            <span className="vt-chat-reply-chip__hint">continues AI</span>
+          ) : null}
+          <button
+            type="button"
+            className="vt-chat-reply-chip__clear"
+            onClick={onClearReply}
+            aria-label="Cancel reply"
+          >
+            ×
+          </button>
+        </div>
       ) : null}
 
       {mentionOpen ? (
@@ -238,7 +273,7 @@ export function ChatComposer({
               onInputChange(value, e.target.selectionStart ?? value.length);
               const el = e.currentTarget;
               el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+              el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
             }}
             onKeyUp={(e) => {
               const el = e.currentTarget;
@@ -255,9 +290,13 @@ export function ChatComposer({
             placeholder={
               pendingSlashes.length > 0
                 ? "Add context… (optional)"
-                : slashCommandsEnabled
-                  ? "Message…  (/ for commands)"
-                  : "Message…"
+                : replyTarget?.role === "ai"
+                  ? "Continue with Vimothy…"
+                  : replyTarget
+                    ? "Write a reply…"
+                    : slashCommandsEnabled
+                      ? "Message…  (/ for commands)"
+                      : "Message…"
             }
             enterKeyHint="send"
             className="vt-chat-composer__field"
@@ -316,7 +355,10 @@ export function ChatComposer({
         <p className="vt-chat-composer__hint">
           Vimothy is responding… type to queue a follow-up
         </p>
-      ) : slashCommandsEnabled && pendingSlashes.length === 0 && !input.trim() ? (
+      ) : slashCommandsEnabled &&
+        pendingSlashes.length === 0 &&
+        !input.trim() &&
+        !replyTarget ? (
         <p className="vt-chat-composer__hint">
           Type <span className="font-mono">/</span> for commands ·{" "}
           <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy

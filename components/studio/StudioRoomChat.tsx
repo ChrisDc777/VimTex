@@ -5,6 +5,7 @@ import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
+import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { DocActionPills } from "@/components/chat/DocActionPills";
 import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
@@ -169,10 +170,27 @@ export function StudioRoomChat({
                 </div>
               ) : null}
               <div className="vt-chat-msg__body">
+                {m.replyTo ? (
+                  <div className="vt-chat-msg__reply-ref">
+                    <span className="vt-chat-msg__reply-author">
+                      {m.replyTo.authorName}
+                    </span>
+                    <span className="vt-chat-msg__reply-preview">
+                      {m.replyTo.preview}
+                    </span>
+                  </div>
+                ) : null}
                 {formatChatMessageBody(m.text)}
               </div>
               {chat.messageContexts[m.id] ? (
                 <ChatContextAttachment preview={chat.messageContexts[m.id]!} />
+              ) : null}
+              {!chat.readOnly ? (
+                <ChatMessageActions
+                  message={m}
+                  disabled={chat.busy}
+                  onReply={chat.startReply}
+                />
               ) : null}
               {isAi ? (
                 <AiReplyMeta
@@ -317,6 +335,8 @@ export function StudioRoomChat({
         modelPickerVariant="studio"
         queuedLabel={chat.queuedLabel}
         onClearQueuedSend={chat.clearQueuedSend}
+        replyTarget={chat.replyTarget}
+        onClearReply={chat.clearReply}
       />
     </>
   );

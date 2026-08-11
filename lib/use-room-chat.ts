@@ -365,6 +365,7 @@ export function useRoomChat({
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
   /** Pending slash commands — shown as chips; all run on Enter with optional context. */
   const [pendingSlashes, setPendingSlashes] = useState<SlashCommand[]>([]);
+  const [replyTarget, setReplyTarget] = useState<RoomChatMessage | null>(null);
   /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
   const queuedSendRef = useRef<{
     input: string;
@@ -644,10 +645,9 @@ export function useRoomChat({
     if (slashes.length > 0) {
       const extra = stripAiMention(trimmed).trim();
       // Short bubble: /fix /rewrite … (+ optional user context). Full prompt via override.
+      // Slash chips already imply Vimothy — don't prefix @vimothy in the bubble.
       const ids = slashes.map((s) => `/${s.id}`).join(" ");
-      text = extra
-        ? `@${AI_MENTION_TAG} ${ids}\n${extra}`
-        : `@${AI_MENTION_TAG} ${ids}`;
+      text = extra ? `${ids}\n${extra}` : ids;
       mention = true;
       // Build a combined instruction for all slash commands.
       const parts = slashes.map((slash) => {
@@ -659,7 +659,20 @@ export function useRoomChat({
           : slash.instruction;
       });
       slashInstruction = parts.join("\n\n---\n\n");
+    } else if (replyTarget?.role === "ai" && !mention && trimmed) {
+      // Replying to Vimothy continues the AI turn without typing @vimothy.
+      mention = true;
     }
+
+    const replyMeta =
+      replyTarget != null
+        ? {
+            id: replyTarget.id,
+            authorName:
+              replyTarget.role === "ai" ? "Vimothy" : replyTarget.authorName,
+            preview: replyTarget.text.replace(/\s+/g, " ").slice(0, 72),
+          }
+        : null;
 
     const userMsg: RoomChatMessage = {
       id: newChatMessageId(),
@@ -670,6 +683,7 @@ export function useRoomChat({
       text,
       mentionAi: mention,
       createdAt: Date.now(),
+      replyTo: replyMeta,
     };
 
     if (slashes.length > 0 && slashInstruction) {
@@ -690,6 +704,7 @@ export function useRoomChat({
 
     setInput("");
     setPendingSlashes([]);
+    setReplyTarget(null);
     setMentionOpen(false);
     setSlashOpen(false);
     setSlashFilter("");
@@ -705,7 +720,16 @@ export function useRoomChat({
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, workspace, input, pendingSlashes, invokeAi, user.color, user.name]);
+  }, [
+    busy,
+    workspace,
+    input,
+    pendingSlashes,
+    replyTarget,
+    invokeAi,
+    user.color,
+    user.name,
+  ]);
 
   // Keep ref in sync so the post-invoke drain can call the latest send.
   useEffect(() => {
@@ -776,12 +800,11 @@ export function useRoomChat({
       const after = value.slice(caret);
       // Drop the `/partial` token that opened the menu.
       const withoutToken = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1") + after;
+      // Keep optional user context only — slash chips imply @vimothy on send.
       const rest = stripAiMention(withoutToken)
         .replace(new RegExp(`^/${cmd.id}\\b\\s*`, "i"), "")
         .trim();
-      const next = rest
-        ? `@${AI_MENTION_TAG} ${rest} `
-        : `@${AI_MENTION_TAG} `;
+      const next = rest ? `${rest} ` : "";
       setInput(next);
       setPendingSlashes((prev) => {
         // Avoid duplicate chips for the same command.
@@ -799,6 +822,20 @@ export function useRoomChat({
     },
     [input, shell],
   );
+
+  const startReply = useCallback((msg: RoomChatMessage) => {
+    setReplyTarget(msg);
+    setMentionOpen(false);
+    setSlashOpen(false);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      el?.focus();
+    });
+  }, []);
+
+  const clearReply = useCallback(() => {
+    setReplyTarget(null);
+  }, []);
 
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
@@ -858,6 +895,9 @@ export function useRoomChat({
     clearPendingSlash,
     removeSlashChip,
     dismissSlashMenu,
+    replyTarget,
+    startReply,
+    clearReply,
     messageContexts,
     model,
     setModel,

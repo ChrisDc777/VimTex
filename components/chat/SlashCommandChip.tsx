@@ -9,7 +9,7 @@ type SlashCommandChipProps = {
 
 /**
  * Cursor-style inline slash token: just `/id` in the composer, removable.
- * Color is a breeze×sunset blend (warm peach), same for every command.
+ * Color is a breeze→sunset gradient blend, same for every command.
  */
 export function SlashCommandChip({ command, onClear }: SlashCommandChipProps) {
   return (

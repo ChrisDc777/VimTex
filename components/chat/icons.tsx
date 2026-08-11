@@ -76,3 +76,24 @@ export function ChevronIcon({ className }: { className?: string }) {
     </SafeSvg>
   );
 }
+
+export function ReplyIcon({ className }: { className?: string }) {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <path
+        d="M5.5 4.5 2.5 7.5 5.5 10.5M2.75 7.5H8.5a3 3 0 0 1 3 3V11"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
+}
