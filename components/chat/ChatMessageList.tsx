@@ -7,6 +7,7 @@ import { formatRelativeTime, type RoomChatMessage } from "@/lib/room-chat";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
+import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { RefreshIcon } from "@/components/chat/icons";
 
 const EMPTY_SUGGESTIONS = [
@@ -26,6 +27,7 @@ type ChatMessageListProps = {
   onScroll: () => void;
   onRetry: (msg: RoomChatMessage) => void;
   onRegenerate?: (msg: RoomChatMessage) => void;
+  onReply?: (msg: RoomChatMessage) => void;
   onSuggestion: (text: string) => void;
   stickBottom: boolean;
   onScrollToBottom: () => void;
@@ -58,6 +60,7 @@ export function ChatMessageList({
   onScroll,
   onRetry,
   onRegenerate,
+  onReply,
   onSuggestion,
   stickBottom,
   onScrollToBottom,
@@ -134,11 +137,29 @@ export function ChatMessageList({
                   return (
                     <div key={message.id} className="vt-chat-msg">
                       <div className="vt-chat-msg__bubble">
+                        {message.replyTo ? (
+                          <div className="vt-chat-msg__reply-ref">
+                            <span className="vt-chat-msg__reply-author">
+                              {message.replyTo.authorName}
+                            </span>
+                            <span className="vt-chat-msg__reply-preview">
+                              {message.replyTo.preview}
+                            </span>
+                          </div>
+                        ) : null}
                         {formatChatMessageBody(message.text)}
                       </div>
                       {messageContexts[message.id] ? (
                         <ChatContextAttachment
                           preview={messageContexts[message.id]!}
+                        />
+                      ) : null}
+
+                      {!readOnly ? (
+                        <ChatMessageActions
+                          message={message}
+                          disabled={busy}
+                          onReply={onReply}
                         />
                       ) : null}
 

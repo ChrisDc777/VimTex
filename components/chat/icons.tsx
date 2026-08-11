@@ -76,3 +76,53 @@ export function ChevronIcon({ className }: { className?: string }) {
     </SafeSvg>
   );
 }
+
+export function ReplyIcon({ className }: { className?: string }) {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <path
+        d="M5.5 4.5 2.5 7.5 5.5 10.5M2.75 7.5H8.5a3 3 0 0 1 3 3V11"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
+}
+
+export function CopyIcon({ className }: { className?: string }) {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <rect
+        x="4.5"
+        y="4.5"
+        width="7"
+        height="7"
+        rx="1.25"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M9.5 4.5V3.75A1.25 1.25 0 0 0 8.25 2.5H3.75A1.25 1.25 0 0 0 2.5 3.75v4.5A1.25 1.25 0 0 0 3.75 9.5H4.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </SafeSvg>
+  );
+}

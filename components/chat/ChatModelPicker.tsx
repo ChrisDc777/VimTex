@@ -21,6 +21,10 @@ import {
 } from "@/lib/ai-keys";
 import { loadCustomModels, saveCustomModels } from "@/lib/ai-custom-models";
 import { ChevronIcon } from "@/components/chat/icons";
+import {
+  modelBrandLogo,
+  providerLogo,
+} from "@/components/chat/provider-logos";
 
 type ChatModelPickerProps = {
   model: AiModelId;
@@ -211,6 +215,7 @@ export function ChatModelPicker({
   const currentProvider = providerForModel(model);
   const currentLabel =
     currentProvider.models.find((m) => m.id === model)?.label ?? model;
+  const coloredLogos = variant === "studio";
 
   const toggleOpen = () => {
     const next = !open;
@@ -284,6 +289,10 @@ export function ChatModelPicker({
         title={`Model: ${currentLabel}`}
         onClick={toggleOpen}
       >
+        <span className="vt-chat-model-picker__logo" aria-hidden>
+          {modelBrandLogo(model, { colored: coloredLogos }) ??
+            providerLogo(currentProvider.id, { colored: coloredLogos })}
+        </span>
         <span className="vt-chat-model-picker__label">{currentLabel}</span>
         <ChevronIcon className={open ? "rotate-180" : ""} />
       </button>
@@ -308,31 +317,48 @@ export function ChatModelPicker({
                 return (
                   <div key={provider.id} className="vt-chat-model-menu__group">
                     <p className="vt-chat-model-menu__group-label">
+                      <span className="vt-chat-model-menu__group-logo" aria-hidden>
+                        {providerLogo(provider.id, { colored: coloredLogos })}
+                      </span>
                       {provider.label}
                     </p>
                     <ul className="vt-chat-model-menu__list">
-                      {provider.models.map((m) => (
-                        <li key={m.id}>
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={m.id === model}
-                            disabled={providerLocked}
-                            className={
-                              m.id === model
-                                ? "vt-chat-model-menu__item vt-chat-model-menu__item--active"
-                                : providerLocked
-                                  ? "vt-chat-model-menu__item vt-chat-model-menu__item--disabled"
-                                  : "vt-chat-model-menu__item"
-                            }
-                            onClick={() => selectModel(m.id)}
-                          >
-                            <span className="vt-chat-model-menu__name">
-                              {m.label}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
+                      {provider.models.map((m) => {
+                        const brand =
+                          provider.id === "byok-openrouter"
+                            ? modelBrandLogo(m.id, { colored: coloredLogos })
+                            : null;
+                        return (
+                          <li key={m.id}>
+                            <button
+                              type="button"
+                              role="option"
+                              aria-selected={m.id === model}
+                              disabled={providerLocked}
+                              className={
+                                m.id === model
+                                  ? "vt-chat-model-menu__item vt-chat-model-menu__item--active"
+                                  : providerLocked
+                                    ? "vt-chat-model-menu__item vt-chat-model-menu__item--disabled"
+                                    : "vt-chat-model-menu__item"
+                              }
+                              onClick={() => selectModel(m.id)}
+                            >
+                              {brand ? (
+                                <span
+                                  className="vt-chat-model-menu__item-logo"
+                                  aria-hidden
+                                >
+                                  {brand}
+                                </span>
+                              ) : null}
+                              <span className="vt-chat-model-menu__name">
+                                {m.label}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
                       {provider.id === "byok-openrouter"
                         ? customModels.map((slug) => (
                             <li

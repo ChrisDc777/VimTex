@@ -57,8 +57,9 @@ import {
 } from "@/lib/room-chat";
 import {
   filterSlashCommands,
+  insertSlashCommandToken,
+  parseSlashCommandsInText,
   SLASH_COMMANDS,
-  stripTrailingSlashToken,
   type SlashCommand,
 } from "@/lib/slash-commands";
 import type { AiEditSource } from "@/lib/ai-review-store";
@@ -132,6 +133,8 @@ export function useRoomChat({
   const abortRef = useRef<AbortController | null>(null);
   const prevSelectionRef = useRef<SelectionContextPreview | null>(null);
   const selectionChipHiddenRef = useRef(false);
+  /** After Esc, keep the `/` menu closed while the caret stays in that token. */
+  const slashMenuSuppressedRef = useRef(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -291,6 +294,11 @@ export function useRoomChat({
       const slash = before.match(/(^|[\s])\/([a-zA-Z]*)$/);
       if (slash) {
         const nextFilter = slash[2] ?? "";
+        if (slashMenuSuppressedRef.current) {
+          setSlashOpen(false);
+          setSlashFilter(nextFilter);
+          return;
+        }
         setSlashOpen(true);
         // Only reset highlight when the filter text changes — not on ArrowUp/Down
         // (those fire keyup → onInputChange and used to pin the selection to 0).
@@ -299,6 +307,7 @@ export function useRoomChat({
           return nextFilter;
         });
       } else {
+        slashMenuSuppressedRef.current = false;
         setSlashOpen(false);
         setSlashFilter("");
       }
@@ -363,46 +372,22 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
-  /** Pending slash commands — shown as chips; all run on Enter with optional context. */
-  const [pendingSlashes, setPendingSlashes] = useState<SlashCommand[]>([]);
+  const [replyTarget, setReplyTarget] = useState<RoomChatMessage | null>(null);
   /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
-  const queuedSendRef = useRef<{
-    input: string;
-    slashes: SlashCommand[];
-  } | null>(null);
+  const queuedSendRef = useRef<{ input: string } | null>(null);
   const [queuedLabel, setQueuedLabel] = useState<string | null>(null);
-
-  const clearPendingSlash = useCallback(() => {
-    setPendingSlashes([]);
-  }, []);
-
-  /** Remove one slash chip by index; Backspace on empty input pops the last. */
-  const removeSlashChip = useCallback((index: number) => {
-    setPendingSlashes((prev) => prev.filter((_, i) => i !== index));
-  }, []);
 
   const clearQueuedSend = useCallback(() => {
     queuedSendRef.current = null;
     setQueuedLabel(null);
   }, []);
 
-  /** Close the `/` menu and remove the trailing `/token` so Esc stays dismissed. */
+  /** Close the `/` menu only — leave typed `/partial` so the user can keep writing. */
   const dismissSlashMenu = useCallback(() => {
-    const el = inputRef.current;
-    const value = input;
-    const caret = el?.selectionStart ?? value.length;
-    const { next, caret: nextCaret } = stripTrailingSlashToken(value, caret);
-    if (next !== value) {
-      setInput(next);
-      requestAnimationFrame(() => {
-        const field = inputRef.current;
-        field?.setSelectionRange(nextCaret, nextCaret);
-        field?.focus();
-      });
-    }
+    slashMenuSuppressedRef.current = true;
     setSlashOpen(false);
     setSlashFilter("");
-  }, [input]);
+  }, []);
 
   const invokeAi = useCallback(
     async (userMsg: RoomChatMessage) => {
@@ -596,7 +581,6 @@ export function useRoomChat({
           queuedSendRef.current = null;
           setQueuedLabel(null);
           setInput(queued.input);
-          if (queued.slashes.length > 0) setPendingSlashes(queued.slashes);
           // Let state settle then fire automatically.
           requestAnimationFrame(() => {
             sendRef.current?.();
@@ -616,50 +600,65 @@ export function useRoomChat({
 
     // While busy: queue this input (replaces any prior queued send).
     if (busy) {
-      const slashes = pendingSlashes;
       const trimmed = input.trim();
-      if (!trimmed && slashes.length === 0) return;
+      if (!trimmed) return;
+      const slashes = parseSlashCommandsInText(trimmed);
       const label =
         slashes.length > 0
           ? slashes.map((s) => `/${s.id}`).join(" ")
           : trimmed.slice(0, 40);
-      queuedSendRef.current = { input, slashes };
+      queuedSendRef.current = { input };
       setQueuedLabel(label);
       setInput("");
-      setPendingSlashes([]);
       return;
     }
 
-    const slashes = pendingSlashes;
     const trimmed = input.trim();
-    if (!trimmed && slashes.length === 0) return;
+    if (!trimmed) return;
 
     const clientId = ws.getClientId();
     if (clientId == null) return;
 
-    let text = trimmed;
+    const slashPool = aiFeatureEnabled(shell, "slashCommands")
+      ? SLASH_COMMANDS
+      : SLASH_COMMANDS.filter((c) => c.derivationCoach);
+    const slashes = parseSlashCommandsInText(trimmed, slashPool);
+
+    const text = trimmed;
     let mention = mentionsAi(text);
     let slashInstruction: string | null = null;
 
     if (slashes.length > 0) {
-      const extra = stripAiMention(trimmed).trim();
-      // Short bubble: /fix /rewrite … (+ optional user context). Full prompt via override.
-      const ids = slashes.map((s) => `/${s.id}`).join(" ");
-      text = extra
-        ? `@${AI_MENTION_TAG} ${ids}\n${extra}`
-        : `@${AI_MENTION_TAG} ${ids}`;
+      // Keep the user's typed text (with inline /commands) as the bubble.
       mention = true;
-      // Build a combined instruction for all slash commands.
+      const withoutTokens = stripAiMention(
+        trimmed.replace(/(^|[\s])\/[a-z][a-z0-9-]*\b/gi, "$1"),
+      )
+        .replace(/[ \t]{2,}/g, " ")
+        .trim();
       const parts = slashes.map((slash) => {
         if (slash.id === "review") {
-          return buildGrammarReviewInstruction(extra || undefined);
+          return buildGrammarReviewInstruction(withoutTokens || undefined);
         }
-        return extra
-          ? `${slash.instruction}\n\nAdditional instructions from the user:\n${extra}`
+        return withoutTokens
+          ? `${slash.instruction}\n\nAdditional instructions from the user:\n${withoutTokens}`
           : slash.instruction;
       });
       slashInstruction = parts.join("\n\n---\n\n");
+    } else if (replyTarget?.role === "ai" && !mention && trimmed) {
+      // Replying to Vimothy continues the AI turn without typing @vimothy.
+      mention = true;
     }
+
+    const replyMeta =
+      replyTarget != null
+        ? {
+            id: replyTarget.id,
+            authorName:
+              replyTarget.role === "ai" ? "Vimothy" : replyTarget.authorName,
+            preview: replyTarget.text.replace(/\s+/g, " ").slice(0, 72),
+          }
+        : null;
 
     const userMsg: RoomChatMessage = {
       id: newChatMessageId(),
@@ -670,29 +669,20 @@ export function useRoomChat({
       text,
       mentionAi: mention,
       createdAt: Date.now(),
+      replyTo: replyMeta,
     };
 
     if (slashes.length > 0 && slashInstruction) {
       instructionOverridesRef.current[userMsg.id] = slashInstruction;
       editSourceOverridesRef.current[userMsg.id] = "slash";
-      const labelStr = slashes.map((s) => `/${s.id}`).join(" ");
-      const previewStr = slashes.map((s) => s.title).join(" + ");
-      setMessageContexts((prev) => ({
-        ...prev,
-        [userMsg.id]: {
-          label: labelStr,
-          preview: previewStr,
-          lineFrom: 0,
-          lineTo: 0,
-        },
-      }));
     }
 
     setInput("");
-    setPendingSlashes([]);
+    setReplyTarget(null);
     setMentionOpen(false);
     setSlashOpen(false);
     setSlashFilter("");
+    slashMenuSuppressedRef.current = false;
     setError(null);
     setErrorForId(null);
     setStickBottom(true);
@@ -705,7 +695,16 @@ export function useRoomChat({
     if (mention) {
       await invokeAi(userMsg);
     }
-  }, [busy, workspace, input, pendingSlashes, invokeAi, user.color, user.name]);
+  }, [
+    busy,
+    workspace,
+    input,
+    replyTarget,
+    invokeAi,
+    user.color,
+    user.name,
+    shell,
+  ]);
 
   // Keep ref in sync so the post-invoke drain can call the latest send.
   useEffect(() => {
@@ -761,7 +760,7 @@ export function useRoomChat({
     [busy, workspace, invokeAi, user.color, user.name],
   );
 
-  /** Attach slash command as a chip; optional context + Enter runs it. */
+  /** Insert `/id` inline at the caret (menu Enter / click). Does not auto-run. */
   const runSlashCommand = useCallback(
     (cmd: SlashCommand) => {
       const slashAllowed =
@@ -772,33 +771,38 @@ export function useRoomChat({
       const el = inputRef.current;
       const value = input;
       const caret = el?.selectionStart ?? value.length;
-      const before = value.slice(0, caret);
-      const after = value.slice(caret);
-      // Drop the `/partial` token that opened the menu.
-      const withoutToken = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1") + after;
-      const rest = stripAiMention(withoutToken)
-        .replace(new RegExp(`^/${cmd.id}\\b\\s*`, "i"), "")
-        .trim();
-      const next = rest
-        ? `@${AI_MENTION_TAG} ${rest} `
-        : `@${AI_MENTION_TAG} `;
+      const { next, caret: nextCaret } = insertSlashCommandToken(
+        value,
+        caret,
+        cmd.id,
+      );
       setInput(next);
-      setPendingSlashes((prev) => {
-        // Avoid duplicate chips for the same command.
-        if (prev.some((s) => s.id === cmd.id)) return prev;
-        return [...prev, cmd];
-      });
+      slashMenuSuppressedRef.current = false;
       setSlashOpen(false);
       setSlashFilter("");
       requestAnimationFrame(() => {
         const field = inputRef.current;
-        const pos = next.length;
         field?.focus();
-        field?.setSelectionRange(pos, pos);
+        field?.setSelectionRange(nextCaret, nextCaret);
+        updateComposerMenus(next, nextCaret);
       });
     },
-    [input, shell],
+    [input, shell, updateComposerMenus],
   );
+
+  const startReply = useCallback((msg: RoomChatMessage) => {
+    setReplyTarget(msg);
+    setMentionOpen(false);
+    setSlashOpen(false);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      el?.focus();
+    });
+  }, []);
+
+  const clearReply = useCallback(() => {
+    setReplyTarget(null);
+  }, []);
 
   const retryAi = useCallback(
     (msg: RoomChatMessage) => {
@@ -854,10 +858,10 @@ export function useRoomChat({
       selectionChipHiddenRef.current = true;
       setSelectionChipHidden(true);
     },
-    pendingSlashes,
-    clearPendingSlash,
-    removeSlashChip,
     dismissSlashMenu,
+    replyTarget,
+    startReply,
+    clearReply,
     messageContexts,
     model,
     setModel,

@@ -131,3 +131,47 @@ export function stripTrailingSlashToken(
   const trimmedBefore = before.replace(/(^|[\s])\/[a-zA-Z]*$/, "$1");
   return { next: trimmedBefore + after, caret: trimmedBefore.length };
 }
+
+const SLASH_TOKEN_RE = /(^|[\s])\/([a-z][a-z0-9-]*)\b/gi;
+
+/** Known `/id` tokens in order of appearance (deduped). */
+export function parseSlashCommandsInText(
+  text: string,
+  commands: readonly SlashCommand[] = SLASH_COMMANDS,
+): SlashCommand[] {
+  const byId = new Map(commands.map((c) => [c.id, c]));
+  const found: SlashCommand[] = [];
+  const seen = new Set<string>();
+  SLASH_TOKEN_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = SLASH_TOKEN_RE.exec(text)) !== null) {
+    const id = (match[2] ?? "").toLowerCase();
+    const cmd = byId.get(id as SlashCommandId);
+    if (!cmd || seen.has(cmd.id)) continue;
+    seen.add(cmd.id);
+    found.push(cmd);
+  }
+  return found;
+}
+
+/** True when text contains at least one known slash command. */
+export function textHasSlashCommand(
+  text: string,
+  commands: readonly SlashCommand[] = SLASH_COMMANDS,
+): boolean {
+  return parseSlashCommandsInText(text, commands).length > 0;
+}
+
+/**
+ * Replace the trailing `/partial` before caret with `/id ` (inline, not a chip).
+ */
+export function insertSlashCommandToken(
+  value: string,
+  caret: number,
+  commandId: string,
+): { next: string; caret: number } {
+  const before = value.slice(0, caret);
+  const after = value.slice(caret);
+  const replaced = before.replace(/(^|[\s])\/[a-zA-Z]*$/, `$1/${commandId} `);
+  return { next: replaced + after, caret: replaced.length };
+}

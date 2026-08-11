@@ -82,6 +82,7 @@ export function RoomChatSidebar({
         onScroll={chat.onListScroll}
         onRetry={chat.retryAi}
         onRegenerate={chat.regenerateAi}
+        onReply={chat.startReply}
         onSuggestion={chat.insertSuggestion}
         stickBottom={chat.stickBottom}
         onScrollToBottom={chat.scrollToBottom}
@@ -126,14 +127,13 @@ export function RoomChatSidebar({
           chat.shell === "studio" ||
           aiFeatureEnabled("forge", "derivationCoach")
         }
-        pendingSlashes={chat.pendingSlashes}
-        onClearPendingSlash={chat.clearPendingSlash}
-        onRemoveSlashChip={chat.removeSlashChip}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
         queuedLabel={chat.queuedLabel}
         onClearQueuedSend={chat.clearQueuedSend}
+        replyTarget={chat.replyTarget}
+        onClearReply={chat.clearReply}
       />
     </div>
   );

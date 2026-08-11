@@ -25,6 +25,12 @@ export type RoomChatMessage = {
     outputTokens?: number;
     totalTokens?: number;
   } | null;
+  /** Soft reply target shown in the bubble (not a hard thread). */
+  replyTo?: {
+    id: string;
+    authorName: string;
+    preview: string;
+  } | null;
 };
 
 export function newChatMessageId(): string {
