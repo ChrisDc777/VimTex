@@ -215,6 +215,7 @@ export function ChatModelPicker({
   const currentProvider = providerForModel(model);
   const currentLabel =
     currentProvider.models.find((m) => m.id === model)?.label ?? model;
+  const coloredLogos = variant === "studio";
 
   const toggleOpen = () => {
     const next = !open;
@@ -289,7 +290,8 @@ export function ChatModelPicker({
         onClick={toggleOpen}
       >
         <span className="vt-chat-model-picker__logo" aria-hidden>
-          {modelBrandLogo(model) ?? providerLogo(currentProvider.id)}
+          {modelBrandLogo(model, { colored: coloredLogos }) ??
+            providerLogo(currentProvider.id, { colored: coloredLogos })}
         </span>
         <span className="vt-chat-model-picker__label">{currentLabel}</span>
         <ChevronIcon className={open ? "rotate-180" : ""} />
@@ -316,7 +318,7 @@ export function ChatModelPicker({
                   <div key={provider.id} className="vt-chat-model-menu__group">
                     <p className="vt-chat-model-menu__group-label">
                       <span className="vt-chat-model-menu__group-logo" aria-hidden>
-                        {providerLogo(provider.id)}
+                        {providerLogo(provider.id, { colored: coloredLogos })}
                       </span>
                       {provider.label}
                     </p>
@@ -324,7 +326,7 @@ export function ChatModelPicker({
                       {provider.models.map((m) => {
                         const brand =
                           provider.id === "byok-openrouter"
-                            ? modelBrandLogo(m.id)
+                            ? modelBrandLogo(m.id, { colored: coloredLogos })
                             : null;
                         return (
                           <li key={m.id}>

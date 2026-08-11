@@ -455,6 +455,56 @@
   background: color-mix(in srgb, var(--canvas) 92%, transparent);
 }
 
+/* Studio composer shell: elevated, breeze focus — distinct from Forge. */
+.ui-studio .vt-chat-composer-wrap {
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.ui-studio .vt-chat-composer__shell {
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--hairline-strong, var(--hairline)) 85%, transparent);
+  border-radius: calc(var(--radius-lg) + 2px);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--canvas-mid) 55%, var(--canvas)) 0%,
+    var(--canvas) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ink) 4%, transparent),
+    0 1px 2px color-mix(in srgb, #000 18%, transparent);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.ui-studio .vt-chat-composer__input-area {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.ui-studio .vt-chat-composer__shell--focused {
+  border-color: color-mix(in srgb, var(--accent-breeze, var(--focus)) 48%, var(--hairline));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ink) 5%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent-breeze, var(--focus)) 16%, transparent),
+    0 1px 3px color-mix(in srgb, #000 22%, transparent);
+}
+
+.ui-studio .vt-chat-composer__shell[data-busy="true"] {
+  opacity: 0.72;
+}
+
+.ui-studio .vt-chat-composer__shell .vt-chat-composer__field {
+  min-width: 6rem;
+  min-height: 28px;
+  max-height: 120px;
+  padding: 4px 2px;
+  line-height: 1.4;
+}
+
 .ui-studio .vt-chat-composer__meta {
   display: flex;
   align-items: center;
