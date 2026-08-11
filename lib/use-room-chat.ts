@@ -133,6 +133,8 @@ export function useRoomChat({
   const abortRef = useRef<AbortController | null>(null);
   const prevSelectionRef = useRef<SelectionContextPreview | null>(null);
   const selectionChipHiddenRef = useRef(false);
+  /** After Esc, keep the `/` menu closed while the caret stays in that token. */
+  const slashMenuSuppressedRef = useRef(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -370,8 +372,6 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
-  /** After Esc, keep the `/` menu closed while the caret stays in that token. */
-  const slashMenuSuppressedRef = useRef(false);
   const [replyTarget, setReplyTarget] = useState<RoomChatMessage | null>(null);
   /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
   const queuedSendRef = useRef<{ input: string } | null>(null);
@@ -624,7 +624,7 @@ export function useRoomChat({
       : SLASH_COMMANDS.filter((c) => c.derivationCoach);
     const slashes = parseSlashCommandsInText(trimmed, slashPool);
 
-    let text = trimmed;
+    const text = trimmed;
     let mention = mentionsAi(text);
     let slashInstruction: string | null = null;
 
