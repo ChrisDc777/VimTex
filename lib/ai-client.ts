@@ -27,6 +27,10 @@ export type AiChatRequest = {
   mode?: "coach";
   /** Sampling temperature 0–1 (#60). */
   temperature?: number;
+  /** #57 Level C — Studio auxiliary context. */
+  diagnostics?: string;
+  outline?: string;
+  citations?: string;
 };
 
 export type AiChatResult = {
@@ -52,6 +56,9 @@ function requestBody({
   history,
   mode,
   temperature,
+  diagnostics,
+  outline,
+  citations,
   stream,
 }: AiChatRequest & { stream?: boolean }) {
   const backend = backendForModel(model);
@@ -69,6 +76,9 @@ function requestBody({
     ...(history && history.length > 0 ? { history } : {}),
     ...(mode ? { mode } : {}),
     ...(temp !== undefined ? { temperature: temp } : {}),
+    ...(diagnostics ? { diagnostics } : {}),
+    ...(outline ? { outline } : {}),
+    ...(citations ? { citations } : {}),
     ...(stream ? { stream: true } : {}),
   };
 }

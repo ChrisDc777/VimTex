@@ -22,6 +22,7 @@ import {
   type EditorContextSnapshot,
   type SelectionContextPreview,
 } from "@/lib/ai-chat-context";
+import { buildAuxiliaryAiContext } from "@/lib/ai-aux-context";
 import { buildAiHistoryFromRoomChat } from "@/lib/ai-chat-history";
 import { postAiChat, streamAiChat } from "@/lib/ai-client";
 import { formatAiError } from "@/lib/ai-errors";
@@ -419,13 +420,22 @@ export function useRoomChat({
       setStreamingText(null);
       const beforeSnapshot = ws.getText();
       const snap = getEditorContext?.() ?? null;
+      const noteText = snap?.text ?? beforeSnapshot;
+      const includeSelection = aiFeatureEnabled(shell, "selectionActions");
+      const aux = includeSelection
+        ? buildAuxiliaryAiContext(noteText)
+        : {};
       const packed = packAiChatContext({
-        text: snap?.text ?? beforeSnapshot,
+        text: noteText,
         caretOffset: snap?.caret.offset,
         selection: snap?.selection,
         surrounding: snap?.surrounding,
         caret: snap?.caret,
-        includeSelectionContext: aiFeatureEnabled(shell, "selectionActions"),
+        includeSelectionContext: includeSelection,
+        includeAuxiliaryContext: includeSelection,
+        diagnostics: aux.diagnostics,
+        outline: aux.outline,
+        citations: aux.citations,
       });
       const usedSelection =
         packed.selection && snap
@@ -462,6 +472,9 @@ export function useRoomChat({
           surrounding: packed.surrounding,
           caret: packed.caret,
           truncated: packed.truncated,
+          diagnostics: packed.diagnostics,
+          outline: packed.outline,
+          citations: packed.citations,
           ...(history && history.length > 0 ? { history } : {}),
           ...(coach ? { mode: "coach" as const } : {}),
         };
