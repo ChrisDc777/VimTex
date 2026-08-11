@@ -596,7 +596,11 @@ export function StudioShell({
                     requestAnimationFrame(() => {
                       void aiRunnerRef.current?.runInstruction(
                         action.instruction,
-                        { source: "selection" },
+                        {
+                          // Short bubble label; full prompt stays in overrides.
+                          chatText: action.label,
+                          source: "selection",
+                        },
                       );
                     });
                   }}
