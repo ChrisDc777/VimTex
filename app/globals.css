@@ -2491,6 +2491,41 @@ body[data-pane-resizing] * {
   padding: 2px 2px 0;
 }
 
+.vt-chat-composer__input-stack {
+  position: relative;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.vt-chat-composer__highlight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 2px 2px 4px;
+}
+
+.vt-chat-composer__slash {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: linear-gradient(
+    115deg,
+    var(--accent-breeze, #a0c3ec) 0%,
+    color-mix(in srgb, var(--accent-breeze, #a0c3ec) 45%, var(--accent-sunset, #ff7a17)) 48%,
+    var(--accent-sunset, #ff7a17) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .vt-chat-composer__shell--focused {
   border-color: color-mix(in srgb, var(--focus) 40%, var(--hairline));
 }
@@ -2500,7 +2535,10 @@ body[data-pane-resizing] * {
 }
 
 .vt-chat-composer__field {
+  position: relative;
+  z-index: 1;
   flex: 1 1 100%;
+  width: 100%;
   min-width: 0;
   min-height: 40px;
   max-height: 140px;
@@ -2509,7 +2547,8 @@ body[data-pane-resizing] * {
   scrollbar-width: none;
   border: none;
   background: transparent;
-  color: var(--ink);
+  color: transparent;
+  caret-color: var(--ink);
   padding: 2px 2px 4px;
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 13px;

@@ -3,16 +3,20 @@
 import {
   type KeyboardEvent,
   type RefObject,
+  useRef,
   useState,
 } from "react";
 import { mentionsAi, AI_MENTION_TAG } from "@/lib/chat-mentions";
 import type { AiModelId } from "@/lib/ai-providers";
 import type { SelectionContextPreview } from "@/lib/ai-chat-context";
-import type { SlashCommand } from "@/lib/slash-commands";
+import {
+  textHasSlashCommand,
+  type SlashCommand,
+} from "@/lib/slash-commands";
 import { ChatContextChip } from "@/components/chat/ChatContextChip";
 import { ChatModelPicker } from "@/components/chat/ChatModelPicker";
+import { highlightComposerInput } from "@/components/chat/ComposerInputHighlight";
 import { MentionMenu } from "@/components/chat/MentionMenu";
-import { SlashCommandChip } from "@/components/chat/SlashCommandChip";
 import { SlashMenu } from "@/components/chat/SlashMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
 import type { RoomChatMessage } from "@/lib/room-chat";
@@ -40,11 +44,6 @@ type ChatComposerProps = {
   onSlashClose?: () => void;
   /** Studio-only: show / hint in placeholder. */
   slashCommandsEnabled?: boolean;
-  /** Attached slash commands (chips); all cleared via onClearPendingSlash. */
-  pendingSlashes?: SlashCommand[];
-  onClearPendingSlash?: () => void;
-  /** Remove a single slash chip by index (Backspace on empty = last). */
-  onRemoveSlashChip?: (index: number) => void;
   /** View-only rooms: hide send UI, show explanation. */
   readOnly?: boolean;
   /** Active editor selection attached to the next @vimothy turn. */
@@ -82,9 +81,6 @@ export function ChatComposer({
   onSlashIndexChange,
   onSlashClose,
   slashCommandsEnabled = false,
-  pendingSlashes = [],
-  onClearPendingSlash,
-  onRemoveSlashChip,
   readOnly = false,
   selectionPreview = null,
   onHideSelectionChip,
@@ -95,6 +91,7 @@ export function ChatComposer({
   onClearReply,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   if (readOnly) {
     return (
@@ -105,6 +102,13 @@ export function ChatComposer({
       </div>
     );
   }
+
+  const syncHighlightScroll = (el: HTMLTextAreaElement) => {
+    const mirror = highlightRef.current;
+    if (!mirror) return;
+    mirror.scrollTop = el.scrollTop;
+    mirror.scrollLeft = el.scrollLeft;
+  };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (mentionOpen && filteredMentions.length > 0) {
@@ -149,13 +153,14 @@ export function ChatComposer({
           );
           return;
         }
+        // Only Enter commits a menu pick into the text as `/id`.
         if (e.key === "Enter") {
           e.preventDefault();
           const cmd = filteredSlashCommands[slashIndex];
           if (cmd) onSlashSelect(cmd);
           return;
         }
-        // Tab dismisses the menu so the user can keep typing freely.
+        // Tab / Space close the menu without inserting — keep typing freely.
         if (e.key === "Tab") {
           e.preventDefault();
           onSlashClose?.();
@@ -167,34 +172,16 @@ export function ChatComposer({
         onSlashClose?.();
         return;
       }
-      // Space dismisses without running a command (#63).
       if (e.key === " " && filteredSlashCommands.length > 0) {
         onSlashClose?.();
+        // Do not preventDefault — space is typed into the field.
         return;
       }
-    }
-
-    if (e.key === "Escape" && pendingSlashes.length > 0 && onClearPendingSlash) {
-      e.preventDefault();
-      onClearPendingSlash();
-      return;
     }
 
     if (e.key === "Escape" && replyTarget && onClearReply) {
       e.preventDefault();
       onClearReply();
-      return;
-    }
-
-    // Backspace on an empty input pops the last slash chip.
-    if (
-      e.key === "Backspace" &&
-      !input &&
-      pendingSlashes.length > 0 &&
-      onRemoveSlashChip
-    ) {
-      e.preventDefault();
-      onRemoveSlashChip(pendingSlashes.length - 1);
       return;
     }
 
@@ -204,12 +191,12 @@ export function ChatComposer({
     }
   };
 
-  // While AI is busy the user can draft; pressing Send queues the message.
-  const canSend = pendingSlashes.length > 0 || input.trim().length > 0;
+  const hasSlash = textHasSlashCommand(input);
+  const canSend = input.trim().length > 0;
 
   return (
     <div className="vt-chat-composer-wrap">
-      {selectionPreview && (mentionsAi(input) || pendingSlashes.length > 0) ? (
+      {selectionPreview && (mentionsAi(input) || hasSlash) ? (
         <ChatContextChip
           preview={selectionPreview}
           onClear={onHideSelectionChip}
@@ -266,49 +253,52 @@ export function ChatComposer({
         data-variant={modelPickerVariant}
       >
         <div className="vt-chat-composer__input-area">
-          {pendingSlashes.map((cmd, i) => (
-            <SlashCommandChip
-              key={cmd.id}
-              command={cmd}
-              onClear={() => onRemoveSlashChip?.(i)}
-            />
-          ))}
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => {
-              const value = e.target.value;
-              onInputChange(value, e.target.selectionStart ?? value.length);
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
-            }}
-            onKeyUp={(e) => {
-              const el = e.currentTarget;
-              onInputChange(el.value, el.selectionStart ?? el.value.length);
-            }}
-            onClick={(e) => {
-              const el = e.currentTarget;
-              onInputChange(el.value, el.selectionStart ?? el.value.length);
-            }}
-            onFocus={() => setShellFocused(true)}
-            onBlur={() => setShellFocused(false)}
-            onKeyDown={onKeyDown}
-            rows={2}
-            placeholder={
-              pendingSlashes.length > 0
-                ? "Add context… (optional)"
-                : replyTarget?.role === "ai"
+          <div className="vt-chat-composer__input-stack">
+            <div
+              ref={highlightRef}
+              className="vt-chat-composer__highlight"
+              aria-hidden
+            >
+              {input ? highlightComposerInput(input) : "\u00a0"}
+            </div>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => {
+                const value = e.target.value;
+                onInputChange(value, e.target.selectionStart ?? value.length);
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+                syncHighlightScroll(el);
+              }}
+              onScroll={(e) => syncHighlightScroll(e.currentTarget)}
+              onKeyUp={(e) => {
+                const el = e.currentTarget;
+                onInputChange(el.value, el.selectionStart ?? el.value.length);
+              }}
+              onClick={(e) => {
+                const el = e.currentTarget;
+                onInputChange(el.value, el.selectionStart ?? el.value.length);
+              }}
+              onFocus={() => setShellFocused(true)}
+              onBlur={() => setShellFocused(false)}
+              onKeyDown={onKeyDown}
+              rows={2}
+              placeholder={
+                replyTarget?.role === "ai"
                   ? "Continue with Vimothy…"
                   : replyTarget
                     ? "Write a reply…"
                     : slashCommandsEnabled
                       ? "Message…  (/ for commands)"
                       : "Message…"
-            }
-            enterKeyHint="send"
-            className="vt-chat-composer__field"
-          />
+              }
+              enterKeyHint="send"
+              className="vt-chat-composer__field"
+              spellCheck={false}
+            />
+          </div>
         </div>
         <div className="vt-chat-composer__toolbar">
           <ChatModelPicker
@@ -363,10 +353,7 @@ export function ChatComposer({
         <p className="vt-chat-composer__hint">
           Vimothy is responding… type to queue a follow-up
         </p>
-      ) : slashCommandsEnabled &&
-        pendingSlashes.length === 0 &&
-        !input.trim() &&
-        !replyTarget ? (
+      ) : slashCommandsEnabled && !input.trim() && !replyTarget ? (
         <p className="vt-chat-composer__hint">
           Type <span className="font-mono">/</span> for commands ·{" "}
           <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy

@@ -1,6 +1,7 @@
 "use client";
 
-import { ReplyIcon } from "@/components/chat/icons";
+import { useState } from "react";
+import { CopyIcon, ReplyIcon } from "@/components/chat/icons";
 import type { RoomChatMessage } from "@/lib/room-chat";
 
 type ChatMessageActionsProps = {
@@ -18,7 +19,17 @@ export function ChatMessageActions({
   disabled = false,
   onReply,
 }: ChatMessageActionsProps) {
-  if (!onReply) return null;
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      /* clipboard may be denied */
+    }
+  };
 
   return (
     <div className="vt-chat-msg__actions">
@@ -26,15 +37,28 @@ export function ChatMessageActions({
         type="button"
         className="vt-chat-msg__action"
         disabled={disabled}
-        onClick={() => onReply(message)}
-        aria-label={
-          message.role === "ai" ? "Reply to Vimothy" : "Reply to message"
-        }
-        title="Reply"
+        onClick={() => void copy()}
+        aria-label="Copy message"
+        title="Copy"
       >
-        <ReplyIcon />
-        Reply
+        <CopyIcon />
+        {copied ? "Copied" : "Copy"}
       </button>
+      {onReply ? (
+        <button
+          type="button"
+          className="vt-chat-msg__action"
+          disabled={disabled}
+          onClick={() => onReply(message)}
+          aria-label={
+            message.role === "ai" ? "Reply to Vimothy" : "Reply to message"
+          }
+          title="Reply"
+        >
+          <ReplyIcon />
+          Reply
+        </button>
+      ) : null}
     </div>
   );
 }

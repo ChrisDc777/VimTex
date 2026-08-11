@@ -97,3 +97,32 @@ export function ReplyIcon({ className }: { className?: string }) {
     </SafeSvg>
   );
 }
+
+export function CopyIcon({ className }: { className?: string }) {
+  return (
+    <SafeSvg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <rect
+        x="4.5"
+        y="4.5"
+        width="7"
+        height="7"
+        rx="1.25"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M9.5 4.5V3.75A1.25 1.25 0 0 0 8.25 2.5H3.75A1.25 1.25 0 0 0 2.5 3.75v4.5A1.25 1.25 0 0 0 3.75 9.5H4.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </SafeSvg>
+  );
+}

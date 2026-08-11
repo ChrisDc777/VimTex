@@ -505,6 +505,14 @@
   padding: 4px 2px 6px;
   font-size: 13px;
   line-height: 1.5;
+  color: transparent;
+  caret-color: var(--ink);
+}
+
+.ui-studio .vt-chat-composer__highlight {
+  padding: 4px 2px 6px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .ui-studio .vt-chat-composer__toolbar {
