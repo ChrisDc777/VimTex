@@ -7,7 +7,6 @@ import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
-import { aiFeatureEnabled } from "@/lib/ai-features";
 import { useRoomChat } from "@/lib/use-room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
 
@@ -21,6 +20,8 @@ export type RoomChatSidebarProps = {
   chatReady: boolean;
   /** Live editor snapshot for AI context (#57). Forge omits selection. */
   getEditorContext?: () => EditorContextSnapshot | null;
+  /** Parent supplies `RightPanelSwitcher` chrome. */
+  chromeless?: boolean;
 };
 
 export function RoomChatSidebar({
@@ -31,6 +32,7 @@ export function RoomChatSidebar({
   user,
   chatReady,
   getEditorContext,
+  chromeless = false,
 }: RoomChatSidebarProps) {
   const chat = useRoomChat({
     open,
@@ -45,30 +47,32 @@ export function RoomChatSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <SidePanelHeader
-        title="Chat"
-        meta={
-          <>
-            <AvatarStack
-              peers={peers}
-              selfClientId={selfClientId}
-              max={3}
-              size={22}
-            />
-            <span>{peers.length} online</span>
-          </>
-        }
-        actions={
-          <button
-            type="button"
-            onClick={onClose}
-            className="vt-panel-header__icon-btn"
-            aria-label="Close chat"
-          >
-            <CloseIcon />
-          </button>
-        }
-      />
+      {chromeless ? null : (
+        <SidePanelHeader
+          title="Chat"
+          meta={
+            <>
+              <AvatarStack
+                peers={peers}
+                selfClientId={selfClientId}
+                max={3}
+                size={22}
+              />
+              <span>{peers.length} online</span>
+            </>
+          }
+          actions={
+            <button
+              type="button"
+              onClick={onClose}
+              className="vt-panel-header__icon-btn"
+              aria-label="Close chat"
+            >
+              <CloseIcon />
+            </button>
+          }
+        />
+      )}
 
       <ChatMessageList
         messages={chat.messages}
@@ -123,10 +127,7 @@ export function RoomChatSidebar({
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.dismissSlashMenu()}
-        slashCommandsEnabled={
-          chat.shell === "studio" ||
-          aiFeatureEnabled("forge", "derivationCoach")
-        }
+        slashCommandsEnabled={chat.slashCommandsEnabled}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

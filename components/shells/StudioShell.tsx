@@ -17,7 +17,8 @@ import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
-import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
+import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
+import { RightPanelSwitcher, type RightPanelTab } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { VtToaster } from "@/components/VtToaster";
@@ -123,7 +124,9 @@ export function StudioShell({
   const [user, setUser] = useState<CollabUser | null>(null);
   const [needsName, setNeedsName] = useState(false);
   const [editingName, setEditingName] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [rightPanelView, setRightPanelView] = useState<RightPanelTab | null>(
+    null,
+  );
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
@@ -140,7 +143,6 @@ export function StudioShell({
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
-  const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const [hasSelectionRange, setHasSelectionRange] = useState(false);
   const [hasEquationScope, setHasEquationScope] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -264,7 +266,7 @@ export function StudioShell({
       setEditSecret(null);
       setNote("");
       setSeed(content || STARTER_NOTE);
-      setChatOpen(false);
+      setRightPanelView(null);
       setCollabStatus("connecting");
       setPeers([]);
       setVimMode("normal");
@@ -333,10 +335,34 @@ export function StudioShell({
   const { recentRooms, clear: clearTrackedRecentRooms } =
     useRecentRoomsTracker(roomId);
 
+  const chatOpen = rightPanelView === "chat";
+  const historyOpen = rightPanelView === "history";
+  const rightPanelOpen = rightPanelView !== null;
+
+  const closeRightPanel = useCallback(() => {
+    setRightPanelView(null);
+  }, []);
+
+  const openChatPanel = useCallback(() => {
+    setRightPanelView("chat");
+  }, []);
+
+  const openHistoryPanel = useCallback(() => {
+    setRightPanelView("history");
+  }, []);
+
+  const toggleChat = useCallback(() => {
+    setRightPanelView((view) => (view === "chat" ? null : "chat"));
+  }, []);
+
+  const toggleHistory = useCallback(() => {
+    setRightPanelView((view) => (view === "history" ? null : "history"));
+  }, []);
+
   useShellShortcuts({
     onTogglePalette: useCallback(() => setPaletteOpen((v) => !v), []),
     onToggleCheatsheet: useCallback(() => setCheatsheetOpen((v) => !v), []),
-    onToggleChat: useCallback(() => setChatOpen((v) => !v), []),
+    onToggleChat: toggleChat,
     onToggleViewMode: useCallback(() => {
       setViewMode((prev) => (prev === "split" ? "realtime" : "split"));
     }, []),
@@ -378,7 +404,7 @@ export function StudioShell({
     usePaneLayout({
       open: {
         left: outlineOpen && aiFeatureEnabled("studio", "outlineTodo"),
-        right: chatOpen,
+        right: rightPanelOpen,
       },
     });
   const {
@@ -431,9 +457,7 @@ export function StudioShell({
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }
-              onOpenSnapshots={
-                readOnly ? undefined : () => setRoomSnapshotsOpen(true)
-              }
+              onOpenSnapshots={openHistoryPanel}
             />
           ) : null}
           {aiFeatureEnabled("studio", "outlineTodo") ? (
@@ -455,6 +479,21 @@ export function StudioShell({
           ) : null}
           <button
             type="button"
+            aria-pressed={historyOpen}
+            aria-label={historyOpen ? "Close version history" : "Open version history"}
+            title={historyOpen ? "Close version history" : "Version history"}
+            disabled={!ready || !roomId}
+            onClick={toggleHistory}
+            className={
+              historyOpen
+                ? "vt-pill vt-pill--solid vt-pill--icon"
+                : "vt-pill vt-pill--ghost vt-pill--icon"
+            }
+          >
+            <HistoryIcon />
+          </button>
+          <button
+            type="button"
             aria-pressed={chatOpen}
             aria-label={chatOpen ? "Close chat" : "Open chat"}
             title={
@@ -463,7 +502,7 @@ export function StudioShell({
                 : `Room chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
             }
             disabled={!ready}
-            onClick={() => setChatOpen((v) => !v)}
+            onClick={toggleChat}
             className={
               chatOpen
                 ? "vt-pill vt-pill--solid vt-pill--icon"
@@ -594,7 +633,7 @@ export function StudioShell({
                         editorRef.current?.selectRange(scope.from, scope.to);
                       }
                     }
-                    setChatOpen(true);
+                    openChatPanel();
                     // Let CM selection settle before packing AI context.
                     requestAnimationFrame(() => {
                       void aiRunnerRef.current?.runInstruction(
@@ -616,7 +655,7 @@ export function StudioShell({
                 canExplain={aiFeatureEnabled("studio", "diagnosticsExplain")}
                 canFix={aiFeatureEnabled("studio", "diagnosticsFix")}
                 onRun={(request) => {
-                  setChatOpen(true);
+                  openChatPanel();
                   void aiRunnerRef.current?.runInstruction(request.instruction, {
                     chatText: request.chatText,
                     attachment: request.attachment,
@@ -656,30 +695,60 @@ export function StudioShell({
         {user ? (
           <SidePanel
             side="right"
-            open={chatOpen}
+            open={rightPanelOpen}
             keepMounted
             width={paneLayout.right}
             mobileHeight={paneLayout.mobileBottomHeight}
-            ariaLabel="Room chat"
+            ariaLabel={historyOpen ? "Version history" : "Room chat"}
             surfaceClassName="vt-chat-panel"
             onResize={(delta) => resizePane("right", delta)}
             onResizeMobile={(delta) => resizeMobileBottom(delta)}
             onReset={() => resetPane("right")}
             onResetMobile={() => resetPane("mobileBottomHeight")}
           >
-            <StudioRoomChat
-              open
-              embedded
-              onClose={() => setChatOpen(false)}
-              peers={peers}
-              selfClientId={selfClientId}
-              user={user}
-              chatReady={ready}
-              getEditorContext={() =>
-                editorRef.current?.getEditorContext() ?? null
-              }
-              aiRunnerRef={aiRunnerRef}
-            />
+            {rightPanelOpen && rightPanelView && roomId ? (
+              <div className="flex h-full min-h-0 flex-col">
+                <RightPanelSwitcher
+                  active={rightPanelView}
+                  onSelectChat={openChatPanel}
+                  onSelectHistory={openHistoryPanel}
+                  onClose={closeRightPanel}
+                />
+                <div
+                  key={rightPanelView}
+                  className="vt-right-panel-content flex min-h-0 flex-1 flex-col"
+                >
+                  {rightPanelView === "history" ? (
+                    <RoomHistoryPanel
+                      roomId={roomId}
+                      readOnly={readOnly}
+                      chromeless
+                      onClose={closeRightPanel}
+                      auth={{
+                        editSecret,
+                        viewToken,
+                        authToken: gate.authToken,
+                      }}
+                    />
+                  ) : (
+                    <StudioRoomChat
+                      open
+                      embedded
+                      chromeless
+                      onClose={closeRightPanel}
+                      peers={peers}
+                      selfClientId={selfClientId}
+                      user={user}
+                      chatReady={ready}
+                      getEditorContext={() =>
+                        editorRef.current?.getEditorContext() ?? null
+                      }
+                      aiRunnerRef={aiRunnerRef}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : null}
           </SidePanel>
         ) : null}
       </div>
@@ -727,7 +796,7 @@ export function StudioShell({
         onViewModeChange={handleViewMode}
         onEditorModeChange={handleEditorMode}
         onUiVariantChange={onUiVariantChange}
-        onToggleChat={() => setChatOpen((v) => !v)}
+        onToggleChat={toggleChat}
         onToggleOutline={() => setOutlineOpen((v) => !v)}
         onOpenCheatsheet={() => setCheatsheetOpen(true)}
         onOpenPreferences={() => openPreferences()}
@@ -768,13 +837,6 @@ export function StudioShell({
           onSaved={gate.applyMeta}
         />
       ) : null}
-      {roomId ? (
-        <RoomSnapshotsDialog
-          open={roomSnapshotsOpen}
-          roomId={roomId}
-          onClose={() => setRoomSnapshotsOpen(false)}
-        />
-      ) : null}
       <VtToaster />
     </div>
     </AiReviewProvider>
@@ -801,6 +863,32 @@ function vimModeLabel(mode: VimMode): string {
   if (m.startsWith("ins")) return "INSERT";
   if (m.startsWith("rep")) return "REPLACE";
   return "NORMAL";
+}
+
+function HistoryIcon() {
+  return (
+    <SafeSvg
+      width={15}
+      height={15}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M8 5.5V8l2 1.25M5.5 3 4 2"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
 }
 
 function ChatIcon() {

@@ -38,6 +38,8 @@ type ChatMessageListProps = {
   peerCount?: number;
   /** When false, documentEdit hints say proposed (Forge suggest-only). */
   canMutateViaAi?: boolean;
+  /** Override empty-state subtitle. */
+  emptySubtitle?: string;
   pendingEdit?: {
     messageId: string;
     before: string;
@@ -69,6 +71,7 @@ export function ChatMessageList({
   onScrollToBottom,
   peerCount,
   canMutateViaAi = true,
+  emptySubtitle,
   pendingEdit = null,
   editOutcomes = {},
   onAcceptEdit,
@@ -86,9 +89,10 @@ export function ChatMessageList({
           <div className="vt-chat-empty">
             <p className="vt-chat-empty__title">Message the room</p>
             <p className="vt-chat-empty__subtitle">
-              {canMutateViaAi
-                ? "Mention @vimothy to edit the note"
-                : "Mention @vimothy for suggestions (Forge won’t change the note)"}
+              {emptySubtitle ??
+                (canMutateViaAi
+                  ? "Mention @vimothy to edit the note"
+                  : "Mention @vimothy for suggestions (Forge won’t change the note)")}
             </p>
             {peerCount != null && peerCount <= 1 ? (
               <p className="vt-chat-empty__waiting">

@@ -1,17 +1,10 @@
 "use client";
 
-import { AiAgentMark } from "@/components/chat/AiAgentMark";
-import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
-import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatComposer } from "@/components/chat/ChatComposer";
-import { ChatContextAttachment } from "@/components/chat/ChatContextChip";
-import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
+import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { DocActionPills } from "@/components/chat/DocActionPills";
-import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
-import { DEFAULT_AI_AGENT } from "@/lib/ai-agents";
-import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { aiFeatureEnabled } from "@/lib/ai-features";
 import {
@@ -23,9 +16,7 @@ import { buildGrammarReviewInstruction } from "@/lib/grammar-review";
 import { renderNoteDiagnostics } from "@/lib/render-note";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
-import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
-import type { CSSProperties } from "react";
 import { useEffect, type MutableRefObject } from "react";
 
 export type StudioAiRunner = {
@@ -45,6 +36,8 @@ export type StudioRoomChatProps = {
   open?: boolean;
   /** Render inner panel only — parent supplies sizing chrome (SidePanel). */
   embedded?: boolean;
+  /** Parent supplies `RightPanelSwitcher` — hide duplicate header/close. */
+  chromeless?: boolean;
   onClose: () => void;
   peers: PeerInfo[];
   selfClientId?: number | null;
@@ -60,6 +53,7 @@ export type StudioRoomChatProps = {
 export function StudioRoomChat({
   open = true,
   embedded = false,
+  chromeless = false,
   onClose,
   peers,
   selfClientId,
@@ -95,198 +89,55 @@ export function StudioRoomChat({
 
   const panel = (
     <>
-      <div className="vt-chat-panel__header">
-        <p className="vt-chat-panel__title">
-          Chat <span>· {peers.length} online</span>
-        </p>
-        <AvatarStack
-          peers={peers}
-          selfClientId={selfClientId}
-          max={3}
-          size={22}
-        />
-        <button
-          type="button"
-          onClick={onClose}
-          className="vt-chat-icon-btn"
-          aria-label="Close chat"
-        >
-          ×
-        </button>
-      </div>
+      {chromeless ? null : (
+        <div className="vt-chat-panel__header">
+          <p className="vt-chat-panel__title">
+            Chat <span>· {peers.length} online</span>
+          </p>
+          <AvatarStack
+            peers={peers}
+            selfClientId={selfClientId}
+            max={3}
+            size={22}
+          />
+          <button
+            type="button"
+            onClick={onClose}
+            className="vt-chat-icon-btn"
+            aria-label="Close chat"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-      <div
-        ref={chat.listRef}
+      <ChatMessageList
+        messages={chat.messages}
+        currentClientId={chat.currentClientId}
+        currentUserName={user.name}
+        now={chat.now}
+        busy={chat.busy}
+        error={chat.error}
+        errorForId={chat.errorForId}
+        listRef={chat.listRef}
         onScroll={chat.onListScroll}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2.5 py-2"
-      >
-        {chat.messages.length === 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs leading-relaxed text-mute">
-              Message the room. Type @ to ask Vimothy.
-            </p>
-            {peers.length <= 1 ? (
-              <p className="vt-chat-empty__waiting">
-                You&apos;re the only one here — share the room link to invite
-                teammates.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {chat.messages.map((m, i) => {
-          const isAi = m.role === "ai";
-          const isSelf =
-            !isAi &&
-            ((chat.currentClientId != null &&
-              m.clientId === chat.currentClientId) ||
-              m.authorName === user.name);
-          const prev = chat.messages[i - 1];
-          const continued =
-            !!prev &&
-            prev.role === m.role &&
-            prev.clientId === m.clientId &&
-            prev.authorName === m.authorName &&
-            m.createdAt - prev.createdAt < 120_000;
-          const showError = chat.error && chat.errorForId === m.id;
-          const msgClass = [
-            "vt-chat-msg",
-            continued ? "vt-chat-msg--continued" : "",
-            isAi ? "vt-chat-msg--ai" : "",
-            isSelf ? "vt-chat-msg--self" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <div key={m.id} className={msgClass}>
-              {!continued ? (
-                <div className="vt-chat-msg__meta">
-                  {isAi ? (
-                    <span
-                      className="vt-chat-msg__agent"
-                      style={
-                        {
-                          ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
-                        } as CSSProperties
-                      }
-                    >
-                      <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
-                      <span className="vt-chat-msg__author">
-                        {DEFAULT_AI_AGENT.name}
-                      </span>
-                    </span>
-                  ) : (
-                    <span
-                      className="vt-chat-msg__author"
-                      style={{ color: m.authorColor }}
-                    >
-                      {isSelf ? "You" : m.authorName}
-                    </span>
-                  )}
-                  <span className="vt-chat-msg__time">
-                    {formatRelativeTime(m.createdAt, chat.now)}
-                  </span>
-                </div>
-              ) : null}
-              <div className="vt-chat-msg__body">
-                {m.replyTo ? (
-                  <div className="vt-chat-msg__reply-ref">
-                    <span className="vt-chat-msg__reply-author">
-                      {m.replyTo.authorName}
-                    </span>
-                    <span className="vt-chat-msg__reply-preview">
-                      {m.replyTo.preview}
-                    </span>
-                  </div>
-                ) : null}
-                {formatChatMessageBody(m.text)}
-              </div>
-              {chat.messageContexts[m.id] ? (
-                <ChatContextAttachment preview={chat.messageContexts[m.id]!} />
-              ) : null}
-              {!chat.readOnly ? (
-                <ChatMessageActions
-                  message={m}
-                  disabled={chat.busy}
-                  onReply={chat.startReply}
-                />
-              ) : null}
-              {isAi ? (
-                <AiReplyMeta
-                  message={m}
-                  busy={chat.busy}
-                  onRegenerate={chat.regenerateAi}
-                />
-              ) : null}
-              {isAi && m.documentEdit != null ? (
-                chat.pendingEdit?.messageId === m.id ? (
-                  <AiDiffProposal
-                    before={chat.pendingEdit.before}
-                    after={chat.pendingEdit.after}
-                    onAccept={chat.acceptPendingEdit}
-                    onReject={chat.rejectPendingEdit}
-                    disabled={chat.busy || chat.readOnly}
-                  />
-                ) : (
-                  <p className="vt-chat-msg__hint">
-                    {chat.editOutcomes[m.id] === "accepted" ||
-                    chat.editOutcomes[m.id] === "auto"
-                      ? chat.editOutcomes[m.id] === "auto"
-                        ? "Auto-applied"
-                        : "Accepted — applied to note"
-                      : chat.editOutcomes[m.id] === "rejected"
-                        ? "Rejected — note unchanged"
-                        : chat.canMutateViaAi
-                          ? "Proposed edit"
-                          : "Proposed edit (not applied — Studio can accept changes)"}
-                  </p>
-                )
-              ) : null}
-              {showError ? (
-                <div className="mt-1 space-y-1">
-                  <p className="text-xs text-body">{chat.error}</p>
-                  <button
-                    type="button"
-                    onClick={() => chat.retryAi(m)}
-                    disabled={chat.busy}
-                    className="vt-chat-retry"
-                    aria-label="Retry"
-                  >
-                    <RefreshIcon />
-                    Retry
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-
-        {chat.busy ? (
-          <div className="vt-chat-msg vt-chat-msg--ai mt-2">
-            <div
-              className="vt-chat-msg__meta"
-              style={
-                {
-                  ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
-                } as CSSProperties
-              }
-            >
-              <span className="vt-chat-msg__agent">
-                <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
-                <span className="vt-chat-msg__author">
-                  {DEFAULT_AI_AGENT.name}
-                </span>
-              </span>
-              <span className="vt-chat-msg__time">streaming</span>
-            </div>
-            <div className="vt-chat-msg__body whitespace-pre-wrap">
-              {chat.streamingText?.trim()
-                ? formatChatMessageBody(chat.streamingText)
-                : "Thinking…"}
-            </div>
-          </div>
-        ) : null}
-      </div>
+        onRetry={chat.retryAi}
+        onRegenerate={chat.regenerateAi}
+        onReply={chat.startReply}
+        onSuggestion={chat.insertSuggestion}
+        stickBottom={chat.stickBottom}
+        onScrollToBottom={chat.scrollToBottom}
+        peerCount={peers.length}
+        canMutateViaAi={chat.canMutateViaAi}
+        pendingEdit={chat.pendingEdit}
+        editOutcomes={chat.editOutcomes}
+        onAcceptEdit={chat.acceptPendingEdit}
+        onRejectEdit={chat.rejectPendingEdit}
+        readOnly={chat.readOnly}
+        streamingText={chat.streamingText}
+        messageContexts={chat.messageContexts}
+        emptySubtitle="Message the room. Type @ to ask Vimothy."
+      />
 
       <TypingIndicator
         typing={peers.filter((peer) => peer.typing)}
@@ -347,11 +198,7 @@ export function StudioRoomChat({
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.dismissSlashMenu()}
-        slashCommandsEnabled={
-          (chat.shell === "studio" && chromePrefs.slashMenu) ||
-          (chat.shell === "forge" &&
-            aiFeatureEnabled("forge", "derivationCoach"))
-        }
+        slashCommandsEnabled={chat.slashCommandsEnabled}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}

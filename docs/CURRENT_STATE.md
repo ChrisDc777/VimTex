@@ -2,6 +2,16 @@
 
 *Fork: ChrisDc777/VimTex. Upstream reference: boscochanam/VimTex (read-only; histories have diverged — see CONTRIBUTING.md).*
 
+## Continuing work (agent handoff)
+
+| Topic | Where to start |
+|-------|----------------|
+| Version history shipped (Level A–B) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| History backlog (autosnap, index, fork) | GitHub [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
+| Chat polish backlog (Ask/Edit chips) | [#129](https://github.com/ChrisDc777/VimTex/issues/129) |
+| Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
+| AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
+
 ## Architecture
 
 ```
@@ -32,20 +42,20 @@ Browser                    Node (server.mjs :3001)
 | Guest edit/view capabilities | ✅ | `lib/room-auth.ts`, `scripts/y-ws/*`, Share menu |
 | Read-only `?view=` (server-enforced) | ✅ | `scripts/y-ws/utils.js`, #23 |
 | Room TTL + optional password | ✅ | room meta + gate dialogs, #24 |
-| Snapshots / version history modal | ✅ | `/api/rooms/.../snapshots`, #25 |
+| Snapshots / version history (modal + side panel) | ✅ | `/api/rooms/.../snapshots`, `RoomHistoryPanel`, #25/#79 |
 | Optional LevelDB persistence | ✅ | `YPERSISTENCE` + `y-leveldb`, #71 |
 | Reconnect / offline banner | ✅ | `ReconnectBanner.tsx`, #21 |
 | Presence / typing | ✅ | awareness, #22 |
 | Studio Split / Live preview | ✅ | `ViewToggle.tsx`, `lib/studio-layout.ts` |
 | Forge editor tabs + panels | ✅ | `EditorTabBar.tsx`, `SidePanel.tsx` |
-| Room chat + @vimothy | ✅ | `useRoomChat`, `api/chat/route.ts` |
+| Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, `ChatMessageList`, `api/chat/route.ts` |
 | Share copy + capability links | ✅ | `ShareRoom.tsx` |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
 | Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |
 | Templates + recent rooms | ✅ | `lib/templates.ts`, `lib/recent-rooms.ts` |
 | Command palette | ✅ | Studio / shared palette |
 | CI / E2E | ✅ | `.github/workflows/ci.yml`, `e2e/` |
-| Docs-style history side panel | ⏸️ | Deferred → M4 polish (#79) |
+| Docs-style history side panel | ✅ | `RoomHistoryPanel.tsx`, preview/compare, #79 |
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
 | Classroom mode | ⏸️ | Deferred → M5 (#82) |
 | AI feature gate (Studio vs Forge) | ✅ | `lib/ai-features.ts`, #59 |

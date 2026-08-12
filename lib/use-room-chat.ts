@@ -275,6 +275,14 @@ export function useRoomChat({
     chromePrefs.customSlashCommands,
   ]);
 
+  const slashCommandsEnabled = useMemo(
+    () =>
+      (aiFeatureEnabled(shell, "slashCommands") && chromePrefs.slashMenu) ||
+      (!aiFeatureEnabled(shell, "slashCommands") &&
+        aiFeatureEnabled(shell, "derivationCoach")),
+    [shell, chromePrefs.slashMenu],
+  );
+
   const updateComposerMenus = useCallback(
     (value: string, caret: number) => {
       const before = value.slice(0, caret);
@@ -904,6 +912,7 @@ export function useRoomChat({
     inputRef: inputRef as RefObject<HTMLTextAreaElement | null>,
     filteredMentions,
     filteredSlashCommands,
+    slashCommandsEnabled,
     onListScroll,
     scrollToBottom,
     insertMention,

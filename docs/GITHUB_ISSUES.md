@@ -1,7 +1,7 @@
 # GitHub issues index
 
 **Repository:** [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex)  
-**Last synced:** 2026-08-06
+**Last synced:** 2026-08-12
 
 > Studio = default shell; Forge = optional multi-tab workbench (`lib/ui-variant.ts`).
 
@@ -22,6 +22,7 @@
 | [`CURRENT_STATE.md`](./CURRENT_STATE.md) | What is shipped |
 | [`RFC-collab-persistence.md`](./RFC-collab-persistence.md) | M2 collab / ACL (complete) |
 | [`AI_ROADMAP.md`](./AI_ROADMAP.md) | M3+ AI plan, Studio vs Forge matrix |
+| [`HISTORY.md`](./HISTORY.md) | Version history architecture (Level A–E) |
 
 ---
 
@@ -50,7 +51,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 | # | Issue | Now |
 |---|-------|-----|
-| 79 | Docs-style history side panel | **M4** polish |
+| 79 | Docs-style history side panel | ✅ Level A–B shipped; Level C+ → #126–#128 |
 | 81 | Follow-user / presenter mode | Deferred post-M2 |
 | 82 | Classroom mode discovery | **M5** |
 | 78 | Claim guest room | **M5** (blocked on #37) |
@@ -105,6 +106,21 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 32 | PDF / equation image export | P2 |
 | 33 | Delight polish | P1 |
 | 79 | Docs-style history panel | P2 |
+
+### History expansion (backlog)
+
+| # | Issue | Priority |
+|---|-------|----------|
+| 126 | Autosnapshots, pin/rename, observability (Level C) | P2 |
+| 127 | Indexed metadata store + search (Level D) | P3 |
+| 128 | Fork-as-new-room + account authorship (Level E) | P3 |
+| 130 | Motion library evaluation for panel transitions | P3 |
+
+### Chat polish (backlog)
+
+| # | Issue | Priority |
+|---|-------|----------|
+| 129 | Thin Ask vs Edit mode chips | P2 |
 
 ---
 

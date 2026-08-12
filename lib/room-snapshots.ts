@@ -1,4 +1,20 @@
-/** Client helpers for room snapshots (#25). */
+/** Client helpers for room snapshots (#25) + Docs history panel. */
+
+import {
+  loadRoomAuthToken,
+} from "./room-meta";
+import {
+  loadEditSecret,
+  readViewTokenFromLocation,
+} from "./room-auth";
+
+export type SnapshotKind =
+  | "manual"
+  | "pre_ai"
+  | "pre_restore"
+  | "auto_idle"
+  | "auto_interval"
+  | "named";
 
 export type RoomSnapshotMeta = {
   id: string;
@@ -6,13 +22,55 @@ export type RoomSnapshotMeta = {
   label: string;
   createdAt: number;
   byteLength: number;
+  kind?: SnapshotKind;
+  contentHash?: string;
+  charLength?: number;
+  createdBy?: { name?: string; clientId?: number };
+  pinned?: boolean;
 };
+
+export type SnapshotAuth = {
+  editSecret?: string | null;
+  viewToken?: string | null;
+  authToken?: string | null;
+};
+
+export type SnapshotDiffSummary = {
+  added: number;
+  removed: number;
+  truncated?: boolean;
+};
+
+function snapshotHeaders(auth?: SnapshotAuth): HeadersInit {
+  const headers: Record<string, string> = {};
+  const edit = auth?.editSecret?.trim();
+  const view = auth?.viewToken?.trim();
+  const sessionAuth = auth?.authToken?.trim();
+  if (edit) headers["x-vimtex-edit"] = edit;
+  if (view) headers["x-vimtex-view"] = view;
+  if (sessionAuth) headers["x-vimtex-auth"] = sessionAuth;
+  return headers;
+}
+
+/** Resolve snapshot credentials from shell session state. */
+export function resolveSnapshotAuth(
+  roomId: string,
+  opts?: SnapshotAuth,
+): SnapshotAuth {
+  return {
+    editSecret: opts?.editSecret ?? loadEditSecret(roomId),
+    viewToken: opts?.viewToken ?? readViewTokenFromLocation(),
+    authToken: opts?.authToken ?? loadRoomAuthToken(roomId),
+  };
+}
 
 export async function listRoomSnapshots(
   roomId: string,
+  auth?: SnapshotAuth,
 ): Promise<RoomSnapshotMeta[]> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots`,
+    { headers: snapshotHeaders(resolveSnapshotAuth(roomId, auth)) },
   );
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -27,15 +85,25 @@ export async function createRoomSnapshot(
   label?: string,
   /** Exact note text to checkpoint (preferred). Falls back to server Y.Doc. */
   text?: string,
+  opts?: {
+    auth?: SnapshotAuth;
+    kind?: SnapshotKind;
+    createdBy?: { name?: string; clientId?: number };
+  },
 ): Promise<RoomSnapshotMeta> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...snapshotHeaders(resolveSnapshotAuth(roomId, opts?.auth)),
+      },
       body: JSON.stringify({
         label: label ?? "",
         ...(typeof text === "string" ? { text } : {}),
+        ...(opts?.kind ? { kind: opts.kind } : {}),
+        ...(opts?.createdBy ? { createdBy: opts.createdBy } : {}),
       }),
     },
   );
@@ -49,13 +117,80 @@ export async function createRoomSnapshot(
   return body.snapshot;
 }
 
+export async function fetchSnapshotPreview(
+  roomId: string,
+  snapId: string,
+  auth?: SnapshotAuth,
+): Promise<{ text: string; meta: RoomSnapshotMeta }> {
+  const res = await fetch(
+    `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
+    { headers: snapshotHeaders(resolveSnapshotAuth(roomId, auth)) },
+  );
+  const body = (await res.json().catch(() => null)) as {
+    text?: string;
+    meta?: RoomSnapshotMeta;
+    error?: string;
+  } | null;
+  if (!res.ok || typeof body?.text !== "string" || !body.meta) {
+    throw new Error(body?.error || `Failed to load snapshot (${res.status})`);
+  }
+  return { text: body.text, meta: body.meta };
+}
+
+export async function fetchSnapshotDiff(
+  roomId: string,
+  snapId: string,
+  against: "live" | string,
+  liveText: string,
+  auth?: SnapshotAuth,
+): Promise<{ summary: SnapshotDiffSummary; lines?: import("./text-diff").DiffLine[] }> {
+  const res = await fetch(
+    `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}/diff?against=${encodeURIComponent(against)}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...snapshotHeaders(resolveSnapshotAuth(roomId, auth)),
+      },
+      body: JSON.stringify({ liveText }),
+    },
+  );
+  const body = (await res.json().catch(() => null)) as {
+    summary?: SnapshotDiffSummary;
+    lines?: import("./text-diff").DiffLine[];
+    error?: string;
+  } | null;
+  if (!res.ok || !body?.summary) {
+    throw new Error(body?.error || `Failed to compare snapshot (${res.status})`);
+  }
+  return { summary: body.summary, lines: body.lines };
+}
+
 export async function restoreRoomSnapshot(
   roomId: string,
   snapId: string,
+  opts?: {
+    auth?: SnapshotAuth;
+    /** Save current buffer as pre-restore checkpoint first. */
+    checkpointCurrent?: boolean;
+    currentText?: string;
+  },
 ): Promise<{ text: string }> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
-    { method: "POST" },
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...snapshotHeaders(resolveSnapshotAuth(roomId, opts?.auth)),
+      },
+      body: JSON.stringify({
+        checkpointCurrent: Boolean(opts?.checkpointCurrent),
+        ...(typeof opts?.currentText === "string"
+          ? { currentText: opts.currentText }
+          : {}),
+      }),
+    },
   );
   const body = (await res.json().catch(() => null)) as {
     text?: string;
@@ -73,13 +208,34 @@ export async function restoreRoomSnapshot(
 export async function deleteRoomSnapshot(
   roomId: string,
   snapId: string,
+  auth?: SnapshotAuth,
 ): Promise<void> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
-    { method: "DELETE" },
+    {
+      method: "DELETE",
+      headers: snapshotHeaders(resolveSnapshotAuth(roomId, auth)),
+    },
   );
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error || `Delete failed (${res.status})`);
+  }
+}
+
+export function snapshotKindLabel(kind: SnapshotKind | undefined): string {
+  switch (kind) {
+    case "pre_ai":
+      return "Pre-AI";
+    case "pre_restore":
+      return "Before restore";
+    case "auto_idle":
+      return "Auto";
+    case "auto_interval":
+      return "Auto";
+    case "named":
+      return "Milestone";
+    default:
+      return "Manual";
   }
 }

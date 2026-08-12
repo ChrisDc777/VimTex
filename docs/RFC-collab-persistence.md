@@ -92,7 +92,7 @@ ACL and RO flags live on the controller (`readOnly`, WS `params` for `view` / `e
 3. Lengthen `createRoomId`; honest reconnect copy — ✅
 4. #23 read-only tokens (server enforce) — ✅
 5. #24 password + absolute TTL metadata — ✅
-6. #25 snapshot store — ✅ (modal UI; Docs-style panel deferred `#79` → M4)
+6. #25 snapshot store — ✅ (modal + Docs-style side panel `#79` / Level A–B)
 7. Guest edit capability tokens — ✅ `#80`
 
 **M2 near-term (option A) is complete.** Option B (Hocuspocus/Postgres) remains M5 when multi-instance is required.
