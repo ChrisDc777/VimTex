@@ -9,6 +9,7 @@ import {
   createRoomSnapshot,
   deleteRoomSnapshot,
   fetchSnapshotPreview,
+  forkRoomSnapshot,
   listRoomSnapshots,
   patchRoomSnapshot,
   restoreRoomSnapshot,
@@ -16,6 +17,8 @@ import {
   type RoomSnapshotMeta,
   type SnapshotAuth,
 } from "@/lib/room-snapshots";
+import { writeRoomToLocation } from "@/lib/collab";
+import { saveEditSecret } from "@/lib/room-auth";
 import { formatRelativeTime } from "@/lib/room-chat";
 import { notify } from "@/lib/toasts";
 
@@ -220,6 +223,37 @@ export function RoomHistoryPanel({
     }
   };
 
+  const handleFork = async (snap: RoomSnapshotMeta) => {
+    if (
+      !window.confirm(
+        `Fork “${snap.label}” into a new room? You’ll leave this room and open the fork with edit access.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const forked = await forkRoomSnapshot(roomId, snap.id, {
+        auth,
+        createdBy: workspace
+          ? { clientId: workspace.getClientId() }
+          : undefined,
+      });
+      saveEditSecret(forked.roomId, forked.edit);
+      writeRoomToLocation(forked.roomId, {
+        editSecret: forked.edit,
+        clearViewToken: true,
+      });
+      notify.success("Opened forked room");
+      window.location.assign(
+        `/?room=${encodeURIComponent(forked.roomId)}&edit=${encodeURIComponent(forked.edit)}`,
+      );
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Fork failed");
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {chromeless ? null : (
@@ -404,6 +438,14 @@ export function RoomHistoryPanel({
                       onClick={() => void handleTogglePin(selected)}
                     >
                       {selected.pinned ? "Unpin" : "Pin"}
+                    </button>
+                    <button
+                      type="button"
+                      className="vt-pill vt-pill--ghost"
+                      disabled={busy}
+                      onClick={() => void handleFork(selected)}
+                    >
+                      Fork
                     </button>
                     <button
                       type="button"

@@ -19,9 +19,9 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 
 | Topic | Where to start |
 |-------|----------------|
-| Version history shipped (Level A–C) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| Version history shipped (Level A–E) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
 | Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
-| History backlog (index, fork) | GitHub [#127](https://github.com/ChrisDc777/VimTex/issues/127)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
+| History backlog | Level D/E shipped (#127/#128); authorship remap → #37/#78 |
 | Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
@@ -33,8 +33,8 @@ Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and open GitHub issues #126–#130.
 
 Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
-in PR #131. History Level C (#126) and Ask/Edit chips (#129) shipped.
-Next product work is History Level D (#127) unless I specify otherwise.
+in PR #131. History Level C–E (#126–#128) and Ask/Edit chips (#129) shipped.
+Next product work is M4 import/export or motion eval (#130) unless I specify otherwise.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -70,7 +70,7 @@ Browser                    Node (server.mjs :3001)
 | Guest edit/view capabilities | ✅ | `lib/room-auth.ts`, `scripts/y-ws/*`, Share menu |
 | Read-only `?view=` (server-enforced) | ✅ | `scripts/y-ws/utils.js`, #23 |
 | Room TTL + optional password | ✅ | room meta + gate dialogs, #24 |
-| Snapshots / version history side panel | ✅ | History icon + `RoomHistoryPanel`, autosnap/pin/rename, `/api/rooms/.../snapshots`, #25/#79/#126 |
+| Snapshots / version history side panel | ✅ | History icon + `RoomHistoryPanel`, autosnap/pin/rename/index/fork, `/api/rooms/.../snapshots`, #25/#79/#126–#128 |
 | Optional LevelDB persistence | ✅ | `YPERSISTENCE` + `y-leveldb`, #71 |
 | Reconnect / offline banner | ✅ | `ReconnectBanner.tsx`, #21 |
 | Presence / typing | ✅ | awareness, #22 |

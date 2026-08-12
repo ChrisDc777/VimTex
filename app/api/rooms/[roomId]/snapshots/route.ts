@@ -10,9 +10,20 @@ const { getYDoc } = require("../../../../../scripts/y-ws/utils.js") as {
 };
 const {
   listSnapshots,
+  querySnapshots,
   createSnapshot,
 } = require("../../../../../scripts/y-ws/room-snapshots.js") as {
   listSnapshots: (roomId: string) => SnapshotMeta[];
+  querySnapshots: (
+    roomId: string,
+    opts?: { limit?: number; offset?: number; q?: string },
+  ) => {
+    snapshots: SnapshotMeta[];
+    total: number;
+    limit: number;
+    offset: number;
+    q: string;
+  };
   createSnapshot: (
     roomId: string,
     update: Uint8Array,
@@ -91,7 +102,24 @@ export async function GET(req: Request, context: RouteContext) {
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
-  return NextResponse.json({ snapshots: listSnapshots(roomId) });
+
+  const url = new URL(req.url);
+  const q = url.searchParams.get("q") ?? "";
+  const limitRaw = url.searchParams.get("limit");
+  const offsetRaw = url.searchParams.get("offset");
+  const wantsPage =
+    limitRaw != null || offsetRaw != null || q.trim().length > 0;
+
+  if (!wantsPage) {
+    return NextResponse.json({ snapshots: listSnapshots(roomId) });
+  }
+
+  const page = querySnapshots(roomId, {
+    q,
+    limit: limitRaw != null ? Number(limitRaw) : 50,
+    offset: offsetRaw != null ? Number(offsetRaw) : 0,
+  });
+  return NextResponse.json(page);
 }
 
 export async function POST(req: Request, context: RouteContext) {

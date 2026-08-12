@@ -111,9 +111,9 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 | # | Issue | Priority |
 |---|-------|----------|
-| 126 | Autosnapshots, pin/rename, observability (Level C) | P2 — current slice |
-| 127 | Indexed metadata store + search (Level D) | P3 |
-| 128 | Fork-as-new-room + account authorship (Level E) | P3 |
+| 126 | Autosnapshots, pin/rename, observability (Level C) | ✅ shipped |
+| 127 | Indexed metadata store + search (Level D) | ✅ shipped |
+| 128 | Fork-as-new-room + account authorship (Level E) | ✅ fork shipped; authorship remapping deferred → #37/#78 |
 | 130 | Motion library evaluation for panel transitions | P3 |
 
 ### Chat polish (backlog)
