@@ -21,7 +21,7 @@ import { NewSheetDialog } from "@/components/NewSheetDialog";
 import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
-import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
+import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { SidePanel } from "@/components/SidePanel";
@@ -143,7 +143,6 @@ export function ForgeShell({
   const [editSecret, setEditSecret] = useState<string | null>(null);
   const [capabilityReady, setCapabilityReady] = useState(false);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
-  const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateDerivedTitleRef = useRef<(roomId: string, note: string) => void>(
@@ -153,6 +152,7 @@ export function ForgeShell({
   const problemOpen = rightPanelView === "problem";
   const previewOpen = rightPanelView === "preview";
   const chatOpen = rightPanelView === "chat";
+  const historyOpen = rightPanelView === "history";
   const rightPanelOpen = rightPanelView !== null;
 
   const { layout, resizePane, resizeMobileBottom, resetPane } = usePaneLayout({
@@ -559,9 +559,7 @@ export function ForgeShell({
         onOpenRoomSettings={
           readOnly ? undefined : () => setRoomSettingsOpen(true)
         }
-        onOpenRoomSnapshots={
-          readOnly ? undefined : () => setRoomSnapshotsOpen(true)
-        }
+        onOpenRoomSnapshots={() => setRightPanelView("history")}
         onEditSecret={setEditSecret}
         headerExtra={
           <SnippetMenu
@@ -626,12 +624,16 @@ export function ForgeShell({
                 ? "Room chat"
                 : rightPanelView === "problem"
                   ? "Problem reference"
-                  : "Rendered preview"
+                  : rightPanelView === "history"
+                    ? "Version history"
+                    : "Rendered preview"
             }
             surfaceClassName={
               rightPanelView === "problem"
                 ? "vt-pane-reference"
-                : "vt-pane-preview"
+                : rightPanelView === "history"
+                  ? "vt-pane-preview"
+                  : "vt-pane-preview"
             }
             onResize={(delta) => resizePane("right", delta)}
             onResizeMobile={(delta) => resizeMobileBottom(delta)}
@@ -646,15 +648,22 @@ export function ForgeShell({
               />
             ) : null}
             {previewOpen ? <ForgePreviewPane note={note} /> : null}
-            {user ? (
-              <div
-                className={
-                  chatOpen ? "flex h-full min-h-0 flex-col" : "hidden"
-                }
-                aria-hidden={!chatOpen}
-              >
+            {roomId && historyOpen ? (
+              <RoomHistoryPanel
+                roomId={roomId}
+                readOnly={readOnly}
+                onClose={() => setRightPanelView(null)}
+                auth={{
+                  editSecret,
+                  viewToken: effectiveViewToken,
+                  authToken: gate.authToken,
+                }}
+              />
+            ) : null}
+            {user && chatOpen ? (
+              <div className="flex h-full min-h-0 flex-col">
                 <RoomChatSidebar
-                  open={rightPanelOpen}
+                  open={chatOpen}
                   onClose={closeRightPanel}
                   peers={peers}
                   selfClientId={selfClientId}
@@ -784,13 +793,6 @@ export function ForgeShell({
           roomId={roomId}
           onClose={() => setRoomSettingsOpen(false)}
           onSaved={gate.applyMeta}
-        />
-      ) : null}
-      {roomId ? (
-        <RoomSnapshotsDialog
-          open={roomSnapshotsOpen}
-          roomId={roomId}
-          onClose={() => setRoomSnapshotsOpen(false)}
         />
       ) : null}
       <VtToaster />

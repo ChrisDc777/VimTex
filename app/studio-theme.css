@@ -848,3 +848,44 @@
     transition: none !important;
   }
 }
+
+/* Studio chat: shared ChatMessageList blocks styled as stream layout */
+.ui-studio .vt-chat-block {
+  max-width: 92%;
+  margin-bottom: 8px;
+  gap: 2px;
+}
+
+.ui-studio .vt-chat-block__meta {
+  padding: 0;
+}
+
+.ui-studio .vt-chat-block__author {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.ui-studio .vt-chat-block__time {
+  font-size: 9px;
+  line-height: 12px;
+}
+
+.ui-studio .vt-chat-block--ai .vt-chat-msg__bubble,
+.ui-studio .vt-chat-block--other .vt-chat-msg__bubble,
+.ui-studio .vt-chat-block--self .vt-chat-msg__bubble {
+  display: contents;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.ui-studio .vt-chat-block--ai .vt-chat-msg__bubble {
+  color: var(--body);
+}
+
+.ui-studio .vt-chat-msg__applied {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--mute);
+}

@@ -7,7 +7,6 @@ import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
-import { aiFeatureEnabled } from "@/lib/ai-features";
 import { useRoomChat } from "@/lib/use-room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
 
@@ -123,10 +122,7 @@ export function RoomChatSidebar({
         onSlashSelect={chat.runSlashCommand}
         onSlashIndexChange={chat.setSlashIndex}
         onSlashClose={() => chat.dismissSlashMenu()}
-        slashCommandsEnabled={
-          chat.shell === "studio" ||
-          aiFeatureEnabled("forge", "derivationCoach")
-        }
+        slashCommandsEnabled={chat.slashCommandsEnabled}
         readOnly={chat.readOnly}
         selectionPreview={chat.selectionPreview}
         onHideSelectionChip={chat.hideSelectionChip}
