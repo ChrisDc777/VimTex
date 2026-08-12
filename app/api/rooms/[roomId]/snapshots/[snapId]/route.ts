@@ -8,12 +8,21 @@ const require = createRequire(import.meta.url);
 const {
   readSnapshotUpdate,
   readSnapshotText,
+  readSnapshotMeta,
+  updateSnapshotMeta,
   deleteSnapshot,
   listSnapshots,
   createSnapshot,
+  logSnapshotEvent,
 } = require("../../../../../../scripts/y-ws/room-snapshots.js") as {
   readSnapshotUpdate: (roomId: string, id: string) => Uint8Array | null;
   readSnapshotText: (roomId: string, id: string) => string | null;
+  readSnapshotMeta: (roomId: string, id: string) => SnapshotMeta | null;
+  updateSnapshotMeta: (
+    roomId: string,
+    id: string,
+    patch: { label?: string; pinned?: boolean },
+  ) => SnapshotMeta | null;
   deleteSnapshot: (roomId: string, id: string) => boolean;
   listSnapshots: (roomId: string) => Array<{ id: string }>;
   createSnapshot: (
@@ -22,6 +31,10 @@ const {
     label?: string,
     opts?: { kind?: string; skipDedupe?: boolean },
   ) => SnapshotMeta;
+  logSnapshotEvent: (
+    action: string,
+    fields: Record<string, unknown>,
+  ) => void;
 };
 const {
   parseSnapshotCredentials,
@@ -48,6 +61,7 @@ type SnapshotMeta = {
   kind?: string;
   contentHash?: string;
   charLength?: number;
+  pinned?: boolean;
 };
 
 type SnapshotCredentials = {
@@ -71,9 +85,7 @@ function findSnapshotMeta(
   roomId: string,
   snapId: string,
 ): SnapshotMeta | null {
-  return (
-    listSnapshots(roomId).find((s) => s.id === snapId) as SnapshotMeta | null
-  ) ?? null;
+  return readSnapshotMeta(roomId, snapId);
 }
 
 export async function GET(_req: Request, context: RouteContext) {
@@ -164,11 +176,59 @@ export async function POST(req: Request, context: RouteContext) {
   const restoredText = snapshotDoc.getText("codemirror").toString();
   snapshotDoc.destroy();
 
+  const restoredMeta = findSnapshotMeta(roomId, snapId);
+  logSnapshotEvent("restore", {
+    roomId,
+    snapId,
+    kind: restoredMeta?.kind,
+    charLength: restoredText.length,
+    byteLength: restoredMeta?.byteLength,
+    pinned: restoredMeta?.pinned,
+  });
+
   return NextResponse.json({
     ok: true,
     text: restoredText,
     length: restoredText.length,
   });
+}
+
+export async function PATCH(req: Request, context: RouteContext) {
+  const { roomId: rawRoom, snapId: rawSnap } = await context.params;
+  const roomId = decodeURIComponent(rawRoom ?? "").trim();
+  const snapId = decodeURIComponent(rawSnap ?? "").trim();
+  if (!ROOM_ID_PATTERN.test(roomId) || !SNAP_ID_PATTERN.test(snapId)) {
+    return NextResponse.json({ error: "Invalid id." }, { status: 400 });
+  }
+
+  const creds = parseSnapshotCredentials(req);
+  const auth = authorizeSnapshotWrite(roomId, creds);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  let label: string | undefined;
+  let pinned: boolean | undefined;
+  try {
+    const body = (await req.json()) as { label?: unknown; pinned?: unknown };
+    if (typeof body.label === "string") label = body.label;
+    if (typeof body.pinned === "boolean") pinned = body.pinned;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  if (label === undefined && pinned === undefined) {
+    return NextResponse.json(
+      { error: "Provide label and/or pinned." },
+      { status: 400 },
+    );
+  }
+
+  const meta = updateSnapshotMeta(roomId, snapId, { label, pinned });
+  if (!meta) {
+    return NextResponse.json({ error: "Snapshot not found." }, { status: 404 });
+  }
+  return NextResponse.json({ snapshot: meta });
 }
 
 export async function DELETE(req: Request, context: RouteContext) {

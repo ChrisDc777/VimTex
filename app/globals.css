@@ -4504,6 +4504,12 @@ body[data-pane-resizing] * {
   white-space: nowrap;
 }
 
+.vt-history-timeline__pin {
+  margin-right: 4px;
+  color: var(--primary, var(--ink));
+  font-size: 10px;
+}
+
 .vt-history-timeline__meta {
   display: flex;
   align-items: center;
@@ -4547,6 +4553,18 @@ body[data-pane-resizing] * {
   white-space: nowrap;
 }
 
+.vt-history-preview__rename {
+  min-width: 0;
+  flex: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .vt-history-preview__compare {
   display: inline-flex;
   align-items: center;
@@ -4578,6 +4596,7 @@ body[data-pane-resizing] * {
 
 .vt-history-preview__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 10px;
   border-top: 1px solid var(--hairline);

@@ -10,6 +10,7 @@ import {
   deleteRoomSnapshot,
   fetchSnapshotPreview,
   listRoomSnapshots,
+  patchRoomSnapshot,
   restoreRoomSnapshot,
   snapshotKindLabel,
   type RoomSnapshotMeta,
@@ -44,6 +45,8 @@ export function RoomHistoryPanel({
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -81,6 +84,11 @@ export function RoomHistoryPanel({
   }, [snapshots, query]);
 
   const selected = snapshots.find((s) => s.id === selectedId) ?? null;
+
+  useEffect(() => {
+    setRenaming(false);
+    setRenameValue(selected?.label ?? "");
+  }, [selected?.id, selected?.label]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -174,6 +182,44 @@ export function RoomHistoryPanel({
     }
   };
 
+  const handleRename = async (snap: RoomSnapshotMeta) => {
+    const next = renameValue.trim().slice(0, 80);
+    if (!next || next === snap.label) {
+      setRenaming(false);
+      setRenameValue(snap.label);
+      return;
+    }
+    setBusy(true);
+    try {
+      await patchRoomSnapshot(roomId, snap.id, { label: next }, auth);
+      setRenaming(false);
+      notify.success("Checkpoint renamed");
+      await refresh();
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Rename failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTogglePin = async (snap: RoomSnapshotMeta) => {
+    setBusy(true);
+    try {
+      await patchRoomSnapshot(
+        roomId,
+        snap.id,
+        { pinned: !snap.pinned },
+        auth,
+      );
+      notify.success(snap.pinned ? "Unpinned" : "Pinned — kept when history fills up");
+      await refresh();
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Pin failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {chromeless ? null : (
@@ -254,7 +300,14 @@ export function RoomHistoryPanel({
                       }
                       onClick={() => setSelectedId(snap.id)}
                     >
-                      <span className="vt-history-timeline__label">{snap.label}</span>
+                      <span className="vt-history-timeline__label">
+                        {snap.pinned ? (
+                          <span className="vt-history-timeline__pin" aria-label="Pinned">
+                            ★
+                          </span>
+                        ) : null}
+                        {snap.label}
+                      </span>
                       <span className="vt-history-timeline__meta">
                         <span className="vt-history-timeline__kind">
                           {snapshotKindLabel(snap.kind)}
@@ -274,7 +327,26 @@ export function RoomHistoryPanel({
             {selected ? (
               <>
                 <div className="vt-history-preview__toolbar">
-                  <p className="vt-history-preview__title">{selected.label}</p>
+                  {renaming && !readOnly ? (
+                    <input
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void handleRename(selected);
+                        if (e.key === "Escape") {
+                          setRenaming(false);
+                          setRenameValue(selected.label);
+                        }
+                      }}
+                      className="vt-history-preview__rename"
+                      aria-label="Checkpoint name"
+                      autoFocus
+                      disabled={busy}
+                    />
+                  ) : (
+                    <p className="vt-history-preview__title">{selected.label}</p>
+                  )}
                   <label className="vt-history-preview__compare">
                     <input
                       type="checkbox"
@@ -301,6 +373,37 @@ export function RoomHistoryPanel({
                       onClick={() => void handleRestore(selected)}
                     >
                       Restore
+                    </button>
+                    {renaming ? (
+                      <button
+                        type="button"
+                        className="vt-pill vt-pill--ghost"
+                        disabled={busy}
+                        onClick={() => void handleRename(selected)}
+                      >
+                        Save name
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="vt-pill vt-pill--ghost"
+                        disabled={busy}
+                        onClick={() => {
+                          setRenameValue(selected.label);
+                          setRenaming(true);
+                        }}
+                      >
+                        Rename
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="vt-pill vt-pill--ghost"
+                      disabled={busy}
+                      aria-pressed={Boolean(selected.pinned)}
+                      onClick={() => void handleTogglePin(selected)}
+                    >
+                      {selected.pinned ? "Unpin" : "Pin"}
                     </button>
                     <button
                       type="button"

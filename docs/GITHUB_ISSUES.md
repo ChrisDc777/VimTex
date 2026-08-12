@@ -51,7 +51,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 | # | Issue | Now |
 |---|-------|-----|
-| 79 | Docs-style history side panel | ✅ Level A–B shipped; Level C+ → #126–#128 |
+| 79 | Docs-style history side panel | ✅ Level A–C shipped; Level D+ → #127–#128 |
 | 81 | Follow-user / presenter mode | Deferred post-M2 |
 | 82 | Classroom mode discovery | **M5** |
 | 78 | Claim guest room | **M5** (blocked on #37) |
@@ -105,13 +105,13 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 31 | Import LaTeX / Markdown | P1 |
 | 32 | PDF / equation image export | P2 |
 | 33 | Delight polish | P1 |
-| 79 | Docs-style history panel | ✅ shipped (PR #131); Level C+ → #126–#128 |
+| 79 | Docs-style history panel | ✅ shipped (PR #131); Level C → #126 |
 
 ### History expansion (backlog)
 
 | # | Issue | Priority |
 |---|-------|----------|
-| 126 | Autosnapshots, pin/rename, observability (Level C) | P2 |
+| 126 | Autosnapshots, pin/rename, observability (Level C) | P2 — current slice |
 | 127 | Indexed metadata store + search (Level D) | P3 |
 | 128 | Fork-as-new-room + account authorship (Level E) | P3 |
 | 130 | Motion library evaluation for panel transitions | P3 |

@@ -22,6 +22,7 @@ import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
+import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
 import { RightPanelSwitcher } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
@@ -556,6 +557,15 @@ export function ForgeShell({
   return (
     <WorkspaceProvider value={workspace}>
     <AiReviewProvider>
+    <RoomAutosnapHost
+      roomId={roomId}
+      readOnly={readOnly}
+      auth={{
+        editSecret,
+        viewToken: effectiveViewToken,
+        authToken: gate.authToken,
+      }}
+    />
     <div className="app-shell ui-forge flex h-dvh flex-col text-ink">
       <AppHeader
         ready={ready}

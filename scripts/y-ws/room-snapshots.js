@@ -7,11 +7,49 @@ const { createHash, randomBytes } = require('node:crypto')
 const Y = require('yjs')
 const { getRoomDataDir } = require('./room-meta.js')
 
-/** Max checkpoints per room (FIFO when exceeded; pinned reserved for Level C). */
+/** Max unpinned checkpoints per room (FIFO). Pinned snapshots skip eviction. */
 const MAX_SNAPSHOTS_PER_ROOM = Number(process.env.VIMTEX_MAX_SNAPSHOTS) || 50
 
 /** Skip duplicate creates when hash matches latest within this window. */
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000
+
+/**
+ * Structured log for snapshot create/restore/patch. Never includes note text,
+ * labels, or display names.
+ * @param {'create' | 'restore' | 'patch'} action
+ * @param {{
+ *   roomId?: string,
+ *   id?: string,
+ *   snapId?: string,
+ *   kind?: string,
+ *   charLength?: number,
+ *   byteLength?: number,
+ *   pinned?: boolean,
+ *   deduped?: boolean,
+ * }} fields
+ * @returns {Record<string, unknown>}
+ */
+function snapshotLogPayload (action, fields) {
+  return {
+    event: 'vimtex.snapshot',
+    action,
+    roomId: fields.roomId || null,
+    snapId: fields.id || fields.snapId || null,
+    kind: fields.kind || null,
+    charLength: typeof fields.charLength === 'number' ? fields.charLength : null,
+    byteLength: typeof fields.byteLength === 'number' ? fields.byteLength : null,
+    pinned: Boolean(fields.pinned),
+    deduped: Boolean(fields.deduped),
+  }
+}
+
+/**
+ * @param {'create' | 'restore' | 'patch'} action
+ * @param {object} fields
+ */
+function logSnapshotEvent (action, fields) {
+  console.info(JSON.stringify(snapshotLogPayload(action, fields)))
+}
 
 /**
  * @param {string} roomId
@@ -144,6 +182,7 @@ function createSnapshot (roomId, update, label = '', opts = {}) {
       latest.contentHash === contentHash &&
       Date.now() - latest.createdAt < DEDUPE_WINDOW_MS
     ) {
+      logSnapshotEvent('create', { ...latest, deduped: true })
       return latest
     }
   }
@@ -160,11 +199,58 @@ function createSnapshot (roomId, update, label = '', opts = {}) {
     kind,
     contentHash,
     charLength: text.length,
+    pinned: false,
     ...(opts.createdBy ? { createdBy: opts.createdBy } : {}),
   }
   fs.writeFileSync(path.join(dir, `${id}.bin`), Buffer.from(update))
   fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(meta, null, 2))
   enforceRetention(roomId)
+  logSnapshotEvent('create', meta)
+  return meta
+}
+
+/**
+ * @param {string} roomId
+ * @param {string} snapshotId
+ * @returns {SnapshotMeta | null}
+ */
+function readSnapshotMeta (roomId, snapshotId) {
+  const safeId = snapshotId.replace(/[^a-zA-Z0-9_-]/g, '')
+  if (!safeId) return null
+  const file = path.join(snapshotsDir(roomId), `${safeId}.json`)
+  try {
+    return normalizeMeta(JSON.parse(fs.readFileSync(file, 'utf8')))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Pin and/or rename a checkpoint. Does not rewrite the .bin payload.
+ * @param {string} roomId
+ * @param {string} snapshotId
+ * @param {{ label?: string, pinned?: boolean }} patch
+ * @returns {SnapshotMeta | null}
+ */
+function updateSnapshotMeta (roomId, snapshotId, patch) {
+  const meta = readSnapshotMeta(roomId, snapshotId)
+  if (!meta) return null
+  const safeId = snapshotId.replace(/[^a-zA-Z0-9_-]/g, '')
+  if (typeof patch.label === 'string') {
+    const nextLabel = patch.label.trim().slice(0, 80)
+    if (nextLabel) {
+      meta.label = nextLabel
+      if (meta.kind === 'manual' || !meta.kind) meta.kind = 'named'
+    }
+  }
+  if (typeof patch.pinned === 'boolean') {
+    meta.pinned = patch.pinned
+  }
+  fs.writeFileSync(
+    path.join(snapshotsDir(roomId), `${safeId}.json`),
+    JSON.stringify(meta, null, 2),
+  )
+  logSnapshotEvent('patch', meta)
   return meta
 }
 
@@ -234,10 +320,14 @@ module.exports = {
   MAX_SNAPSHOTS_PER_ROOM,
   listSnapshots,
   createSnapshot,
+  readSnapshotMeta,
+  updateSnapshotMeta,
   readSnapshotUpdate,
   readSnapshotText,
   decodeSnapshotText,
   hashText,
   deleteSnapshot,
   deleteAllSnapshots,
+  snapshotLogPayload,
+  logSnapshotEvent,
 }

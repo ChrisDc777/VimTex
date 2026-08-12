@@ -19,8 +19,8 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 
 | Topic | Where to start |
 |-------|----------------|
-| Version history shipped (Level A–B) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
-| History backlog (autosnap, index, fork) | GitHub [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
+| Version history shipped (Level A–C) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| History backlog (index, fork) | GitHub [#127](https://github.com/ChrisDc777/VimTex/issues/127)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
 | Chat polish backlog (Ask/Edit chips) | [#129](https://github.com/ChrisDc777/VimTex/issues/129) |
 | Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
@@ -29,11 +29,12 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 ### Prompt for a new Cursor session
 
 ```
-Pull origin/master. Read docs/CURRENT_STATE.md first (doc authority + handoff),
+Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and open GitHub issues #126–#130.
 
 Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
-in PR #131. Next product work is history Level C (#126) unless I specify otherwise.
+in PR #131. History Level C (#126) is the current product slice (autosnap, pin/rename,
+observability). Next after that is chat Ask/Edit chips (#129) unless I specify otherwise.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -69,7 +70,7 @@ Browser                    Node (server.mjs :3001)
 | Guest edit/view capabilities | ✅ | `lib/room-auth.ts`, `scripts/y-ws/*`, Share menu |
 | Read-only `?view=` (server-enforced) | ✅ | `scripts/y-ws/utils.js`, #23 |
 | Room TTL + optional password | ✅ | room meta + gate dialogs, #24 |
-| Snapshots / version history side panel | ✅ | History icon + `RoomHistoryPanel`, `/api/rooms/.../snapshots`, #25/#79 |
+| Snapshots / version history side panel | ✅ | History icon + `RoomHistoryPanel`, autosnap/pin/rename, `/api/rooms/.../snapshots`, #25/#79/#126 |
 | Optional LevelDB persistence | ✅ | `YPERSISTENCE` + `y-leveldb`, #71 |
 | Reconnect / offline banner | ✅ | `ReconnectBanner.tsx`, #21 |
 | Presence / typing | ✅ | awareness, #22 |
