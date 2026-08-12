@@ -1,8 +1,13 @@
-export type RightPanelView = "problem" | "preview" | "chat";
+export type RightPanelView = "problem" | "preview" | "chat" | "history";
 
 const RIGHT_PANEL_KEY = "vimtex:rightPanel";
 
-const VALID_VIEWS = new Set<RightPanelView>(["problem", "preview", "chat"]);
+const VALID_VIEWS = new Set<RightPanelView>([
+  "problem",
+  "preview",
+  "chat",
+  "history",
+]);
 
 function isRightPanelView(value: string): value is RightPanelView {
   return VALID_VIEWS.has(value as RightPanelView);

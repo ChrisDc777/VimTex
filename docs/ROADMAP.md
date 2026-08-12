@@ -106,7 +106,7 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | P1 | Copy as TeX / Markdown / rendered equation | S | |
 | P1 | Import .md / .tex | M | |
 | P1 | Toasts, empty states, reconnect polish | S | |
-| P2 | Docs-style version history side panel | M | `#79` (from M2) |
+| P2 | Docs-style version history side panel | M | `#79` — shipped (Level A–B); autosnap/fork → backlog |
 | P2 | PNG/SVG/MathML per equation | M | |
 | P2 | PDF export (print or server render) | L | |
 | P2 | Overleaf handoff RFC | XS | |

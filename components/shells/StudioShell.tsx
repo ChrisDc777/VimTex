@@ -17,7 +17,7 @@ import { StudioStatusBar } from "@/components/studio/StudioStatusBar";
 import { ShareRoom } from "@/components/ShareRoom";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
-import { RoomSnapshotsDialog } from "@/components/RoomSnapshotsDialog";
+import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { VtToaster } from "@/components/VtToaster";
@@ -140,7 +140,7 @@ export function StudioShell({
   const [viewToken, setViewToken] = useState<string | null>(null);
   const [editSecret, setEditSecret] = useState<string | null>(null);
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
-  const [roomSnapshotsOpen, setRoomSnapshotsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [hasSelectionRange, setHasSelectionRange] = useState(false);
   const [hasEquationScope, setHasEquationScope] = useState(false);
   const editorRef = useRef<VimEditorHandle>(null);
@@ -378,7 +378,7 @@ export function StudioShell({
     usePaneLayout({
       open: {
         left: outlineOpen && aiFeatureEnabled("studio", "outlineTodo"),
-        right: chatOpen,
+        right: chatOpen || historyOpen,
       },
     });
   const {
@@ -431,9 +431,10 @@ export function StudioShell({
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }
-              onOpenSnapshots={
-                readOnly ? undefined : () => setRoomSnapshotsOpen(true)
-              }
+              onOpenSnapshots={() => {
+                setHistoryOpen(true);
+                setChatOpen(false);
+              }}
             />
           ) : null}
           {aiFeatureEnabled("studio", "outlineTodo") ? (
@@ -656,30 +657,43 @@ export function StudioShell({
         {user ? (
           <SidePanel
             side="right"
-            open={chatOpen}
+            open={chatOpen || historyOpen}
             keepMounted
             width={paneLayout.right}
             mobileHeight={paneLayout.mobileBottomHeight}
-            ariaLabel="Room chat"
+            ariaLabel={historyOpen ? "Version history" : "Room chat"}
             surfaceClassName="vt-chat-panel"
             onResize={(delta) => resizePane("right", delta)}
             onResizeMobile={(delta) => resizeMobileBottom(delta)}
             onReset={() => resetPane("right")}
             onResetMobile={() => resetPane("mobileBottomHeight")}
           >
-            <StudioRoomChat
-              open
-              embedded
-              onClose={() => setChatOpen(false)}
-              peers={peers}
-              selfClientId={selfClientId}
-              user={user}
-              chatReady={ready}
-              getEditorContext={() =>
-                editorRef.current?.getEditorContext() ?? null
-              }
-              aiRunnerRef={aiRunnerRef}
-            />
+            {historyOpen && roomId ? (
+              <RoomHistoryPanel
+                roomId={roomId}
+                readOnly={readOnly}
+                onClose={() => setHistoryOpen(false)}
+                auth={{
+                  editSecret,
+                  viewToken,
+                  authToken: gate.authToken,
+                }}
+              />
+            ) : user ? (
+              <StudioRoomChat
+                open
+                embedded
+                onClose={() => setChatOpen(false)}
+                peers={peers}
+                selfClientId={selfClientId}
+                user={user}
+                chatReady={ready}
+                getEditorContext={() =>
+                  editorRef.current?.getEditorContext() ?? null
+                }
+                aiRunnerRef={aiRunnerRef}
+              />
+            ) : null}
           </SidePanel>
         ) : null}
       </div>
@@ -766,13 +780,6 @@ export function StudioShell({
           roomId={roomId}
           onClose={() => setRoomSettingsOpen(false)}
           onSaved={gate.applyMeta}
-        />
-      ) : null}
-      {roomId ? (
-        <RoomSnapshotsDialog
-          open={roomSnapshotsOpen}
-          roomId={roomId}
-          onClose={() => setRoomSnapshotsOpen(false)}
         />
       ) : null}
       <VtToaster />
