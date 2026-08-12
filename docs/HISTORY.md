@@ -33,7 +33,9 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 
 ## UI
 
-- **Studio / Forge:** Share → Version history opens `RoomHistoryPanel` in the right `SidePanel`
+- **Toolbar:** dedicated History icon (clock) beside Chat in Studio; Forge rail + mobile bottom tabs
+- **In-panel:** `RightPanelSwitcher` — Chat | History segmented tabs when either panel is open; clicking toolbar icons switches views without hiding the other
+- **Share menu:** Version history… still opens History (secondary entry)
 - Read-only sessions can browse, preview, and compare; restore/delete require edit capability
 - CSS transitions only (`prefers-reduced-motion` respected); no motion library yet
 

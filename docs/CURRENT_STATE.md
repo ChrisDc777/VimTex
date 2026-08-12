@@ -2,6 +2,16 @@
 
 *Fork: ChrisDc777/VimTex. Upstream reference: boscochanam/VimTex (read-only; histories have diverged — see CONTRIBUTING.md).*
 
+## Continuing work (agent handoff)
+
+| Topic | Where to start |
+|-------|----------------|
+| Version history shipped (Level A–B) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| History backlog (autosnap, index, fork) | GitHub [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
+| Chat polish backlog (Ask/Edit chips) | [#129](https://github.com/ChrisDc777/VimTex/issues/129) |
+| Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
+| AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
+
 ## Architecture
 
 ```

@@ -22,12 +22,14 @@ import { RoomChatSidebar } from "@/components/RoomChatSidebar";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
+import { RightPanelSwitcher } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
 import {
   ChatIcon,
+  HistoryIcon,
   PreviewIcon,
   ReferenceIcon,
   SidePanelRail,
@@ -395,6 +397,24 @@ export function ForgeShell({
     });
   }, [focusEditor]);
 
+  const toggleHistory = useCallback(() => {
+    setRightPanelView((view) => {
+      if (view === "history") {
+        focusEditor();
+        return null;
+      }
+      return "history";
+    });
+  }, [focusEditor]);
+
+  const openChatPanel = useCallback(() => {
+    setRightPanelView("chat");
+  }, []);
+
+  const openHistoryPanel = useCallback(() => {
+    setRightPanelView("history");
+  }, []);
+
   const closeRightPanel = useCallback(() => {
     setRightPanelView(null);
     focusEditor();
@@ -559,7 +579,7 @@ export function ForgeShell({
         onOpenRoomSettings={
           readOnly ? undefined : () => setRoomSettingsOpen(true)
         }
-        onOpenRoomSnapshots={() => setRightPanelView("history")}
+        onOpenRoomSnapshots={openHistoryPanel}
         onEditSecret={setEditSecret}
         headerExtra={
           <SnippetMenu
@@ -648,31 +668,45 @@ export function ForgeShell({
               />
             ) : null}
             {previewOpen ? <ForgePreviewPane note={note} /> : null}
-            {roomId && historyOpen ? (
-              <RoomHistoryPanel
-                roomId={roomId}
-                readOnly={readOnly}
-                onClose={() => setRightPanelView(null)}
-                auth={{
-                  editSecret,
-                  viewToken: effectiveViewToken,
-                  authToken: gate.authToken,
-                }}
-              />
-            ) : null}
-            {user && chatOpen ? (
+            {roomId && user && (chatOpen || historyOpen) ? (
               <div className="flex h-full min-h-0 flex-col">
-                <RoomChatSidebar
-                  open={chatOpen}
+                <RightPanelSwitcher
+                  active={chatOpen ? "chat" : "history"}
+                  onSelectChat={openChatPanel}
+                  onSelectHistory={openHistoryPanel}
                   onClose={closeRightPanel}
-                  peers={peers}
-                  selfClientId={selfClientId}
-                  user={user}
-                  chatReady={ready}
-                  getEditorContext={() =>
-                    editorRef.current?.getEditorContext() ?? null
-                  }
                 />
+                <div
+                  key={chatOpen ? "chat" : "history"}
+                  className="vt-right-panel-content flex min-h-0 flex-1 flex-col"
+                >
+                  {historyOpen ? (
+                    <RoomHistoryPanel
+                      roomId={roomId}
+                      readOnly={readOnly}
+                      chromeless
+                      onClose={closeRightPanel}
+                      auth={{
+                        editSecret,
+                        viewToken: effectiveViewToken,
+                        authToken: gate.authToken,
+                      }}
+                    />
+                  ) : (
+                    <RoomChatSidebar
+                      open={chatOpen}
+                      chromeless
+                      onClose={closeRightPanel}
+                      peers={peers}
+                      selfClientId={selfClientId}
+                      user={user}
+                      chatReady={ready}
+                      getEditorContext={() =>
+                        editorRef.current?.getEditorContext() ?? null
+                      }
+                    />
+                  )}
+                </div>
               </div>
             ) : null}
           </SidePanel>
@@ -699,6 +733,13 @@ export function ForgeShell({
             icon={<PreviewIcon />}
           />
           <SidePanelRailButton
+            label="History"
+            pressed={historyOpen}
+            disabled={!ready || !roomId}
+            onClick={toggleHistory}
+            icon={<HistoryIcon />}
+          />
+          <SidePanelRailButton
             label="Chat"
             pressed={chatOpen}
             disabled={!ready}
@@ -712,10 +753,12 @@ export function ForgeShell({
         problemOpen={problemOpen}
         previewOpen={previewOpen}
         chatOpen={chatOpen}
+        historyOpen={historyOpen}
         disabled={!ready}
         onToggleProblem={toggleProblem}
         onTogglePreview={togglePreview}
         onToggleChat={toggleChat}
+        onToggleHistory={toggleHistory}
       />
 
       <StatusBar

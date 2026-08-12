@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import {
   ChatIcon,
+  HistoryIcon,
   PreviewIcon,
   ReferenceIcon,
 } from "@/components/SidePanelRail";
@@ -11,20 +12,24 @@ export type BottomPanelTabsProps = {
   problemOpen: boolean;
   previewOpen: boolean;
   chatOpen: boolean;
+  historyOpen: boolean;
   disabled?: boolean;
   onToggleProblem: () => void;
   onTogglePreview: () => void;
   onToggleChat: () => void;
+  onToggleHistory: () => void;
 };
 
 export function BottomPanelTabs({
   problemOpen,
   previewOpen,
   chatOpen,
+  historyOpen,
   disabled,
   onToggleProblem,
   onTogglePreview,
   onToggleChat,
+  onToggleHistory,
 }: BottomPanelTabsProps) {
   return (
     <nav
@@ -45,6 +50,13 @@ export function BottomPanelTabs({
         disabled={disabled}
         onClick={onTogglePreview}
         icon={<PreviewIcon />}
+      />
+      <BottomTabButton
+        label="History"
+        pressed={historyOpen}
+        disabled={disabled}
+        onClick={onToggleHistory}
+        icon={<HistoryIcon />}
       />
       <BottomTabButton
         label="Chat"

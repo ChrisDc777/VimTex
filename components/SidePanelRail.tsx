@@ -126,3 +126,22 @@ export function ChatIcon() {
     </SafeSvg>
   );
 }
+
+export function HistoryIcon() {
+  return (
+    <SafeSvg width={18} height={18} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+        stroke="currentColor"
+        strokeWidth="1.25"
+      />
+      <path
+        d="M8 5.5V8l2 1.25M5.5 3 4 2"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SafeSvg>
+  );
+}
