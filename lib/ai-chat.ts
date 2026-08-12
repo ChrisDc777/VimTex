@@ -43,6 +43,8 @@ export type SystemPromptContext = {
   citations?: string;
   /** Chat-only derivation coach (#84) — no patch/document edit format. */
   coach?: boolean;
+  /** Ask mode (#129) — answer only; forbid @@@PATCH / @@@DOCUMENT. */
+  ask?: boolean;
 };
 
 export function buildSystemPrompt(
@@ -127,6 +129,16 @@ ${ctx.document}
 - Keep replies concise and step-by-step.
 - Prefer KaTeX-friendly TeX. Math in chat: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks, **bold**, or markdown code fences.`,
     );
+    return sections.join("\n\n");
+  }
+
+  if (ctx.ask) {
+    sections.push(`Rules:
+- Ask mode: answer questions about the note. Do not change the document.
+- Never emit @@@PATCH, @@@END, @@@DOCUMENT, FIND, or THEN edit markers.
+- If the user wants edits, tell them to switch the composer to Edit.
+- Keep replies concise.
+- Prefer KaTeX-friendly TeX. Math in chat: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks, **bold**, or markdown code fences.`);
     return sections.join("\n\n");
   }
 

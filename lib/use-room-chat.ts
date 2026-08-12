@@ -45,10 +45,13 @@ import {
 } from "@/lib/chat-mentions";
 import {
   AI_ROOM_PREFS_EVENT,
+  DEFAULT_AI_CHAT_MODE,
   DEFAULT_AI_TEMPERATURE,
   loadAiRoomPrefs,
+  resolveAiChatMode,
   resolveAiRoomModel,
   saveAiRoomPrefs,
+  type AiChatMode,
 } from "@/lib/ai-room-prefs";
 import { loadChatModel, saveChatModel } from "@/lib/chat-model-storage";
 import {
@@ -105,6 +108,7 @@ export function useRoomChat({
   const { prefs: chromePrefs } = useAiChromePrefs();
   const [model, setModelState] = useState<AiModelId>(DEFAULT_AI_MODEL);
   const [temperature, setTemperatureState] = useState(DEFAULT_AI_TEMPERATURE);
+  const [chatMode, setChatModeState] = useState<AiChatMode>(DEFAULT_AI_CHAT_MODE);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
   const [busy, setBusyState] = useState(false);
@@ -148,6 +152,7 @@ export function useRoomChat({
     setModelState(resolveAiRoomModel(roomId, fallback) as AiModelId);
     const roomTemp = loadAiRoomPrefs(roomId).temperature;
     setTemperatureState(roomTemp ?? DEFAULT_AI_TEMPERATURE);
+    setChatModeState(resolveAiChatMode(roomId));
   }, [roomId, persistModel]);
 
   useEffect(() => {
@@ -160,6 +165,7 @@ export function useRoomChat({
       if (prefs.temperature !== undefined) {
         setTemperatureState(prefs.temperature);
       }
+      if (prefs.chatMode) setChatModeState(prefs.chatMode);
     };
     window.addEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
     return () => window.removeEventListener(AI_ROOM_PREFS_EVENT, onPrefs);
@@ -384,6 +390,14 @@ export function useRoomChat({
     [roomId],
   );
 
+  const setChatMode = useCallback(
+    (next: AiChatMode) => {
+      setChatModeState(next);
+      if (roomId) saveAiRoomPrefs(roomId, { chatMode: next });
+    },
+    [roomId],
+  );
+
   const cancelAi = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -393,6 +407,8 @@ export function useRoomChat({
 
   const instructionOverridesRef = useRef<Record<string, string>>({});
   const editSourceOverridesRef = useRef<Record<string, AiEditSource>>({});
+  /** Force Edit for one-shot mutating runners (doc pills / selection) while Ask is selected. */
+  const chatModeOverridesRef = useRef<Record<string, AiChatMode>>({});
   const [replyTarget, setReplyTarget] = useState<RoomChatMessage | null>(null);
   /** One composer follow-up while Vimothy is busy (Enter queues; replaces prior). */
   const queuedSendRef = useRef<{ input: string } | null>(null);
@@ -489,6 +505,10 @@ export function useRoomChat({
             })
           : undefined;
         const coach = isDerivationCoachInstruction(instruction);
+        const effectiveMode =
+          chatModeOverridesRef.current[userMsg.id] ?? chatMode;
+        delete chatModeOverridesRef.current[userMsg.id];
+        const askOnly = !coach && effectiveMode === "ask";
         const req = {
           instruction,
           document: packed.document,
@@ -503,7 +523,11 @@ export function useRoomChat({
           outline: packed.outline,
           citations: packed.citations,
           ...(history && history.length > 0 ? { history } : {}),
-          ...(coach ? { mode: "coach" as const } : {}),
+          ...(coach
+            ? { mode: "coach" as const }
+            : askOnly
+              ? { mode: "ask" as const }
+              : {}),
         };
         const data = useStream
           ? await streamAiChat(req, {
@@ -519,14 +543,13 @@ export function useRoomChat({
         if (ac.signal.aborted) return;
 
         const parsed = parseAssistantReply(data.message ?? "");
-        // Coach mode: never propose or attach note mutations (#84).
-        let proposedAfter: string | null = coach
-          ? null
-          : parsed.documentEdit;
+        // Coach / Ask: never propose or attach note mutations (#84 / #129).
+        let proposedAfter: string | null =
+          coach || askOnly ? null : parsed.documentEdit;
         let editKind: "document" | "patch" = "document";
         let appliedHunks: AppliedAiPatchHunk[] | undefined;
 
-        if (!coach && parsed.patch) {
+        if (!coach && !askOnly && parsed.patch) {
           const applied = applyAiPatch(beforeSnapshot, parsed.patch);
           if (applied.ok) {
             proposedAfter = applied.after;
@@ -609,7 +632,7 @@ export function useRoomChat({
         }
       }
     },
-    [workspace, model, temperature, shell, review, busy, getEditorContext, messages],
+    [workspace, model, temperature, chatMode, shell, review, busy, getEditorContext, messages],
   );
 
   // Stable ref so the drain callback can call send without a stale closure.
@@ -769,6 +792,10 @@ export function useRoomChat({
       if (opts?.source) {
         editSourceOverridesRef.current[userMsg.id] = opts.source;
       }
+      // Explicit rewrite runners always use Edit, even if the chip is Ask.
+      if (!isDerivationCoachInstruction(trimmed)) {
+        chatModeOverridesRef.current[userMsg.id] = "edit";
+      }
       if (opts?.attachment) {
         setMessageContexts((prev) => ({
           ...prev,
@@ -892,6 +919,8 @@ export function useRoomChat({
     setModel,
     temperature,
     setTemperature,
+    chatMode,
+    setChatMode,
     input,
     messages,
     busy,
