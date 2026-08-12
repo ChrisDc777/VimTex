@@ -398,6 +398,13 @@
   min-width: 0;
 }
 
+.ui-studio .vt-chat-msg__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
 .ui-studio .vt-chat-msg__author {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   font-size: 11px;
@@ -408,6 +415,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ui-studio .vt-chat-msg--ai .vt-chat-msg__author {
+  color: var(--ai-agent-accent, #ff7a17);
+  font-weight: 600;
 }
 
 .ui-studio .vt-chat-msg__time {
