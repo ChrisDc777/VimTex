@@ -47,7 +47,7 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 | D | Indexed metadata store (SQLite/Postgres), pagination, full-text search |
 | E | Fork-as-new-room, account authorship, team retention policies |
 
-See GitHub issues for tracking.
+See GitHub [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#128](https://github.com/ChrisDc777/VimTex/issues/128). Do not re-implement Level A–B.
 
 ## Caveats
 

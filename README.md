@@ -2,7 +2,7 @@
 
 **Vim keybindings. Live LaTeX. Shared buffer. Zero setup.**
 
-A collaborative math scratchpad — open a room, type TeX like Vim, and watch KaTeX render as you go. Share the link; everyone edits the same buffer in realtime. Ask `@ai` to rewrite an equation and the whole room sees the change.
+A collaborative math scratchpad — open a room, type TeX like Vim, and watch KaTeX render as you go. Share the link; everyone edits the same buffer in realtime. Ask `@vimothy` to rewrite an equation and the whole room sees the change.
 
 > Not the Vim/Neovim LaTeX plugin `lervag/vimtex` — this is a browser-based web app.
 
@@ -64,7 +64,7 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 - Forge also keeps a **browser localStorage** copy per room as a solo refresh cache (not authoritative after sync).
 - **Share → Copy edit / view-only link** upgrades the room to guest ACL (`editSecret` in `ROOM_DATA_DIR`). Edit links carry `?edit=`; view-only links carry `?view=` only. Stripping `?view=` does **not** grant edit. Before the first Share, bare `?room=` still edits (legacy).
 - **Share → Room settings** can set an optional PIN and absolute TTL. Password rooms require unlock once per browser session; expired rooms refuse WS joins.
-- **Share → Version history** saves/restores manual Yjs checkpoints of the note buffer.
+- **History icon** (toolbar / Forge rail) opens version checkpoints of the note. Share → Version history is a secondary entry. Restore replaces the live buffer for everyone in the room.
 
 ---
 
@@ -103,7 +103,7 @@ Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/Vi
 |-----|-------------|
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phased milestones M0–M5 |
 | [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md) | M3+ AI plan (Studio full vs Forge suggest-only) |
-| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | What is shipped today |
+| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | **Start here** — shipped inventory + next-session prompt |
 | [docs/RFC-collab-persistence.md](docs/RFC-collab-persistence.md) | Guest ACL / persistence (M2) |
 | [docs/HISTORY.md](docs/HISTORY.md) | Version history architecture (Level A–E) |
 | [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index + backlog |

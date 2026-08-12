@@ -16,7 +16,7 @@
 ## UI direction
 
 - **Default shell:** Studio (`.ui-studio` + `app/studio-theme.css`) — live share, split/live preview, command palette, pill controls.
-- **Optional shell:** Forge (base `:root` tokens) — tabs, rails, unified Problem/Preview/Chat panel, mobile bottom nav.
+- **Optional shell:** Forge (base `:root` tokens) — tabs, rails, unified Problem/Preview/Chat/History panel, mobile bottom nav.
 - **Separate concern:** both shells collaborate; never tie a shell to local-only mode.
 
 ## Dependencies and lockfiles

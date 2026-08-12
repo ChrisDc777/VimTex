@@ -48,14 +48,14 @@ land and expose stable hunk ranges — see Wave D.
 | Selection / inline actions | ✅ | ❌ | #28 |
 | Equation-scoped rewrite | ✅ Lvl A | ❌ | #83 |
 | Derivation coach | ✅ Lvl A | ✅ | #84 |
-| Ghost text | 🔄 | ❌ | #55 |
+| Ghost text | ✅ Lvl A | ❌ | #55 |
 | Streaming + cancel | ✅ | ✅ | #29 |
 | Diagnostics explain | ✅ | ✅ | #53 |
 | Chat memory (last N) | ✅ | ❌ | #54 |
-| Slash commands | ✅ | ❌ | #63 |
-| Doc actions | 🔄 | ❌ | #58 |
-| Templates (/letter…) | 🔄 | ❌ | #52 |
-| Outline + TODO scan | 🔄 | ❌ | #56 |
+| Slash commands | ✅ | `/derive` only | #63 |
+| Doc actions | ✅ (pref, default off) | ❌ | #58 |
+| Templates (/letter…) | ✅ (optional slash) | ❌ | #52 |
+| Outline + TODO scan | ✅ | ❌ | #56 |
 | Grammar / critique review | ✅ Lvl A | ❌ | #62 |
 
 ## Delivery waves
@@ -84,7 +84,7 @@ land and expose stable hunk ranges — see Wave D.
 
 ### Wave C — Studio depth
 
-#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates → chrome prefs / compose-then-send → #56 outline ✅ → editor `/` inserts → #61 cite ✅ → #62 review ✅ Level A → #60 polish (usage + raised limits)
+#63 slash (chat composer) ✅ → #55 ghost (local TeX) ✅ → #58 doc actions + #52 templates ✅ → chrome prefs / compose-then-send ✅ → #56 outline ✅ → editor `/` inserts → #61 cite ✅ → #62 review ✅ Level A → #60 polish (usage + raised limits)
 
 **#63:** Studio chat `/` menu — pick command → chip + optional context → Enter runs.  
 **#55 Level A:** local ghost text for `\begin{…}` / math closers in Studio insert mode (Tab accept, Esc dismiss). AI type-ahead later.  
@@ -113,7 +113,7 @@ land and expose stable hunk ranges — see Wave D.
 
 **#88 Level A:** While a proposal is pending, Studio CM shows a gutter mark and line tint on changed lines in the live (`before`) buffer (from `diffLines`). Cleared on Accept/Reject.
 
-**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via Version history (client Y.Doc apply).
+**#89:** Optional Preferences → AI → Snapshot on Accept (default off). Confirm Accept may create a labeled #25 checkpoint (`Pre-AI: source · time`) from the client pre-apply buffer (does not mutate live Yjs). Auto-apply skips this; restore is manual and room-wide via the History panel.
 
 **#83 Level A:** When the caret or selection sits in a parsed math span (`\(`/`\[` / auto-math), Studio shows an Equation action bar. **Rewrite eq** expands to that span and asks Vimothy for a patch-only equation rewrite (Confirm Accept). Forge stays suggest-only.
 

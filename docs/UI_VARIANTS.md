@@ -24,7 +24,7 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 
 ### Studio (`studio`)
 
-- Header: brand, Share, Room menu, Live/Split toggle, Chat
+- Header: brand, Share, Outline, **History**, Chat, Live/Split toggle
 - Side rail + mobile bottom tabs; command palette (Ctrl/Cmd+K)
 - Split Live / Split preview (`ViewToggle`)
 - Name picker on first visit; Preferences dialog
@@ -35,7 +35,7 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 
 - `AppHeader` + sheet menu, editor tab bar
 - Right activity rail / mobile bottom tabs
-- Unified right panel: Problem | Preview | Chat
+- Unified right panel: Problem | Preview | Chat | **History** (`RightPanelSwitcher` when Chat or History is open)
 - Resizable panes, persisted widths
 - Preferences dialog (Editor keys, relative line numbers, Workspace style)
 - Base `:root` tokens in `app/globals.css`: mineral surfaces, stepped dark neutrals
@@ -78,7 +78,7 @@ features must stay distinct; only shared plumbing converges.
 | `lib/collab.ts` | room id, URL sync, collab status, display name |
 | `VimEditor` | CodeMirror + Vim/Standard modes, Yjs binding, carets |
 | `RoomChatSidebar` | subscribe/append chat |
-| `lib/room-chat.ts`, `api/chat/route.ts` | @ai invoke, reply parsing |
+| `lib/room-chat.ts`, `api/chat/route.ts` | @vimothy invoke, reply parsing |
 | `lib/use-editor-tabs.ts` | Forge tab session (open/close/rename/reopen recent room) |
 | `lib/render-note.ts` | shared parser (bare math + line heuristics) |
 | `lib/storage.ts` | room-scoped autosave, view mode |
@@ -103,7 +103,7 @@ features must stay distinct; only shared plumbing converges.
 |----------|--------|-------|
 | Two-peer edit sync | required | required |
 | Share copy URL | required | required |
-| @ai edit propagates | required | required |
+| @vimothy edit propagates | required | required (suggest-only apply) |
 | Split preview | required | preview panel |
 | Tab switch + autosave | N/A | required |
 | Mobile toolbar | required | required |
