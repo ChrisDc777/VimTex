@@ -20,8 +20,8 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Topic | Where to start |
 |-------|----------------|
 | Version history shipped (Level A–C) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
 | History backlog (index, fork) | GitHub [#127](https://github.com/ChrisDc777/VimTex/issues/127)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
-| Chat polish backlog (Ask/Edit chips) | [#129](https://github.com/ChrisDc777/VimTex/issues/129) |
 | Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
@@ -33,8 +33,8 @@ Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and open GitHub issues #126–#130.
 
 Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
-in PR #131. History Level C (#126) is the current product slice (autosnap, pin/rename,
-observability). Next after that is chat Ask/Edit chips (#129) unless I specify otherwise.
+in PR #131. History Level C (#126) and Ask/Edit chips (#129) shipped.
+Next product work is History Level D (#127) unless I specify otherwise.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -76,7 +76,7 @@ Browser                    Node (server.mjs :3001)
 | Presence / typing | ✅ | awareness, #22 |
 | Studio Split / Live preview | ✅ | `ViewToggle.tsx`, `lib/studio-layout.ts` |
 | Forge editor tabs + panels | ✅ | `EditorTabBar.tsx`, `SidePanel.tsx` |
-| Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, `ChatMessageList`, `api/chat/route.ts` |
+| Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, Ask/Edit chips (#129), `ChatMessageList`, `api/chat/route.ts` |
 | Share copy + capability links | ✅ | `ShareRoom.tsx` |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
 | Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |

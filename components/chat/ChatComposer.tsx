@@ -19,6 +19,8 @@ import { highlightComposerInput } from "@/components/chat/ComposerInputHighlight
 import { MentionMenu } from "@/components/chat/MentionMenu";
 import { SlashMenu } from "@/components/chat/SlashMenu";
 import { SendIcon, StopIcon } from "@/components/chat/icons";
+import { ChatModeChips } from "@/components/chat/ChatModeChips";
+import type { AiChatMode } from "@/lib/ai-room-prefs";
 import type { RoomChatMessage } from "@/lib/room-chat";
 
 type ChatComposerProps = {
@@ -57,6 +59,9 @@ type ChatComposerProps = {
   /** Soft reply target (AI reply continues without @mention). */
   replyTarget?: RoomChatMessage | null;
   onClearReply?: () => void;
+  /** Ask vs Edit (#129). Shown when onChatModeChange is provided. */
+  chatMode?: AiChatMode;
+  onChatModeChange?: (mode: AiChatMode) => void;
 };
 
 export function ChatComposer({
@@ -89,6 +94,8 @@ export function ChatComposer({
   onClearQueuedSend,
   replyTarget = null,
   onClearReply,
+  chatMode = "edit",
+  onChatModeChange,
 }: ChatComposerProps) {
   const [shellFocused, setShellFocused] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -301,6 +308,13 @@ export function ChatComposer({
           </div>
         </div>
         <div className="vt-chat-composer__toolbar">
+          {onChatModeChange ? (
+            <ChatModeChips
+              mode={chatMode}
+              onChange={onChatModeChange}
+              disabled={busy}
+            />
+          ) : null}
           <ChatModelPicker
             model={model}
             onChange={onModelChange}
@@ -355,8 +369,16 @@ export function ChatComposer({
         </p>
       ) : slashCommandsEnabled && !input.trim() && !replyTarget ? (
         <p className="vt-chat-composer__hint">
-          Type <span className="font-mono">/</span> for commands ·{" "}
-          <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy
+          {chatMode === "ask" ? (
+            <>
+              Ask mode — answers only · switch to Edit to change the note
+            </>
+          ) : (
+            <>
+              Type <span className="font-mono">/</span> for commands ·{" "}
+              <span className="font-mono">@{AI_MENTION_TAG}</span> to ask Vimothy
+            </>
+          )}
         </p>
       ) : null}
     </div>

@@ -120,7 +120,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 | # | Issue | Priority |
 |---|-------|----------|
-| 129 | Thin Ask vs Edit mode chips | P2 |
+| 129 | Thin Ask vs Edit mode chips | ✅ shipped |
 
 ---
 

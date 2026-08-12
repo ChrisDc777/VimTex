@@ -135,6 +135,8 @@ export function RoomChatSidebar({
         onClearQueuedSend={chat.clearQueuedSend}
         replyTarget={chat.replyTarget}
         onClearReply={chat.clearReply}
+        chatMode={chat.chatMode}
+        onChatModeChange={chat.setChatMode}
       />
     </div>
   );

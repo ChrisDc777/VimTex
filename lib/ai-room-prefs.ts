@@ -5,10 +5,20 @@
  * Kept free of path-alias imports so node:test can load this module.
  */
 
+/** Composer Ask / Edit chip (#129). Plan deferred. */
+export type AiChatMode = "ask" | "edit";
+
+export const AI_CHAT_MODES = ["ask", "edit"] as const;
+
 export type AiRoomPrefs = {
   model?: string;
   /** 0–1 sampling temperature. Omitted → server default. */
   temperature?: number;
+  /**
+   * Ask = chat-only (no patches). Edit = today's Confirm Accept patch path.
+   * Default Edit so existing rooms keep mutating behavior.
+   */
+  chatMode?: AiChatMode;
 };
 
 const STORAGE_PREFIX = "vimtex:aiRoom:";
@@ -43,6 +53,18 @@ function sanitizeModel(raw: unknown): string | undefined {
   return id;
 }
 
+export function normalizeAiChatMode(value: unknown): AiChatMode | undefined {
+  return value === "ask" || value === "edit" ? value : undefined;
+}
+
+export const DEFAULT_AI_CHAT_MODE: AiChatMode = "edit";
+
+export function resolveAiChatMode(
+  roomId: string | null | undefined,
+): AiChatMode {
+  return loadAiRoomPrefs(roomId).chatMode ?? DEFAULT_AI_CHAT_MODE;
+}
+
 export function loadAiRoomPrefs(roomId: string | null | undefined): AiRoomPrefs {
   if (!roomId || typeof localStorage === "undefined") return {};
   try {
@@ -53,6 +75,7 @@ export function loadAiRoomPrefs(roomId: string | null | undefined): AiRoomPrefs 
     return {
       model: sanitizeModel(parsed.model),
       temperature: normalizeAiTemperature(parsed.temperature),
+      chatMode: normalizeAiChatMode(parsed.chatMode),
     };
   } catch {
     return {};
@@ -70,6 +93,9 @@ export function saveAiRoomPrefs(
   }
   if (patch.temperature !== undefined) {
     next.temperature = normalizeAiTemperature(patch.temperature);
+  }
+  if (patch.chatMode !== undefined) {
+    next.chatMode = normalizeAiChatMode(patch.chatMode);
   }
   try {
     if (typeof localStorage !== "undefined") {
