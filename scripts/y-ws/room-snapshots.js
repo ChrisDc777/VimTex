@@ -6,6 +6,14 @@ const path = require('node:path')
 const { createHash, randomBytes } = require('node:crypto')
 const Y = require('yjs')
 const { getRoomDataDir } = require('./room-meta.js')
+const {
+  listIndexedSnapshots,
+  rebuildSnapshotIndex,
+  paginateSnapshots,
+  INDEX_NAME,
+} = require('./snapshot-index.js')
+const { createEditSecret } = require('./room-auth.js')
+const { upsertRoomMeta } = require('./room-meta.js')
 
 /** Max unpinned checkpoints per room (FIFO). Pinned snapshots skip eviction. */
 const MAX_SNAPSHOTS_PER_ROOM = Number(process.env.VIMTEX_MAX_SNAPSHOTS) || 50
@@ -16,7 +24,7 @@ const DEDUPE_WINDOW_MS = 5 * 60 * 1000
 /**
  * Structured log for snapshot create/restore/patch. Never includes note text,
  * labels, or display names.
- * @param {'create' | 'restore' | 'patch'} action
+ * @param {'create' | 'restore' | 'patch' | 'fork'} action
  * @param {{
  *   roomId?: string,
  *   id?: string,
@@ -44,7 +52,7 @@ function snapshotLogPayload (action, fields) {
 }
 
 /**
- * @param {'create' | 'restore' | 'patch'} action
+ * @param {'create' | 'restore' | 'patch' | 'fork'} action
  * @param {object} fields
  */
 function logSnapshotEvent (action, fields) {
@@ -126,13 +134,15 @@ function normalizeMeta (raw) {
  * @param {string} roomId
  * @returns {SnapshotMeta[]}
  */
-function listSnapshots (roomId) {
+function listSnapshotsFromFs (roomId) {
   const dir = snapshotsDir(roomId)
   if (!fs.existsSync(dir)) return []
   /** @type {SnapshotMeta[]} */
   const out = []
   for (const name of fs.readdirSync(dir)) {
-    if (!name.endsWith('.json')) continue
+    if (!name.endsWith('.json') || name === INDEX_NAME || name.startsWith('_')) {
+      continue
+    }
     try {
       const meta = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'))
       if (meta && typeof meta.id === 'string') out.push(normalizeMeta(meta))
@@ -145,10 +155,42 @@ function listSnapshots (roomId) {
 }
 
 /**
+ * Dual-read: prefer metadata index, rebuild from FS metas when missing (#127).
+ * @param {string} roomId
+ * @returns {SnapshotMeta[]}
+ */
+function listSnapshots (roomId) {
+  return /** @type {SnapshotMeta[]} */ (
+    listIndexedSnapshots(snapshotsDir(roomId), normalizeMeta)
+  )
+}
+
+/**
+ * @param {string} roomId
+ * @param {{ limit?: number, offset?: number, q?: string }} [opts]
+ */
+function querySnapshots (roomId, opts = {}) {
+  return paginateSnapshots({
+    snapshots: listSnapshots(roomId),
+    limit: opts.limit,
+    offset: opts.offset,
+    q: opts.q,
+  })
+}
+
+/**
+ * Refresh index after create / patch / delete.
+ * @param {string} roomId
+ */
+function refreshSnapshotIndex (roomId) {
+  rebuildSnapshotIndex(snapshotsDir(roomId), normalizeMeta)
+}
+
+/**
  * @param {string} roomId
  */
 function enforceRetention (roomId) {
-  const snaps = listSnapshots(roomId)
+  const snaps = listSnapshotsFromFs(roomId)
   const unpinned = snaps.filter((s) => !s.pinned)
   if (unpinned.length <= MAX_SNAPSHOTS_PER_ROOM) return
   const toRemove = unpinned.slice(MAX_SNAPSHOTS_PER_ROOM)
@@ -205,6 +247,7 @@ function createSnapshot (roomId, update, label = '', opts = {}) {
   fs.writeFileSync(path.join(dir, `${id}.bin`), Buffer.from(update))
   fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(meta, null, 2))
   enforceRetention(roomId)
+  refreshSnapshotIndex(roomId)
   logSnapshotEvent('create', meta)
   return meta
 }
@@ -250,6 +293,7 @@ function updateSnapshotMeta (roomId, snapshotId, patch) {
     path.join(snapshotsDir(roomId), `${safeId}.json`),
     JSON.stringify(meta, null, 2),
   )
+  refreshSnapshotIndex(roomId)
   logSnapshotEvent('patch', meta)
   return meta
 }
@@ -299,11 +343,12 @@ function deleteSnapshot (roomId, snapshotId) {
       // ignore
     }
   }
+  if (ok) refreshSnapshotIndex(roomId)
   return ok
 }
 
 /**
- * Remove all snapshots for a room (room TTL purge).
+ * Remove all snapshots for a room (room TTL purge) — index cascades with dir.
  * @param {string} roomId
  */
 function deleteAllSnapshots (roomId) {
@@ -316,9 +361,82 @@ function deleteAllSnapshots (roomId) {
   }
 }
 
+/**
+ * Fork a checkpoint into a brand-new room with its own editSecret (#128).
+ * Account authorship remapping is deferred until claim-guest (#37 / #78).
+ *
+ * @param {string} sourceRoomId
+ * @param {string} snapshotId
+ * @param {{ createdBy?: { name?: string, clientId?: number } }} [opts]
+ * @returns {{
+ *   roomId: string,
+ *   edit: string,
+ *   snapshot: SnapshotMeta,
+ *   sourceSnapId: string,
+ *   charLength: number,
+ * } | null}
+ */
+function forkSnapshot (sourceRoomId, snapshotId, opts = {}) {
+  const text = readSnapshotText(sourceRoomId, snapshotId)
+  const sourceMeta = readSnapshotMeta(sourceRoomId, snapshotId)
+  if (text == null || !sourceMeta) return null
+
+  const newRoomId = randomBytes(8).toString('hex')
+  const edit = createEditSecret()
+  upsertRoomMeta(newRoomId, { editSecret: edit })
+
+  const snapDoc = new Y.Doc()
+  let update
+  try {
+    if (text.length > 0) {
+      snapDoc.getText('codemirror').insert(0, text)
+    }
+    update = Y.encodeStateAsUpdate(snapDoc)
+  } finally {
+    snapDoc.destroy()
+  }
+
+  const label = `Forked from ${sourceMeta.label}`.slice(0, 80)
+  const snapshot = createSnapshot(newRoomId, update, label, {
+    kind: 'named',
+    skipDedupe: true,
+    ...(opts.createdBy ? { createdBy: opts.createdBy } : {}),
+  })
+
+  logSnapshotEvent('fork', {
+    roomId: newRoomId,
+    snapId: snapshot.id,
+    kind: snapshot.kind,
+    charLength: snapshot.charLength,
+    byteLength: snapshot.byteLength,
+  })
+
+  return {
+    roomId: newRoomId,
+    edit,
+    snapshot,
+    sourceSnapId: snapshotId,
+    charLength: text.length,
+  }
+}
+
+/**
+ * Placeholder for M5 claim-guest authorship remapping (#128 / #37).
+ * @param {string} _roomId
+ * @param {{ fromClientId?: number, toUserId?: string }} _mapping
+ * @returns {{ updated: number }}
+ */
+function remapSnapshotAuthorship (_roomId, _mapping) {
+  // No accounts yet — return zero updates. Wired after claim-guest.
+  return { updated: 0 }
+}
+
 module.exports = {
   MAX_SNAPSHOTS_PER_ROOM,
   listSnapshots,
+  listSnapshotsFromFs,
+  querySnapshots,
+  refreshSnapshotIndex,
   createSnapshot,
   readSnapshotMeta,
   updateSnapshotMeta,
@@ -328,6 +446,8 @@ module.exports = {
   hashText,
   deleteSnapshot,
   deleteAllSnapshots,
+  forkSnapshot,
+  remapSnapshotAuthorship,
   snapshotLogPayload,
   logSnapshotEvent,
 }

@@ -67,9 +67,15 @@ export function resolveSnapshotAuth(
 export async function listRoomSnapshots(
   roomId: string,
   auth?: SnapshotAuth,
+  opts?: { limit?: number; offset?: number; q?: string },
 ): Promise<RoomSnapshotMeta[]> {
+  const params = new URLSearchParams();
+  if (opts?.limit != null) params.set("limit", String(opts.limit));
+  if (opts?.offset != null) params.set("offset", String(opts.offset));
+  if (opts?.q?.trim()) params.set("q", opts.q.trim());
+  const qs = params.toString();
   const res = await fetch(
-    `/api/rooms/${encodeURIComponent(roomId)}/snapshots`,
+    `/api/rooms/${encodeURIComponent(roomId)}/snapshots${qs ? `?${qs}` : ""}`,
     { headers: snapshotHeaders(resolveSnapshotAuth(roomId, auth)) },
   );
   if (!res.ok) {
@@ -78,6 +84,58 @@ export async function listRoomSnapshots(
   }
   const data = (await res.json()) as { snapshots?: RoomSnapshotMeta[] };
   return data.snapshots ?? [];
+}
+
+export async function forkRoomSnapshot(
+  roomId: string,
+  snapId: string,
+  opts?: {
+    auth?: SnapshotAuth;
+    createdBy?: { name?: string; clientId?: number };
+  },
+): Promise<{
+  roomId: string;
+  edit: string;
+  snapshot: RoomSnapshotMeta;
+  sourceSnapId: string;
+  charLength: number;
+}> {
+  const res = await fetch(
+    `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}/fork`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...snapshotHeaders(resolveSnapshotAuth(roomId, opts?.auth)),
+      },
+      body: JSON.stringify({
+        ...(opts?.createdBy ? { createdBy: opts.createdBy } : {}),
+      }),
+    },
+  );
+  const body = (await res.json().catch(() => null)) as {
+    roomId?: string;
+    edit?: string;
+    snapshot?: RoomSnapshotMeta;
+    sourceSnapId?: string;
+    charLength?: number;
+    error?: string;
+  } | null;
+  if (
+    !res.ok ||
+    typeof body?.roomId !== "string" ||
+    typeof body?.edit !== "string" ||
+    !body.snapshot
+  ) {
+    throw new Error(body?.error || `Fork failed (${res.status})`);
+  }
+  return {
+    roomId: body.roomId,
+    edit: body.edit,
+    snapshot: body.snapshot,
+    sourceSnapId: body.sourceSnapId ?? snapId,
+    charLength: body.charLength ?? 0,
+  };
 }
 
 export async function createRoomSnapshot(
