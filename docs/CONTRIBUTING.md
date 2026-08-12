@@ -9,9 +9,9 @@
 
 ## Branch strategy
 
-- `master` — integration branch on the fork; tracks `origin/master`.
-- Feature branches: `feat/<issue-number>-short-name`, `fix/...`, `chore/...` from `master`.
-- Merge via PR against the fork's own `master` (do not target upstream).
+- `main` — integration branch on the fork; tracks `origin/main`.
+- Feature branches: `feat/<issue-number>-short-name`, `fix/...`, `chore/...` from `main`.
+- Merge via PR against the fork's own `main` (do not target upstream).
 
 ## UI direction
 
@@ -44,6 +44,8 @@ To adopt an upstream feature:
 
 1. Study the upstream commit/diff.
 2. Port it into the Studio/Forge architecture manually on a fork feature branch.
-3. Open a PR against the fork's `master`.
+3. Open a PR against the fork's `main`.
 
 Do **not** `git merge upstream/master` or blind cherry-pick — the file layouts diverged (Studio/Forge vs upstream's shells) and will conflict heavily.
+
+Upstream may still use `master` as its default branch; the fork's integration branch is `main`.

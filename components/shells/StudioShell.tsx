@@ -18,6 +18,7 @@ import { ShareRoom } from "@/components/ShareRoom";
 import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
+import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
 import { RightPanelSwitcher, type RightPanelTab } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
@@ -431,6 +432,15 @@ export function StudioShell({
   return (
     <WorkspaceProvider value={workspace}>
     <AiReviewProvider>
+    <RoomAutosnapHost
+      roomId={roomId}
+      readOnly={readOnly}
+      auth={{
+        editSecret,
+        viewToken,
+        authToken: gate.authToken,
+      }}
+    />
     <StudioAiDiffBridge editorRef={editorRef} />
     <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
       <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">

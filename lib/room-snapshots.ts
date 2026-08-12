@@ -205,6 +205,33 @@ export async function restoreRoomSnapshot(
   return { text: body.text };
 }
 
+export async function patchRoomSnapshot(
+  roomId: string,
+  snapId: string,
+  patch: { label?: string; pinned?: boolean },
+  auth?: SnapshotAuth,
+): Promise<RoomSnapshotMeta> {
+  const res = await fetch(
+    `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        ...snapshotHeaders(resolveSnapshotAuth(roomId, auth)),
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+  const body = (await res.json().catch(() => null)) as {
+    snapshot?: RoomSnapshotMeta;
+    error?: string;
+  } | null;
+  if (!res.ok || !body?.snapshot) {
+    throw new Error(body?.error || `Failed to update snapshot (${res.status})`);
+  }
+  return body.snapshot;
+}
+
 export async function deleteRoomSnapshot(
   roomId: string,
   snapId: string,

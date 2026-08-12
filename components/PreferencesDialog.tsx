@@ -28,6 +28,16 @@ import {
 } from "@/lib/slash-commands";
 import type { BuiltinSlashCommandId } from "@/lib/slash-commands";
 import type { SlashTokenStyle } from "@/lib/ai-chrome-prefs";
+import {
+  DEFAULT_HISTORY_PREFS,
+  HISTORY_INTERVAL_MINUTES,
+  HISTORY_PREFS_EVENT,
+  loadHistoryPrefs,
+  saveHistoryPref,
+  saveHistoryPrefs,
+  type HistoryIntervalMinutes,
+  type HistoryPrefs,
+} from "@/lib/history-prefs";
 
 type PrefSection = "editor" | "workspace" | "ai";
 
@@ -194,6 +204,20 @@ export function PreferencesDialog({
   const [temperature, setTemperature] = useState<AiTemperaturePreset>(
     DEFAULT_AI_TEMPERATURE as AiTemperaturePreset,
   );
+  const [historyPrefs, setHistoryPrefs] = useState<HistoryPrefs>(
+    DEFAULT_HISTORY_PREFS,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setHistoryPrefs(loadHistoryPrefs());
+  }, [open]);
+
+  useEffect(() => {
+    const onPrefs = () => setHistoryPrefs(loadHistoryPrefs());
+    window.addEventListener(HISTORY_PREFS_EVENT, onPrefs);
+    return () => window.removeEventListener(HISTORY_PREFS_EVENT, onPrefs);
+  }, []);
 
   useEffect(() => {
     if (!open || !roomId) return;
@@ -351,6 +375,59 @@ export function PreferencesDialog({
                   }))}
                   value={uiVariant}
                   onChange={applyUiVariant}
+                />
+              </PrefRow>
+
+              <PrefRow
+                title="Idle autosnapshot"
+                description="Save a checkpoint after 45s without local edits"
+              >
+                <Segment
+                  label="Idle autosnapshot"
+                  options={[
+                    { value: "on", label: "On" },
+                    { value: "off", label: "Off" },
+                  ]}
+                  value={historyPrefs.idleAutosnap ? "on" : "off"}
+                  onChange={(value) => {
+                    saveHistoryPref("idleAutosnap", value === "on");
+                    setHistoryPrefs(loadHistoryPrefs());
+                  }}
+                />
+              </PrefRow>
+
+              <PrefRow
+                title="Interval autosnapshot"
+                description="Also checkpoint on a timer while the room is open"
+              >
+                <Segment
+                  label="Interval autosnapshot"
+                  options={[
+                    { value: "off", label: "Off" },
+                    ...HISTORY_INTERVAL_MINUTES.map((minutes) => ({
+                      value: String(minutes),
+                      label: `${minutes}m`,
+                    })),
+                  ]}
+                  value={
+                    historyPrefs.intervalAutosnap
+                      ? String(historyPrefs.intervalMinutes)
+                      : "off"
+                  }
+                  onChange={(value) => {
+                    if (value === "off") {
+                      saveHistoryPref("intervalAutosnap", false);
+                    } else {
+                      saveHistoryPrefs({
+                        ...loadHistoryPrefs(),
+                        intervalAutosnap: true,
+                        intervalMinutes: Number(
+                          value,
+                        ) as HistoryIntervalMinutes,
+                      });
+                    }
+                    setHistoryPrefs(loadHistoryPrefs());
+                  }}
                 />
               </PrefRow>
             </div>

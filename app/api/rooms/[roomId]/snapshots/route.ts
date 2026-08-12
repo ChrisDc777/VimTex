@@ -57,6 +57,7 @@ type SnapshotMeta = {
   contentHash?: string;
   charLength?: number;
   createdBy?: { name?: string; clientId?: number };
+  pinned?: boolean;
 };
 
 type SnapshotCredentials = {
