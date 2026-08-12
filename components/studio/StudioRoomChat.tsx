@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type MutableRefObject } from "react";
+import { AiAgentMark } from "@/components/chat/AiAgentMark";
 import { AiDiffProposal } from "@/components/chat/AiDiffProposal";
 import { AiReplyMeta } from "@/components/chat/AiReplyMeta";
 import { ChatComposer } from "@/components/chat/ChatComposer";
@@ -10,6 +10,7 @@ import { DocActionPills } from "@/components/chat/DocActionPills";
 import { RefreshIcon } from "@/components/chat/icons";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
+import { DEFAULT_AI_AGENT } from "@/lib/ai-agents";
 import { formatChatMessageBody } from "@/lib/chat-message-body";
 import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { aiFeatureEnabled } from "@/lib/ai-features";
@@ -24,6 +25,8 @@ import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
 import { formatRelativeTime } from "@/lib/room-chat";
 import type { CollabUser, PeerInfo } from "@/lib/types";
+import type { CSSProperties } from "react";
+import { useEffect, type MutableRefObject } from "react";
 
 export type StudioAiRunner = {
   runInstruction: (
@@ -158,12 +161,28 @@ export function StudioRoomChat({
             <div key={m.id} className={msgClass}>
               {!continued ? (
                 <div className="vt-chat-msg__meta">
-                  <span
-                    className="vt-chat-msg__author"
-                    style={{ color: isAi ? "var(--primary)" : m.authorColor }}
-                  >
-                    {isAi ? "Vimothy" : isSelf ? "You" : m.authorName}
-                  </span>
+                  {isAi ? (
+                    <span
+                      className="vt-chat-msg__agent"
+                      style={
+                        {
+                          ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
+                        } as CSSProperties
+                      }
+                    >
+                      <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
+                      <span className="vt-chat-msg__author">
+                        {DEFAULT_AI_AGENT.name}
+                      </span>
+                    </span>
+                  ) : (
+                    <span
+                      className="vt-chat-msg__author"
+                      style={{ color: m.authorColor }}
+                    >
+                      {isSelf ? "You" : m.authorName}
+                    </span>
+                  )}
                   <span className="vt-chat-msg__time">
                     {formatRelativeTime(m.createdAt, chat.now)}
                   </span>
@@ -244,12 +263,19 @@ export function StudioRoomChat({
 
         {chat.busy ? (
           <div className="vt-chat-msg vt-chat-msg--ai mt-2">
-            <div className="vt-chat-msg__meta">
-              <span
-                className="vt-chat-msg__author"
-                style={{ color: "var(--primary)" }}
-              >
-                Vimothy
+            <div
+              className="vt-chat-msg__meta"
+              style={
+                {
+                  ["--ai-agent-accent"]: DEFAULT_AI_AGENT.accent,
+                } as CSSProperties
+              }
+            >
+              <span className="vt-chat-msg__agent">
+                <AiAgentMark agent={DEFAULT_AI_AGENT} size="md" />
+                <span className="vt-chat-msg__author">
+                  {DEFAULT_AI_AGENT.name}
+                </span>
               </span>
               <span className="vt-chat-msg__time">streaming</span>
             </div>
