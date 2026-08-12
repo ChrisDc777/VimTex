@@ -6,8 +6,8 @@ import {
   extractPatchBlock,
   parsePatchBody,
   type AiPatchProposal,
-} from "@/lib/ai-patch";
-import { DERIVATION_COACH_SYSTEM_RULES } from "@/lib/derivation-coach";
+} from "./ai-patch.ts";
+import { DERIVATION_COACH_SYSTEM_RULES } from "./derivation-coach.ts";
 
 /** Markers the model uses to propose a full-buffer replacement (fallback). */
 export const DOC_EDIT_START = "@@@DOCUMENT";
