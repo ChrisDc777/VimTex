@@ -62,7 +62,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 **Milestone epic:** [#26](https://github.com/ChrisDc777/VimTex/issues/26)  
 **Studio checklist epic:** [#64](https://github.com/ChrisDc777/VimTex/issues/64)  
-**Plan:** [`AI_ROADMAP.md`](./AI_ROADMAP.md)
+**Plan:** [`AI_ROADMAP.md`](./AI_ROADMAP.md) — Waves A–D Level A largely shipped; remaining items are Level B+ / M5.
 
 ### Wave A (exit-critical)
 
@@ -105,7 +105,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 31 | Import LaTeX / Markdown | P1 |
 | 32 | PDF / equation image export | P2 |
 | 33 | Delight polish | P1 |
-| 79 | Docs-style history panel | P2 |
+| 79 | Docs-style history panel | ✅ shipped (PR #131); Level C+ → #126–#128 |
 
 ### History expansion (backlog)
 
@@ -142,6 +142,8 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 ## Maintenance scripts
 
-- `scripts/issue-backlog.json` — canonical issue definitions
-- `scripts/publish-github-backlog.mjs` — idempotent publish to GitHub
+- `scripts/issue-backlog.json` — **historical M0 seed only**. Not the live backlog; do not re-publish from it.
+- `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
+
+Live tracking: GitHub issues + this index. Next work: [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#130](https://github.com/ChrisDc777/VimTex/issues/130).

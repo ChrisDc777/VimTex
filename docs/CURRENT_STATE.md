@@ -2,6 +2,19 @@
 
 *Fork: ChrisDc777/VimTex. Upstream reference: boscochanam/VimTex (read-only; histories have diverged — see CONTRIBUTING.md).*
 
+## Doc authority
+
+If two docs disagree, **this file + open GitHub issues win**. Do not implement from stale milestone tables.
+
+| Trust | Doc |
+|-------|-----|
+| Shipped vs not | This file |
+| Next work | Open issues [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#130](https://github.com/ChrisDc777/VimTex/issues/130) |
+| History internals | [`HISTORY.md`](./HISTORY.md) |
+| AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
+| Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M2 done, M3 Level A largely shipped |
+| Do **not** treat as live backlog | `scripts/issue-backlog.json` (M0 seed only) |
+
 ## Continuing work (agent handoff)
 
 | Topic | Where to start |
@@ -9,8 +22,22 @@
 | Version history shipped (Level A–B) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
 | History backlog (autosnap, index, fork) | GitHub [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#128](https://github.com/ChrisDc777/VimTex/issues/128) |
 | Chat polish backlog (Ask/Edit chips) | [#129](https://github.com/ChrisDc777/VimTex/issues/129) |
+| Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
+
+### Prompt for a new Cursor session
+
+```
+Pull origin/master. Read docs/CURRENT_STATE.md first (doc authority + handoff),
+then docs/HISTORY.md and open GitHub issues #126–#130.
+
+Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
+in PR #131. Next product work is history Level C (#126) unless I specify otherwise.
+
+If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
+CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
+```
 
 ## Architecture
 
@@ -42,7 +69,7 @@ Browser                    Node (server.mjs :3001)
 | Guest edit/view capabilities | ✅ | `lib/room-auth.ts`, `scripts/y-ws/*`, Share menu |
 | Read-only `?view=` (server-enforced) | ✅ | `scripts/y-ws/utils.js`, #23 |
 | Room TTL + optional password | ✅ | room meta + gate dialogs, #24 |
-| Snapshots / version history (modal + side panel) | ✅ | `/api/rooms/.../snapshots`, `RoomHistoryPanel`, #25/#79 |
+| Snapshots / version history side panel | ✅ | History icon + `RoomHistoryPanel`, `/api/rooms/.../snapshots`, #25/#79 |
 | Optional LevelDB persistence | ✅ | `YPERSISTENCE` + `y-leveldb`, #71 |
 | Reconnect / offline banner | ✅ | `ReconnectBanner.tsx`, #21 |
 | Presence / typing | ✅ | awareness, #22 |
@@ -55,7 +82,6 @@ Browser                    Node (server.mjs :3001)
 | Templates + recent rooms | ✅ | `lib/templates.ts`, `lib/recent-rooms.ts` |
 | Command palette | ✅ | Studio / shared palette |
 | CI / E2E | ✅ | `.github/workflows/ci.yml`, `e2e/` |
-| Docs-style history side panel | ✅ | `RoomHistoryPanel.tsx`, preview/compare, #79 |
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
 | Classroom mode | ⏸️ | Deferred → M5 (#82) |
 | AI feature gate (Studio vs Forge) | ✅ | `lib/ai-features.ts`, #59 |

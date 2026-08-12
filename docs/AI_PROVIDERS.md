@@ -1,11 +1,14 @@
-# AI providers — hybrid server + BYOK (RFC)
+# AI providers — hybrid server + BYOK
 
-**Status:** Accepted (2026-08) — implement after this RFC.
+**Status:** Shipped (2026-08). This doc is the design record, not a build queue.
 
-## Problem
+Hybrid OpenRouter + OpenCode + BYOK, streaming, and per-room model prefs are in
+`lib/ai-providers.ts`, `lib/ai-keys.ts`, `ChatModelPicker`, and `POST /api/chat`.
 
-`/api/chat` is a single non-streaming proxy to OpenRouter using one hardcoded
-server key, with a hardcoded two-model list. We want:
+## Original problem (solved)
+
+`/api/chat` used to be a single non-streaming OpenRouter proxy with one server
+key and a hardcoded two-model list. We wanted:
 
 1. **Hybrid access:** VimTex's own (server) OpenRouter key serves cheap/free
    models for everyone; power users can **bring their own key (BYOK)** to
@@ -96,8 +99,11 @@ history windows were raised; providers may still enforce their own rate limits.
 1. RFC (this doc) ✅
 2. Backend: deps + registry + `/api/chat` refactor ✅
 3. Client: `ai-keys.ts`, model picker grouping, chat payloads ✅
-4. E2E + PR ✅ (102/102 passing)
-5. Later: `streamText` + cancel, then AI diff accept/reject (#27).
+4. E2E + PR ✅
+5. Streaming + cancel (#29) ✅
+6. AI diff accept/reject (#27) ✅
+
+**Not next:** native (non-OpenRouter) providers, server-side key storage, quotas. Those wait for M5 / explicit issues.
 
 ## Non-goals (now)
 

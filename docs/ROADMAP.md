@@ -66,13 +66,13 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | P1 | Room TTL + optional password | M | ✅ `#24` |
 | P1 | Guest edit capability tokens | M | ✅ `#80` (mint on create; no view escalation) |
 | P1 | Optional LevelDB (`YPERSISTENCE`) | M | ✅ `#71` |
-| P2 | Snapshots + version history UI | L | ✅ `#25` modal; Docs-style panel → **M4** `#79` |
+| P2 | Snapshots + version history UI | L | ✅ `#25` store; Docs-style panel `#79` shipped (Level A–B) |
 | P2 | Follow-user / presenter mode | M | ⏸️ Deferred → `#81` (post-M2) |
 | P3 | Classroom mode discovery | L | ⏸️ Deferred → M5 `#82` |
 
 **M2 exit:** Session survives brief disconnect; owner can share view-only link. ✅
 
-**Explicitly not blocking M2 close:** Docs-style history rail (#79), follow/presenter (#81), classroom (#82), claim-guest (#78 / accounts).
+**Explicitly not blocking M2 close:** follow/presenter (#81), classroom (#82), claim-guest (#78 / accounts). History rail (#79) shipped later in M4.
 
 ---
 
@@ -106,7 +106,7 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | P1 | Copy as TeX / Markdown / rendered equation | S | |
 | P1 | Import .md / .tex | M | |
 | P1 | Toasts, empty states, reconnect polish | S | |
-| P2 | Docs-style version history side panel | M | `#79` — shipped (Level A–B); autosnap/fork → backlog |
+| P2 | Docs-style version history side panel | M | ✅ `#79` Level A–B (PR #131); Level C+ → `#126`–`#128` |
 | P2 | PNG/SVG/MathML per equation | M | |
 | P2 | PDF export (print or server render) | L | |
 | P2 | Overleaf handoff RFC | XS | |
@@ -154,8 +154,10 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 
 **Wave 2 (landed):** Forge toggle, onboarding, standard editing mode, templates, recent rooms, command palette, preferences dialog.
 
-**Wave 3 (M2 — landed):** LevelDB optional persistence, read-only + edit capabilities, room TTL/password, snapshots modal, reconnect/presence.
+**Wave 3 (M2 — landed):** LevelDB optional persistence, read-only + edit capabilities, room TTL/password, snapshot store, reconnect/presence.
 
-**Next (M3):** AI accept/reject + Studio/Forge gate — [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md).
+**M3 Level A (landed):** AI accept/reject + Studio/Forge gate — [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md).
+
+**Next:** History Level C ([#126](https://github.com/ChrisDc777/VimTex/issues/126)); remaining M4 import/export; see [`CURRENT_STATE.md`](./CURRENT_STATE.md).
 
 See [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for issue index.
