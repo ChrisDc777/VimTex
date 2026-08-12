@@ -6,14 +6,14 @@ export const runtime = "nodejs";
 
 const require = createRequire(import.meta.url);
 const { readSnapshotText } = require(
-  "../../../../../../scripts/y-ws/room-snapshots.js",
+  "../../../../../../../scripts/y-ws/room-snapshots.js",
 ) as {
   readSnapshotText: (roomId: string, id: string) => string | null;
 };
 const {
   parseSnapshotCredentials,
   authorizeSnapshotRead,
-} = require("../../../../../../scripts/y-ws/snapshot-access.js") as {
+} = require("../../../../../../../scripts/y-ws/snapshot-access.js") as {
   parseSnapshotCredentials: (req: Request) => SnapshotCredentials;
   authorizeSnapshotRead: (
     roomId: string,
