@@ -10,10 +10,14 @@ export type VisualViewportState = {
 
 const KEYBOARD_THRESHOLD = 0.75;
 
+const SSR_VIEWPORT: VisualViewportState = {
+  height: 800,
+  offsetTop: 0,
+  keyboardOpen: false,
+};
+
 function readViewport(): VisualViewportState {
-  if (typeof window === "undefined") {
-    return { height: 800, offsetTop: 0, keyboardOpen: false };
-  }
+  if (typeof window === "undefined") return SSR_VIEWPORT;
 
   const vv = window.visualViewport;
   const height = vv?.height ?? window.innerHeight;
@@ -24,7 +28,9 @@ function readViewport(): VisualViewportState {
 }
 
 export function useVisualViewport(): VisualViewportState {
-  const [state, setState] = useState<VisualViewportState>(readViewport);
+  // Always start from the SSR snapshot. Reading window during the first client
+  // render makes inline layout styles diverge from server HTML.
+  const [state, setState] = useState<VisualViewportState>(SSR_VIEWPORT);
 
   useEffect(() => {
     const update = () => setState(readViewport());

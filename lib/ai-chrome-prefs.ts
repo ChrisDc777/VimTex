@@ -169,7 +169,7 @@ export function applySlashTokenStyleToDocument(style: SlashTokenStyle): void {
 }
 
 export function loadAiChromePrefs(): AiChromePrefs {
-  const prefs: AiChromePrefs = {
+  return {
     slashMenu: readFlag(SLASH_KEY, DEFAULT_AI_CHROME_PREFS.slashMenu),
     docActionPills: readFlag(PILLS_KEY, DEFAULT_AI_CHROME_PREFS.docActionPills),
     ghostText: readFlag(GHOST_KEY, DEFAULT_AI_CHROME_PREFS.ghostText),
@@ -177,8 +177,6 @@ export function loadAiChromePrefs(): AiChromePrefs {
     enabledSlashCommands: readEnabledSlashCommands(),
     customSlashCommands: readCustomSlashCommands(),
   };
-  applySlashTokenStyleToDocument(prefs.slashTokenStyle);
-  return prefs;
 }
 
 export function saveAiChromePrefs(prefs: AiChromePrefs): void {

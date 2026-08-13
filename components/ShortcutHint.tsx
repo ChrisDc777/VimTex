@@ -20,12 +20,6 @@ export function isApplePlatform(): boolean {
   return /Mac OS X|Macintosh|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-/** Primary modifier: ⌘ on Apple, Ctrl elsewhere. */
-export const MOD_LABEL = isApplePlatform() ? "⌘" : "Ctrl";
-
-/** Shift chord token for display. */
-export const SHIFT_LABEL = isApplePlatform() ? "⇧" : "Shift";
-
 type ShortcutParts = {
   mod?: boolean;
   shift?: boolean;
