@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
-import { exportAsMd, exportAsTex } from "@/lib/export";
+import { exportAsMd, exportAsPdf, exportAsTex } from "@/lib/export";
 import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import { openNoteImport } from "@/lib/ui-events";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
@@ -164,6 +164,13 @@ export function CommandPalette({
         keywords: "download .md save obsidian github jupyter",
         hint: ".md",
         run: () => exportAsMd(note),
+      },
+      {
+        id: "export-pdf",
+        label: "Export as PDF (print)",
+        keywords: "download print save pdf paper",
+        hint: "PDF",
+        run: () => exportAsPdf(note),
       },
       {
         id: "copy-vimtex-source",

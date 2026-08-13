@@ -1,6 +1,6 @@
 "use client";
 
-import { exportAsMd, exportAsTex } from "@/lib/export";
+import { exportAsMd, exportAsPdf, exportAsTex } from "@/lib/export";
 
 type ExportMenuProps = {
   note: string;
@@ -29,6 +29,14 @@ export function ExportMenu({ note, compact }: ExportMenuProps) {
         title="Export as Markdown ($ math)"
       >
         .md
+      </button>
+      <button
+        type="button"
+        onClick={() => exportAsPdf(note)}
+        className={pillClass}
+        title="Export as PDF (print)"
+      >
+        .pdf
       </button>
     </div>
   );

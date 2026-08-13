@@ -1,4 +1,8 @@
+import { deriveDocumentTitle } from "./document-title.ts";
 import { vimtexToMarkdownDollars } from "./math-delimiters.ts";
+import { renderNoteToHtml } from "./render-note.ts";
+
+export const PRINT_ROOT_ID = "vt-print-root";
 
 function triggerDownload(
   content: string,
@@ -67,4 +71,33 @@ export async function copyVimtexSource(note: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function ensurePrintRoot(): HTMLElement {
+  const existing = document.getElementById(PRINT_ROOT_ID);
+  if (existing) return existing;
+  const el = document.createElement("div");
+  el.id = PRINT_ROOT_ID;
+  el.className = "vt-print-root latex-preview";
+  el.setAttribute("aria-hidden", "true");
+  document.body.appendChild(el);
+  return el;
+}
+
+/**
+ * Print the rendered note (browser “Save as PDF”).
+ * Uses on-page KaTeX so fonts match the preview.
+ */
+export function exportAsPdf(note: string): void {
+  const root = ensurePrintRoot();
+  root.innerHTML = renderNoteToHtml(note);
+  const prevTitle = document.title;
+  const derived = deriveDocumentTitle(note);
+  document.title = derived === "Untitled" ? "vimtex-note" : derived;
+  const restore = () => {
+    document.title = prevTitle;
+    window.removeEventListener("afterprint", restore);
+  };
+  window.addEventListener("afterprint", restore);
+  window.print();
 }

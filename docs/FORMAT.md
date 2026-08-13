@@ -99,10 +99,11 @@ rewrites delimiters for other apps. **Copy VimTex source** is the lossless path.
 | **Copy VimTex source** | Clipboard = live buffer, unchanged |
 | **Export as LaTeX** | Overleaf-ready `.tex`: `\documentclass{article}` + `amsmath,amssymb` + `\begin{document}…\end{document}`. Skips the wrapper if `\begin{document}` is already present. Delimiters stay `\( \)` / `\[ \]`. Bare math is **not** wrapped. |
 | **Export as Markdown** | `.md` with `$` / `$$` instead of `\( \)` / `\[ \]` (Obsidian, GitHub, Jupyter). Bare math is **not** wrapped. |
+| **Export as PDF** | Browser print of the **rendered** note (Save as PDF). Light paper; KaTeX as in preview. Not a LaTeX compiler. |
+| **Copy equation SVG / PNG** | Preview hover bar: TeX source, SVG markup, or PNG (black on white). |
 | **Import `.tex` / `.md`** | UTF-8, strip BOM, CRLF → LF. Full LaTeX files import **only the document body**. `$` / `$$` math is converted to `\( \)` / `\[ \]` (toast: `converted $ math`). Escaped `\$` is left alone. |
 
-The imported text replaces the current room buffer and syncs to peers. PDF /
-equation-image export is a separate issue (#32), not this handoff.
+The imported text replaces the current room buffer and syncs to peers.
 
 ## 6. Starter and templates
 
@@ -125,4 +126,6 @@ the AI system prompt (`lib/ai-chat.ts`) share these conventions.
 | Copy | lossless buffer | `lib/copy-note.ts` |
 | `.tex` export | article wrapper for Overleaf; no delimiter rewrite | `lib/export.ts` |
 | `.md` export | `\( \)` / `\[ \]` → `$` / `$$` | `lib/export.ts` |
+| PDF export | print rendered preview | `lib/export.ts` |
+| Equation image | SVG / PNG from preview KaTeX | `lib/equation-image.ts` |
 | Imports | UTF-8, LF, unwrap `\begin{document}`, `$` → `\( \)` | `lib/import-note.ts` |

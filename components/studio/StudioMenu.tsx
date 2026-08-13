@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { EditorMode } from "@/lib/editor-mode";
-import { exportAsMd, exportAsTex } from "@/lib/export";
+import { exportAsMd, exportAsPdf, exportAsTex } from "@/lib/export";
 import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import { openNoteImport, subscribeOpenPreferences } from "@/lib/ui-events";
 import type { UiVariant } from "@/lib/ui-variant";
@@ -197,6 +197,15 @@ export function StudioMenu({
         >
           <span className="vt-header-menu__label">Export as Markdown</span>
           <span className="vt-header-menu__hint">$ math</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          onClick={() => run(() => exportAsPdf(note))}
+        >
+          <span className="vt-header-menu__label">Export as PDF</span>
+          <span className="vt-header-menu__hint">print</span>
         </button>
         <button
           type="button"
