@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { openNoteImport, subscribeOpenPreferences } from "@/lib/ui-events";
-import { exportAsMd, exportAsTex } from "@/lib/export";
+import { exportAsMd, exportAsPdf, exportAsTex } from "@/lib/export";
 import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { RecentRoom } from "@/lib/recent-rooms";
@@ -216,6 +216,15 @@ export function SheetMenu({
         >
           <span className="vt-header-menu__label">Export as Markdown</span>
           <span className="vt-header-menu__hint">$ math</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          onClick={() => run(() => exportAsPdf(note))}
+        >
+          <span className="vt-header-menu__label">Export as PDF</span>
+          <span className="vt-header-menu__hint">print</span>
         </button>
         <button
           type="button"

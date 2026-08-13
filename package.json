@@ -27,6 +27,7 @@
     "@replit/codemirror-vim": "^6.3.0",
     "ai": "^7.0.48",
     "codemirror": "^6.0.2",
+    "html-to-image": "^1.11.13",
     "katex": "^0.18.0",
     "lib0": "^0.2.117",
     "lodash.debounce": "^4.0.8",

@@ -104,7 +104,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 |---|-------|----------|
 | 31 | Import LaTeX / Markdown | ✅ shipped |
 | — | Overleaf `.tex` wrap, `.md` `$` math, Copy VimTex source | ✅ shipped (handoff; not #32) |
-| 32 | PDF / equation image export | P2 |
+| 32 | PDF / equation image export | ✅ shipped (print PDF + SVG/PNG copy) |
 | 33 | Delight polish | P1 |
 | 79 | Docs-style history panel | ✅ shipped (PR #131); Level C → #126 |
 
@@ -147,4 +147,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. Next work: M4 [#32](https://github.com/ChrisDc777/VimTex/issues/32)–[#33](https://github.com/ChrisDc777/VimTex/issues/33).
+Live tracking: GitHub issues + this index. Next work: M4 [#33](https://github.com/ChrisDc777/VimTex/issues/33).
