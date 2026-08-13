@@ -60,13 +60,17 @@ export function NoteImportHost() {
           notify.error("Could not read that file.");
           return;
         }
-        const content = prepareImportedNote(raw, file.name);
-        if (!content.trim()) {
+        const prepared = prepareImportedNote(raw, file.name);
+        if (!prepared.content.trim()) {
           notify.error("That file has no importable note text.");
           return;
         }
-        workspace.replaceAll(content, "file-import");
-        notify.success(`Imported ${file.name}`);
+        workspace.replaceAll(prepared.content, "file-import");
+        notify.success(
+          prepared.convertedDollarMath
+            ? `Imported ${file.name} (converted $ math)`
+            : `Imported ${file.name}`,
+        );
       }}
     />
   );

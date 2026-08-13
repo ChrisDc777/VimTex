@@ -9,7 +9,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Trust | Doc |
 |-------|-----|
 | Shipped vs not | This file |
-| Next work | M4: [#32](https://github.com/ChrisDc777/VimTex/issues/32) export, [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish; motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
+| Next work | M4: [#32](https://github.com/ChrisDc777/VimTex/issues/32) PDF / equation image, [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish; motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | History internals | [`HISTORY.md`](./HISTORY.md) |
 | AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
 | Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M2 done, M3 Level A largely shipped |
@@ -22,7 +22,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Version history shipped (Level A–E) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
 | Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
 | History backlog | Level D/E shipped (#127/#128); authorship remap → #37/#78 |
-| M4 import/export | ✅ #31 import shipped; next [#32](https://github.com/ChrisDc777/VimTex/issues/32) export / [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish |
+| M4 import/export | ✅ #31 import + Overleaf / `$` math handoff + Copy source; next [#32](https://github.com/ChrisDc777/VimTex/issues/32) PDF / [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish |
 | Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
@@ -34,8 +34,9 @@ Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and open GitHub issues #32–#33 (M4) and #130.
 
 Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
-in PR #131. History Level C–E (#126–#128), Ask/Edit chips (#129), and file import
-(#31) shipped. Next product work is M4 export (#32) or polish (#33).
+in PR #131. History Level C–E (#126–#128), Ask/Edit chips (#129), file import
+(#31), and .tex/.md handoff (Overleaf wrap, `$` math, Copy VimTex source) shipped.
+Next product work is M4 PDF / equation image (#32) or polish (#33).
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -83,7 +84,8 @@ Browser                    Node (server.mjs :3001)
 | Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |
 | Templates + recent rooms | ✅ | `lib/templates.ts`, `lib/recent-rooms.ts` |
 | Command palette | ✅ | Studio / shared palette |
-| Import .tex / .md | ✅ | Menu + palette file picker, `lib/import-note.ts`, #31 |
+| Import .tex / .md | ✅ | Menu + palette file picker, `$` → `\( \)`, `lib/import-note.ts`, #31 |
+| Export .tex / .md + Copy source | ✅ | Overleaf wrapper, `$` math `.md`, lossless Copy; `lib/export.ts` |
 | CI / E2E | ✅ | `.github/workflows/ci.yml`, `e2e/` |
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |
 | Classroom mode | ⏸️ | Deferred → M5 (#82) |

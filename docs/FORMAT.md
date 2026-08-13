@@ -7,9 +7,11 @@
 ## 1. Model
 
 A VimTex note is a single **UTF-8 plain-text buffer** with `LF` line endings. It
-is the single source of truth: the preview is a *projection* of it, and exports
-are the buffer *verbatim*. It is stored as a Yjs `Y.Text` shared string and
-edited collaboratively.
+is the single source of truth: the preview is a *projection* of it. **Copy
+VimTex source** is the lossless path (clipboard, buffer verbatim). File exports
+are *handoff* conversions for other apps — they are not a second source of
+truth. The buffer is stored as a Yjs `Y.Text` shared string and edited
+collaboratively.
 
 The format is deliberately a **lightweight Markdown-flavored prose + TeX math**
 hybrid. The two non-negotiable rules:
@@ -26,8 +28,7 @@ hybrid. The two non-negotiable rules:
   line break.
 - **`%` comments:** `%` starts a comment running to the end of its line.
   Comments are **stripped from the rendered preview** but **preserved in the
-  source and in exports** (they are valid in both `.tex` and `.md`). To write a
-  literal `%`, escape it as `\%`.
+  source, Copy, and file exports**. To write a literal `%`, escape it as `\%`.
 - **Title metadata:** an optional `\title{...}` on its own line declares the note
   title (first occurrence wins). It is read for tab labels and derived document
   titles; TeX markup inside the braces is stripped for display. When absent, the
@@ -90,14 +91,18 @@ the source and render literally.
 
 ## 5. Exports and imports
 
-`.tex` and `.md` exports write the **buffer verbatim** (delimiters, comments, and
-markup preserved) — lossless by design. Both are *fragments*, not full documents:
-no `\documentclass` wrapper is added or required.
+Authoring in the live buffer stays VimTex (`\( \)` / `\[ \]`). File import/export
+rewrites delimiters for other apps. **Copy VimTex source** is the lossless path.
 
-Imports (`lib/import-note.ts`) read UTF-8, strip a BOM, and normalize CRLF to LF.
-A full LaTeX file with `\begin{document}...\end{document}` imports **only the
-body**. Markdown and TeX fragments are otherwise unchanged — `$` / `$$` stay
-literal. The imported text replaces the current room buffer and syncs to peers.
+| Action | What you get |
+|--------|----------------|
+| **Copy VimTex source** | Clipboard = live buffer, unchanged |
+| **Export as LaTeX** | Overleaf-ready `.tex`: `\documentclass{article}` + `amsmath,amssymb` + `\begin{document}…\end{document}`. Skips the wrapper if `\begin{document}` is already present. Delimiters stay `\( \)` / `\[ \]`. Bare math is **not** wrapped. |
+| **Export as Markdown** | `.md` with `$` / `$$` instead of `\( \)` / `\[ \]` (Obsidian, GitHub, Jupyter). Bare math is **not** wrapped. |
+| **Import `.tex` / `.md`** | UTF-8, strip BOM, CRLF → LF. Full LaTeX files import **only the document body**. `$` / `$$` math is converted to `\( \)` / `\[ \]` (toast: `converted $ math`). Escaped `\$` is left alone. |
+
+The imported text replaces the current room buffer and syncs to peers. PDF /
+equation-image export is a separate issue (#32), not this handoff.
 
 ## 6. Starter and templates
 
@@ -114,8 +119,10 @@ the AI system prompt (`lib/ai-chat.ts`) share these conventions.
 | Source of truth | buffer verbatim | Yjs `Y.Text` |
 | Inline math | `\( \)`, bare commands/expressions | `render-note.ts` |
 | Display math | `\[ \]` only | `render-note.ts` |
-| `$` / `$$` | literal text | `render-note.ts`, `cm-latex-highlight.ts` |
-| `%` comments | stripped in preview, kept in source/export | `render-note.ts` |
+| `$` / `$$` | literal in the live buffer; converted on import / `.md` export | `render-note.ts`, `lib/math-delimiters.ts` |
+| `%` comments | stripped in preview, kept in source / Copy / file export | `render-note.ts` |
 | Title | `\title{...}` then first line | `lib/document-title.ts` |
-| Exports | verbatim, no wrapper | `lib/export.ts` |
-| Imports | UTF-8, LF, unwrap `\begin{document}` | `lib/import-note.ts` |
+| Copy | lossless buffer | `lib/copy-note.ts` |
+| `.tex` export | article wrapper for Overleaf; no delimiter rewrite | `lib/export.ts` |
+| `.md` export | `\( \)` / `\[ \]` → `$` / `$$` | `lib/export.ts` |
+| Imports | UTF-8, LF, unwrap `\begin{document}`, `$` → `\( \)` | `lib/import-note.ts` |

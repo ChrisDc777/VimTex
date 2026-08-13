@@ -1,13 +1,21 @@
 /**
  * Normalize a dropped/picked note so it matches FORMAT.md: UTF-8, LF, no BOM.
- * Full LaTeX documents import the `document` body only; fragments stay verbatim.
+ * Full LaTeX documents import the `document` body only.
+ * Markdown `$` / `$$` math is converted to VimTex `\( \)` / `\[ \]`.
  */
+
+import { hasMarkdownDollarMath, markdownDollarsToVimtex } from "./math-delimiters.ts";
 
 export const NOTE_IMPORT_ACCEPT = ".tex,.md,.markdown,.txt";
 export const NOTE_IMPORT_MAX_BYTES = 1_048_576;
 
 const BEGIN_DOCUMENT = /\\begin\{document\}[ \t]*(?:\n)?/i;
 const END_DOCUMENT = /\\end\{document\}/i;
+
+export type PreparedImport = {
+  content: string;
+  convertedDollarMath: boolean;
+};
 
 export function normalizeImportedText(raw: string): string {
   return raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -23,17 +31,28 @@ export function extractLatexDocumentBody(text: string): string | null {
   return end ? rest.slice(0, end.index) : rest;
 }
 
+function withTrailingNewline(text: string): string {
+  const trimmed = text.replace(/[ \t]+\n/g, "\n").replace(/[ \t]+$/g, "");
+  if (!trimmed.trim()) return "";
+  return trimmed.endsWith("\n") ? trimmed : `${trimmed}\n`;
+}
+
 /**
  * Prepare file bytes for the Yjs buffer.
- * `$` / `$$` stay literal (FORMAT.md); no Markdown-math rewrite.
+ * `$` / `$$` math (Obsidian, GitHub, Jupyter) is rewritten to `\( \)` / `\[ \]`.
  */
-export function prepareImportedNote(raw: string, filename = ""): string {
+export function prepareImportedNote(
+  raw: string,
+  filename = "",
+): PreparedImport {
   const normalized = normalizeImportedText(raw);
   const looksTex =
     /\.tex$/i.test(filename.trim()) || BEGIN_DOCUMENT.test(normalized);
   const extracted = looksTex ? extractLatexDocumentBody(normalized) : null;
-  const body = extracted ?? normalized;
-  const trimmed = body.replace(/[ \t]+\n/g, "\n").replace(/[ \t]+$/g, "");
-  if (!trimmed.trim()) return "";
-  return trimmed.endsWith("\n") ? trimmed : `${trimmed}\n`;
+  const body = withTrailingNewline(extracted ?? normalized);
+  if (!body) return { content: "", convertedDollarMath: false };
+
+  const convertedDollarMath = hasMarkdownDollarMath(body);
+  const content = convertedDollarMath ? markdownDollarsToVimtex(body) : body;
+  return { content, convertedDollarMath };
 }

@@ -1,7 +1,9 @@
 /**
  * Chat-only math / markup normalization for LLM replies.
- * Does not change the stored Yjs message — display pipeline only.
+ * Delimiter conversion is shared with import via `math-delimiters.ts`.
  */
+
+import { markdownDollarsToVimtex } from "./math-delimiters.ts";
 
 /** True when a snippet is almost certainly TeX, not prose code. */
 export function looksLikeTexSnippet(raw: string): boolean {
@@ -40,40 +42,7 @@ export function unwrapTexBackticks(text: string): string {
  * Convert for chat display only.
  */
 export function normalizeChatMathDelimiters(text: string): string {
-  let out = "";
-  let i = 0;
-  while (i < text.length) {
-    if (text[i] === "\\" && text[i + 1] === "$") {
-      out += "\\$";
-      i += 2;
-      continue;
-    }
-    if (text.startsWith("$$", i)) {
-      const close = text.indexOf("$$", i + 2);
-      if (close === -1) {
-        out += text[i]!;
-        i += 1;
-        continue;
-      }
-      out += `\\[${text.slice(i + 2, close)}\\]`;
-      i = close + 2;
-      continue;
-    }
-    if (text[i] === "$") {
-      const close = text.indexOf("$", i + 1);
-      if (close === -1) {
-        out += text[i]!;
-        i += 1;
-        continue;
-      }
-      out += `\\(${text.slice(i + 1, close)}\\)`;
-      i = close + 1;
-      continue;
-    }
-    out += text[i]!;
-    i += 1;
-  }
-  return out;
+  return markdownDollarsToVimtex(text);
 }
 
 /**
