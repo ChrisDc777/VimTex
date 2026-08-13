@@ -146,4 +146,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. Next work: [#126](https://github.com/ChrisDc777/VimTex/issues/126)–[#130](https://github.com/ChrisDc777/VimTex/issues/130).
+Live tracking: GitHub issues + this index. Next work: M4 [#31](https://github.com/ChrisDc777/VimTex/issues/31)–[#33](https://github.com/ChrisDc777/VimTex/issues/33).

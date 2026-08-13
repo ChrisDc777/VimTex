@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { STRIP_EXTENSION_HYDRATION_ATTRS_SCRIPT } from "@/lib/strip-extension-hydration-attrs";
 import "./globals.css";
 
 const geist = Geist({
@@ -48,18 +50,24 @@ export const viewport: Viewport = {
   themeColor: "#111214",
 };
 
+const fontVars = `${geist.variable} ${geistMono.variable} ${jetbrainsMono.variable}`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${geist.variable} ${geistMono.variable} ${jetbrainsMono.variable} h-full antialiased`}
-    >
-      <body suppressHydrationWarning className="min-h-full bg-canvas text-ink">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${fontVars} min-h-full bg-canvas text-ink antialiased`}
+      >
+        <Script id="strip-extension-hydration-attrs" strategy="beforeInteractive">
+          {STRIP_EXTENSION_HYDRATION_ATTRS_SCRIPT}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

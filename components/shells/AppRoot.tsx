@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppLoadingShell } from "@/components/shells/AppLoadingShell";
 import { StudioShell } from "@/components/shells/StudioShell";
 import { ForgeShell } from "@/components/shells/ForgeShell";
 import {
@@ -25,11 +26,7 @@ export function AppRoot() {
   };
 
   if (!hydrated) {
-    return (
-      <div className="app-shell flex h-dvh items-center justify-center text-sm text-mute">
-        Loading VimTex…
-      </div>
-    );
+    return <AppLoadingShell />;
   }
 
   if (uiVariant === "forge") {
