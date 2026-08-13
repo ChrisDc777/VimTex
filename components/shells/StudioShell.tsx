@@ -9,6 +9,7 @@ import { SidePanel } from "@/components/SidePanel";
 import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StudioMenu } from "@/components/studio/StudioMenu";
+import { NoteImportHost } from "@/components/NoteImportHost";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
@@ -432,6 +433,7 @@ export function StudioShell({
   return (
     <WorkspaceProvider value={workspace}>
     <AiReviewProvider>
+    <NoteImportHost />
     <RoomAutosnapHost
       roomId={roomId}
       readOnly={readOnly}

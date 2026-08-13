@@ -5,11 +5,11 @@ import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import type { EditorMode } from "@/lib/editor-mode";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import { openNoteImport, subscribeOpenPreferences } from "@/lib/ui-events";
 import type { UiVariant } from "@/lib/ui-variant";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { NewRoomOptions } from "@/lib/types";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
-import { subscribeOpenPreferences } from "@/lib/ui-events";
 
 type StudioMenuProps = {
   note: string;
@@ -167,6 +167,17 @@ export function StudioMenu({
           <span className="vt-header-menu__hint">Choose a template</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
+        <div className="vt-caption px-2 py-1 text-mute">Import</div>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          onClick={() => run(() => openNoteImport())}
+        >
+          <span className="vt-header-menu__label">Import file…</span>
+          <span className="vt-header-menu__hint">.tex / .md</span>
+        </button>
+        <div className="vt-header-menu__divider" role="separator" />
         <div className="vt-caption px-2 py-1 text-mute">Export</div>
         <button
           type="button"
@@ -250,7 +261,7 @@ export function StudioMenu({
         aria-expanded={open}
         aria-controls={menuId}
         aria-label="Room menu"
-        title="New room, export, editor options"
+        title="New room, import, export, editor options"
         onClick={() => setOpen((v) => !v)}
       >
         <MenuIcon />

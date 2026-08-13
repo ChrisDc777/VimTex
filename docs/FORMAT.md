@@ -88,11 +88,16 @@ the source and render literally.
   (use Split preview, or keep display math on one line / with `\[ \]`).
   Studio Live is required for editor widgets; Split shows KaTeX in the preview pane.
 
-## 5. Exports
+## 5. Exports and imports
 
 `.tex` and `.md` exports write the **buffer verbatim** (delimiters, comments, and
 markup preserved) — lossless by design. Both are *fragments*, not full documents:
 no `\documentclass` wrapper is added or required.
+
+Imports (`lib/import-note.ts`) read UTF-8, strip a BOM, and normalize CRLF to LF.
+A full LaTeX file with `\begin{document}...\end{document}` imports **only the
+body**. Markdown and TeX fragments are otherwise unchanged — `$` / `$$` stay
+literal. The imported text replaces the current room buffer and syncs to peers.
 
 ## 6. Starter and templates
 
@@ -113,3 +118,4 @@ the AI system prompt (`lib/ai-chat.ts`) share these conventions.
 | `%` comments | stripped in preview, kept in source/export | `render-note.ts` |
 | Title | `\title{...}` then first line | `lib/document-title.ts` |
 | Exports | verbatim, no wrapper | `lib/export.ts` |
+| Imports | UTF-8, LF, unwrap `\begin{document}` | `lib/import-note.ts` |
