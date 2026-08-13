@@ -11,6 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import { openNoteImport } from "@/lib/ui-events";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { NewRoomOptions, ViewMode } from "@/lib/types";
@@ -142,6 +143,13 @@ export function CommandPalette({
       run: () => onSaveAsTemplate(),
     });
     list.push(
+      {
+        id: "import-note",
+        label: "Import LaTeX or Markdown",
+        keywords: "upload open .tex .md file import",
+        hint: "File",
+        run: () => openNoteImport(),
+      },
       {
         id: "export-tex",
         label: "Export as LaTeX",

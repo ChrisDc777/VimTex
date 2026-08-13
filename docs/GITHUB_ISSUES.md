@@ -102,7 +102,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 | # | Issue | Priority |
 |---|-------|----------|
-| 31 | Import LaTeX / Markdown | P1 |
+| 31 | Import LaTeX / Markdown | ✅ shipped |
 | 32 | PDF / equation image export | P2 |
 | 33 | Delight polish | P1 |
 | 79 | Docs-style history panel | ✅ shipped (PR #131); Level C → #126 |
@@ -146,4 +146,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. Next work: M4 [#31](https://github.com/ChrisDc777/VimTex/issues/31)–[#33](https://github.com/ChrisDc777/VimTex/issues/33).
+Live tracking: GitHub issues + this index. Next work: M4 [#32](https://github.com/ChrisDc777/VimTex/issues/32)–[#33](https://github.com/ChrisDc777/VimTex/issues/33).

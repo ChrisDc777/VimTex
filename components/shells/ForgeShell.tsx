@@ -15,6 +15,7 @@ import { ReconnectBanner } from "@/components/ReconnectBanner";
 import { SnippetMenu } from "@/components/SnippetMenu";
 import { VtToaster } from "@/components/VtToaster";
 import { CommandPalette } from "@/components/CommandPalette";
+import { NoteImportHost } from "@/components/NoteImportHost";
 import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { NewSheetDialog } from "@/components/NewSheetDialog";
@@ -557,6 +558,7 @@ export function ForgeShell({
   return (
     <WorkspaceProvider value={workspace}>
     <AiReviewProvider>
+    <NoteImportHost />
     <RoomAutosnapHost
       roomId={roomId}
       readOnly={readOnly}
