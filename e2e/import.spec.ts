@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { editorDocText, joinStudioRoom, openForge } from "./helpers";
 
-const MD_BODY = "Imported heading\n\nSee \\(x^2\\) and $literal$.\n";
+const MD_BODY = "Imported heading\n\nSee $x^2$ and \\(y\\).\n";
 const TEX_DOC = [
   "\\documentclass{article}",
   "\\begin{document}",
@@ -30,11 +30,14 @@ test.describe("M4 note import (#31)", () => {
       buffer: Buffer.from(MD_BODY, "utf8"),
     });
 
-    await expect(page.getByText(/imported notes\.md/i)).toBeVisible({
+    await expect(page.getByText(/imported notes\.md \(converted \$ math\)/i)).toBeVisible({
       timeout: 8_000,
     });
-    await expect(await editorDocText(page)).toContain("Imported heading");
-    await expect(await editorDocText(page)).toContain("$literal$");
+    const doc = await editorDocText(page);
+    await expect(doc).toContain("Imported heading");
+    await expect(doc).toContain("\\(x^2\\)");
+    await expect(doc).toContain("\\(y\\)");
+    expect(doc).not.toContain("$x^2$");
   });
 
   test("Forge palette imports a .tex document body only", async ({ page }) => {

@@ -18,7 +18,7 @@ export function ExportMenu({ note, compact }: ExportMenuProps) {
         type="button"
         onClick={() => exportAsTex(note)}
         className={pillClass}
-        title="Export as LaTeX"
+        title="Export as LaTeX for Overleaf"
       >
         .tex
       </button>
@@ -26,7 +26,7 @@ export function ExportMenu({ note, compact }: ExportMenuProps) {
         type="button"
         onClick={() => exportAsMd(note)}
         className={pillClass}
-        title="Export as Markdown"
+        title="Export as Markdown ($ math)"
       >
         .md
       </button>

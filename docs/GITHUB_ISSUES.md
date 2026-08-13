@@ -103,6 +103,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | # | Issue | Priority |
 |---|-------|----------|
 | 31 | Import LaTeX / Markdown | ✅ shipped |
+| — | Overleaf `.tex` wrap, `.md` `$` math, Copy VimTex source | ✅ shipped (handoff; not #32) |
 | 32 | PDF / equation image export | P2 |
 | 33 | Delight polish | P1 |
 | 79 | Docs-style history panel | ✅ shipped (PR #131); Level C → #126 |

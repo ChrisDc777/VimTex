@@ -6,6 +6,7 @@ import { SafeSvg } from "@/components/SafeSvg";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { openNoteImport, subscribeOpenPreferences } from "@/lib/ui-events";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
@@ -205,7 +206,7 @@ export function SheetMenu({
           onClick={() => run(() => exportAsTex(note))}
         >
           <span className="vt-header-menu__label">Export as LaTeX</span>
-          <span className="vt-header-menu__hint">.tex</span>
+          <span className="vt-header-menu__hint">Overleaf</span>
         </button>
         <button
           type="button"
@@ -214,7 +215,16 @@ export function SheetMenu({
           onClick={() => run(() => exportAsMd(note))}
         >
           <span className="vt-header-menu__label">Export as Markdown</span>
-          <span className="vt-header-menu__hint">.md</span>
+          <span className="vt-header-menu__hint">$ math</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="vt-header-menu__item"
+          onClick={() => run(() => copyVimtexSourceToClipboard(note))}
+        >
+          <span className="vt-header-menu__label">Copy VimTex source</span>
+          <span className="vt-header-menu__hint">verbatim</span>
         </button>
         {showRecents ? (
           <>

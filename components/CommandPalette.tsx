@@ -11,6 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { SafeSvg } from "@/components/SafeSvg";
 import { exportAsMd, exportAsTex } from "@/lib/export";
+import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import { openNoteImport } from "@/lib/ui-events";
 import { uiVariantLabel, type UiVariant } from "@/lib/ui-variant";
 import type { EditorMode } from "@/lib/editor-mode";
@@ -152,17 +153,24 @@ export function CommandPalette({
       },
       {
         id: "export-tex",
-        label: "Export as LaTeX",
-        keywords: "download .tex save",
+        label: "Export as LaTeX (Overleaf)",
+        keywords: "download .tex save overleaf compile pdflatex",
         hint: ".tex",
         run: () => exportAsTex(note),
       },
       {
         id: "export-md",
-        label: "Export as Markdown",
-        keywords: "download .md save",
+        label: "Export as Markdown ($ math)",
+        keywords: "download .md save obsidian github jupyter",
         hint: ".md",
         run: () => exportAsMd(note),
+      },
+      {
+        id: "copy-vimtex-source",
+        label: "Copy VimTex source",
+        keywords: "copy clipboard verbatim lossless buffer",
+        hint: "Copy",
+        run: () => copyVimtexSourceToClipboard(note),
       },
     );
     if (viewMode && onViewModeChange) {

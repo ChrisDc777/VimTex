@@ -1,3 +1,5 @@
+import { vimtexToMarkdownDollars } from "./math-delimiters.ts";
+
 function triggerDownload(
   content: string,
   filename: string,
@@ -15,12 +17,54 @@ function triggerDownload(
   URL.revokeObjectURL(url);
 }
 
-/** Download the buffer as a `.tex` file. */
-export function exportAsTex(note: string, basename = "vimtex-note"): void {
-  triggerDownload(note, `${basename}.tex`, "application/x-tex;charset=utf-8");
+const HAS_DOCUMENT_ENV = /\\begin\{document\}/i;
+
+/** Minimal article wrapper so Overleaf / pdfLaTeX can compile a fragment. */
+export function wrapAsOverleafDocument(note: string): string {
+  const body = note.replace(/\s+$/, "\n");
+  if (HAS_DOCUMENT_ENV.test(body)) {
+    return body.endsWith("\n") ? body : `${body}\n`;
+  }
+  return [
+    "\\documentclass{article}",
+    "\\usepackage{amsmath,amssymb}",
+    "\\begin{document}",
+    body.trimEnd(),
+    "\\end{document}",
+    "",
+  ].join("\n");
 }
 
-/** Download the buffer as a `.md` file (math delimiters preserved). */
+/** Obsidian / GitHub / Jupyter: `$` / `$$` instead of `\\(` / `\\[`. */
+export function toMarkdownMathFile(note: string): string {
+  const converted = vimtexToMarkdownDollars(note);
+  return converted.endsWith("\n") ? converted : `${converted}\n`;
+}
+
+/** Download a compilable `.tex` (Overleaf handoff). */
+export function exportAsTex(note: string, basename = "vimtex-note"): void {
+  triggerDownload(
+    wrapAsOverleafDocument(note),
+    `${basename}.tex`,
+    "application/x-tex;charset=utf-8",
+  );
+}
+
+/** Download Markdown with `$` / `$$` math for other apps. */
 export function exportAsMd(note: string, basename = "vimtex-note"): void {
-  triggerDownload(note, `${basename}.md`, "text/markdown;charset=utf-8");
+  triggerDownload(
+    toMarkdownMathFile(note),
+    `${basename}.md`,
+    "text/markdown;charset=utf-8",
+  );
+}
+
+/** Lossless copy of the live VimTex buffer. */
+export async function copyVimtexSource(note: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(note);
+    return true;
+  } catch {
+    return false;
+  }
 }
