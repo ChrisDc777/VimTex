@@ -2428,10 +2428,15 @@ body[data-pane-resizing] * {
   line-height: 1.35;
 }
 
+.vt-chat-math .katex {
+  overflow: visible;
+}
+
 .vt-chat-math--display {
   display: block;
   margin: 0.55em 0;
   overflow-x: auto;
+  overflow-y: visible;
   text-align: center;
 }
 
@@ -4131,12 +4136,20 @@ body[data-pane-resizing] * {
 
 .latex-preview .katex {
   color: var(--ink);
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+}
+
+.latex-preview .vt-tex-src {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .latex-preview .katex-display {
   margin: 1em 0;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -4398,7 +4411,7 @@ body[data-pane-resizing] * {
   left: 0;
   right: 0;
   top: 100%;
-  height: 12px;
+  height: 18px;
 }
 
 .vt-copy-equation,
