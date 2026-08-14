@@ -97,10 +97,10 @@ rewrites delimiters for other apps. **Copy VimTex source** is the lossless path.
 | Action | What you get |
 |--------|----------------|
 | **Copy VimTex source** | Clipboard = live buffer, unchanged |
-| **Export as LaTeX** | Overleaf-ready `.tex`: `\documentclass{article}` + `amsmath,amssymb` + `\begin{document}…\end{document}`. Skips the wrapper if `\begin{document}` is already present. Delimiters stay `\( \)` / `\[ \]`. Bare math is **not** wrapped. |
+| **Export as LaTeX** | Overleaf-ready `.tex`: `\documentclass{article}` + `fontenc` + `amsmath,amssymb` + `\begin{document}…\end{document}`. Skips the wrapper if `\begin{document}` is already present. Delimiters stay `\( \)` / `\[ \]`. Bare math is wrapped. `#` headings become `\section*` / `\subsection*`. |
 | **Export as Markdown** | `.md` with `$` / `$$` instead of `\( \)` / `\[ \]` (Obsidian, GitHub, Jupyter). Bare math is **not** wrapped. |
 | **Export as PDF** | Browser print of the **rendered** note (Save as PDF). Light paper; KaTeX as in preview. Not a LaTeX compiler. |
-| **Copy equation SVG / PNG** | Preview hover bar: TeX source, SVG markup, or PNG (black on white). |
+| **Copy equation TeX / SVG / PNG** | Preview hover bar sits on the equation: TeX source, SVG, or PNG (black on white, KaTeX fonts embedded). |
 | **Import `.tex` / `.md`** | UTF-8, strip BOM, CRLF → LF. Full LaTeX files import **only the document body**. `$` / `$$` math is converted to `\( \)` / `\[ \]` (toast: `converted $ math`). Escaped `\$` is left alone. |
 
 The imported text replaces the current room buffer and syncs to peers.
@@ -124,7 +124,7 @@ the AI system prompt (`lib/ai-chat.ts`) share these conventions.
 | `%` comments | stripped in preview, kept in source / Copy / file export | `render-note.ts` |
 | Title | `\title{...}` then first line | `lib/document-title.ts` |
 | Copy | lossless buffer | `lib/copy-note.ts` |
-| `.tex` export | article wrapper for Overleaf; no delimiter rewrite | `lib/export.ts` |
+| `.tex` export | article wrapper; wrap bare math; `#` → `\section*` | `lib/export.ts` |
 | `.md` export | `\( \)` / `\[ \]` → `$` / `$$` | `lib/export.ts` |
 | PDF export | print rendered preview | `lib/export.ts` |
 | Equation image | SVG / PNG from preview KaTeX | `lib/equation-image.ts` |

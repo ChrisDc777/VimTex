@@ -64,7 +64,7 @@ test.describe("Forge math tools", () => {
     await equation.locator(".katex").first().hover({ force: true });
     const copyBtn = page.locator(".vt-copy-equation");
     await expect(copyBtn).toBeVisible();
-    await expect(copyBtn).toHaveText("Copy");
+    await expect(copyBtn).toHaveText("TeX");
     await expect(
       page.getByRole("button", { name: /copy equation as svg/i }),
     ).toBeVisible();
@@ -73,7 +73,7 @@ test.describe("Forge math tools", () => {
     ).toBeVisible();
   });
 
-  test("clicking a rendered equation copies its TeX source", async ({
+  test("preview TeX button copies equation source", async ({
     page,
     isMobile,
   }) => {
@@ -87,8 +87,11 @@ test.describe("Forge math tools", () => {
     const equation = panel.locator(".vt-tex-src").first();
     await expect(equation.locator(".katex")).toBeVisible({ timeout: 10_000 });
 
-    await equation.locator(".katex").first().click({ force: true });
-    await expect(page.locator(".vt-copy-equation")).toHaveText("Copied");
+    await equation.locator(".katex").first().hover({ force: true });
+    const texBtn = page.getByRole("button", { name: /copy equation as tex/i });
+    await expect(texBtn).toBeVisible();
+    await texBtn.click({ force: true });
+    await expect(texBtn).toHaveText("Copied");
 
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied).toBe("x^2");

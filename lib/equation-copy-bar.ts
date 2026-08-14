@@ -1,5 +1,6 @@
 /**
- * Hover / click copy bar on preview equations: TeX (existing), SVG, PNG.
+ * Hover / click copy bar on preview equations: TeX, SVG, PNG.
+ * Fixed overlay that overlaps the equation so there is no hover gap.
  */
 
 import { copyEquationPng, copyEquationSvg } from "./equation-image.ts";
@@ -48,6 +49,7 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
   let texBtn: HTMLButtonElement | null = null;
   let current: HTMLElement | null = null;
   let feedbackTimer: number | undefined;
+  let hideTimer: number | undefined;
   let busy = false;
 
   const makeFmtButton = (label: string, aria: string) => {
@@ -69,9 +71,10 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     const tex = document.createElement("button");
     tex.type = "button";
     tex.className = "vt-copy-equation";
-    tex.textContent = "Copy";
-    tex.setAttribute("aria-label", "Copy equation source");
+    tex.textContent = "TeX";
+    tex.setAttribute("aria-label", "Copy equation as TeX");
     tex.addEventListener("click", (event) => {
+      event.preventDefault();
       event.stopPropagation();
       const source = current?.getAttribute("data-tex") ?? "";
       if (!source) return;
@@ -81,17 +84,24 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
 
     const svg = makeFmtButton("SVG", "Copy equation as SVG");
     svg.addEventListener("click", (event) => {
+      event.preventDefault();
       event.stopPropagation();
       void copyImage("svg");
     });
 
     const png = makeFmtButton("PNG", "Copy equation as PNG");
     png.addEventListener("click", (event) => {
+      event.preventDefault();
       event.stopPropagation();
       void copyImage("png");
     });
 
     wrap.append(tex, svg, png);
+    wrap.addEventListener("pointerenter", cancelHide);
+    wrap.addEventListener("pointerleave", (event) => {
+      if (wrapperFrom(event.relatedTarget) === current) return;
+      scheduleHide();
+    });
     document.body.appendChild(wrap);
     bar = wrap;
     texBtn = tex;
@@ -103,7 +113,7 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     texBtn.textContent = "Copied";
     window.clearTimeout(feedbackTimer);
     feedbackTimer = window.setTimeout(() => {
-      if (texBtn) texBtn.textContent = "Copy";
+      if (texBtn) texBtn.textContent = "TeX";
     }, 1200);
   };
 
@@ -125,66 +135,97 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     }
   };
 
-  const positionBar = (el: HTMLElement) => {
-    const rect = el.getBoundingClientRect();
-    const toolbar = ensureBar();
-    toolbar.style.display = "flex";
-    toolbar.style.top = `${Math.max(8, rect.top - 40)}px`;
-    toolbar.style.left = `${Math.min(
-      window.innerWidth - 168,
-      Math.max(8, rect.right - 156),
-    )}px`;
+  const cancelHide = () => {
+    window.clearTimeout(hideTimer);
+    hideTimer = undefined;
   };
 
   const hideBar = () => {
+    cancelHide();
     current = null;
     if (bar) bar.style.display = "none";
   };
 
-  const onMouseOver = (event: MouseEvent) => {
-    const target = event.target as HTMLElement;
-    if (target.closest?.(".vt-copy-equation-bar")) return;
-    const wrapper = target.closest?.<HTMLElement>(".vt-tex-src");
-    if (wrapper && wrapper !== current) {
-      current = wrapper;
-      positionBar(wrapper);
-    } else if (!wrapper) {
-      hideBar();
-    }
+  const scheduleHide = () => {
+    cancelHide();
+    hideTimer = window.setTimeout(hideBar, 280);
   };
 
-  const onScroll = () => hideBar();
-  const onMouseDown = (event: MouseEvent) => {
-    if ((event.target as HTMLElement).closest?.(".vt-copy-equation-bar")) return;
-    hideBar();
+  const positionBar = (el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    const toolbar = ensureBar();
+    toolbar.style.display = "flex";
+    const barWidth = toolbar.offsetWidth || 168;
+    const barHeight = toolbar.offsetHeight || 36;
+    // Sit just above the equation with ~10px overlap so the pointer never
+    // crosses an empty gap, without covering the click target.
+    const overlap = 10;
+    const top = Math.max(4, rect.top - barHeight + overlap);
+    const left = Math.min(
+      window.innerWidth - barWidth - 8,
+      Math.max(8, rect.right - barWidth + 8),
+    );
+    toolbar.style.top = `${top}px`;
+    toolbar.style.left = `${left}px`;
+  };
+
+  const showOn = (wrapper: HTMLElement) => {
+    cancelHide();
+    current = wrapper;
+    positionBar(wrapper);
+  };
+
+  const wrapperFrom = (node: EventTarget | null): HTMLElement | null => {
+    if (!(node instanceof Element)) return null;
+    if (node.closest(".vt-copy-equation-bar")) return current;
+    const wrapper = node.closest<HTMLElement>(".vt-tex-src");
+    if (!wrapper || !container.contains(wrapper)) return null;
+    return wrapper;
+  };
+
+  const onPointerOver = (event: PointerEvent) => {
+    const wrapper = wrapperFrom(event.target);
+    if (wrapper) showOn(wrapper);
+  };
+
+  const onPointerOut = (event: PointerEvent) => {
+    if (wrapperFrom(event.relatedTarget) === current) return;
+    if (event.relatedTarget instanceof Element) {
+      if (event.relatedTarget.closest(".vt-copy-equation-bar")) {
+        cancelHide();
+        return;
+      }
+    }
+    if (wrapperFrom(event.target) === current) scheduleHide();
+  };
+
+  const onScroll = () => {
+    if (current) positionBar(current);
   };
 
   const onClick = (event: MouseEvent) => {
     if ((event.target as HTMLElement).closest?.(".vt-copy-equation-bar")) return;
-    const wrapper = (event.target as HTMLElement).closest?.<HTMLElement>(
-      ".vt-tex-src",
-    );
+    const wrapper = wrapperFrom(event.target);
     if (!wrapper) return;
     const tex = wrapper.getAttribute("data-tex") ?? "";
     if (!tex) return;
     void copyText(tex);
-    current = wrapper;
-    ensureBar();
-    positionBar(wrapper);
+    showOn(wrapper);
     flashCopied();
   };
 
-  container.addEventListener("mouseover", onMouseOver);
+  container.addEventListener("pointerover", onPointerOver);
+  container.addEventListener("pointerout", onPointerOut);
   container.addEventListener("scroll", onScroll, true);
-  container.addEventListener("mousedown", onMouseDown);
   container.addEventListener("click", onClick);
 
   return () => {
-    container.removeEventListener("mouseover", onMouseOver);
+    container.removeEventListener("pointerover", onPointerOver);
+    container.removeEventListener("pointerout", onPointerOut);
     container.removeEventListener("scroll", onScroll, true);
-    container.removeEventListener("mousedown", onMouseDown);
     container.removeEventListener("click", onClick);
     window.clearTimeout(feedbackTimer);
+    cancelHide();
     bar?.remove();
     bar = null;
     texBtn = null;

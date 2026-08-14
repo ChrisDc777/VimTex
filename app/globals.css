@@ -4368,6 +4368,10 @@ body[data-pane-resizing] * {
 }
 
 /* Copy-equation affordance (preview hover) */
+.vt-tex-src {
+  position: relative;
+}
+
 .vt-tex-src:hover {
   border-radius: 4px;
   outline: 1px solid color-mix(in srgb, var(--focus) 45%, transparent);
@@ -4375,26 +4379,28 @@ body[data-pane-resizing] * {
 
 .vt-copy-equation-bar {
   position: fixed;
-  z-index: 100;
+  z-index: 200;
   display: none;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
+  gap: 1px;
+  padding: 4px 6px 10px;
   border: 1px solid var(--hairline-strong);
   border-radius: 9999px;
   background: var(--canvas-elevated);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
 }
 
 .vt-copy-equation,
 .vt-copy-equation-fmt {
-  padding: 0.3rem 0.55rem;
+  padding: 0.28rem 0.5rem;
   border: 0;
   border-radius: 9999px;
   background: transparent;
   color: var(--ink);
-  font-size: 0.72rem;
-  font-weight: 500;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1;
   cursor: pointer;
 }
@@ -4406,18 +4412,22 @@ body[data-pane-resizing] * {
 
 .vt-equation-export-host {
   position: fixed;
-  left: -9999px;
-  top: 0;
+  left: 0;
+  top: -12000px;
   z-index: -1;
-  padding: 12px;
+  width: max-content;
+  height: max-content;
+  padding: 8px;
   background: #fff;
   color: #111;
   pointer-events: none;
 }
 
 .vt-equation-export-host .katex,
+.vt-equation-export-host .katex-html,
 .vt-equation-export-host .katex * {
   color: #111 !important;
+  -webkit-text-fill-color: #111 !important;
 }
 
 /* Math snippet picker (both shells) */
