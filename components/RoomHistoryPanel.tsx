@@ -27,8 +27,6 @@ export type RoomHistoryPanelProps = {
   onClose: () => void;
   readOnly?: boolean;
   auth?: SnapshotAuth;
-  /** Parent supplies `RightPanelSwitcher` chrome. */
-  chromeless?: boolean;
 };
 
 export function RoomHistoryPanel({
@@ -36,7 +34,6 @@ export function RoomHistoryPanel({
   onClose,
   readOnly = false,
   auth,
-  chromeless = false,
 }: RoomHistoryPanelProps) {
   const workspace = useWorkspace();
   const [snapshots, setSnapshots] = useState<RoomSnapshotMeta[]>([]);
@@ -256,22 +253,20 @@ export function RoomHistoryPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {chromeless ? null : (
-        <SidePanelHeader
-          title="History"
-          meta={<span>{snapshots.length} checkpoints</span>}
-          actions={
-            <button
-              type="button"
-              onClick={onClose}
-              className="vt-panel-header__icon-btn"
-              aria-label="Close history"
-            >
-              <CloseIcon />
-            </button>
-          }
-        />
-      )}
+      <SidePanelHeader
+        title="History"
+        meta={<span>{snapshots.length} checkpoints</span>}
+        actions={
+          <button
+            type="button"
+            onClick={onClose}
+            className="vt-panel-header__icon-btn"
+            aria-label="Close history"
+          >
+            <CloseIcon />
+          </button>
+        }
+      />
 
       <div className="vt-history-panel flex min-h-0 flex-1 flex-col">
         {!readOnly ? (

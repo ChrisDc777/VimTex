@@ -61,28 +61,53 @@ export function extractKatexCss(css: string): string {
   return out.join("\n");
 }
 
+async function fetchOk(
+  url: string,
+  ms = 2000,
+): Promise<Response | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(ms) });
+    if (!res.ok) return null;
+    return res;
+  } catch {
+    return null;
+  }
+}
+
+/** Drop non-data URLs so SVG rasterization cannot taint the canvas. */
+export function dropExternalCssUrls(css: string): string {
+  return css.replace(
+    /url\(\s*(['"]?)([^)'"]*)\1\s*\)/gi,
+    (full, _quote: string, url: string) =>
+      url.startsWith("data:")
+        ? full
+        : "url(data:application/octet-stream;base64,)",
+  );
+}
+
 async function inlineFontUrls(
   cssText: string,
   baseHref: string | null,
 ): Promise<string> {
   const urlRe = /url\((['"]?)([^)'"]+)\1\)/g;
   const matches = [...cssText.matchAll(urlRe)];
-  let out = cssText;
-  for (const match of matches) {
-    const raw = match[2];
-    if (!raw || raw.startsWith("data:")) continue;
-    try {
+  const replacements = await Promise.all(
+    matches.map(async (match) => {
+      const raw = match[2];
+      if (!raw || raw.startsWith("data:")) return null;
       const abs = new URL(raw, baseHref || document.baseURI).href;
-      const res = await fetch(abs);
-      if (!res.ok) continue;
+      const res = await fetchOk(abs);
+      if (!res) return null;
       const mime = res.headers.get("content-type") || "font/woff2";
       const b64 = arrayBufferToBase64(await res.arrayBuffer());
-      out = out.split(match[0]).join(`url("data:${mime};base64,${b64}")`);
-    } catch {
-      /* keep original url */
-    }
+      return { from: match[0], to: `url("data:${mime};base64,${b64}")` };
+    }),
+  );
+  let out = cssText;
+  for (const rep of replacements) {
+    if (rep) out = out.split(rep.from).join(rep.to);
   }
-  return out;
+  return dropExternalCssUrls(out);
 }
 
 function allStyleSheets(): CSSStyleSheet[] {
@@ -149,15 +174,11 @@ async function cssFromFetchedSheets(): Promise<string> {
     parts.push(await inlineFontUrls(extractKatexCss(text), null));
   }
   for (const href of hrefs) {
-    try {
-      const res = await fetch(href);
-      if (!res.ok) continue;
-      const text = await res.text();
-      if (!/katex|KaTeX/i.test(text)) continue;
-      parts.push(await inlineFontUrls(extractKatexCss(text), href));
-    } catch {
-      /* skip */
-    }
+    const res = await fetchOk(href, 2500);
+    if (!res) continue;
+    const text = await res.text();
+    if (!/katex|KaTeX/i.test(text)) continue;
+    parts.push(await inlineFontUrls(extractKatexCss(text), href));
   }
   return parts.join("\n");
 }
@@ -166,11 +187,12 @@ async function cssFromFetchedSheets(): Promise<string> {
 export async function collectEquationCss(): Promise<string> {
   if (cssCache) return cssCache;
   cssCache = (async () => {
-    const fetched = await cssFromFetchedSheets();
-    const fromRules = /vlist/i.test(fetched) ? "" : await cssFromRules();
+    let body = await cssFromRules();
+    if (!/vlist/i.test(body)) {
+      body += `\n${await cssFromFetchedSheets()}`;
+    }
     return [
-      fetched,
-      fromRules,
+      dropExternalCssUrls(body),
       `.katex,.katex *{color:${INK}!important}`,
       `.katex,.katex-display,.katex-html,.katex-display>.katex{overflow:visible!important;margin:0!important;max-width:none!important}`,
       `.katex{white-space:nowrap!important}`,
@@ -298,8 +320,18 @@ async function rasterizeSvg(
     const img = new Image();
     img.decoding = "sync";
     await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Could not rasterize equation"));
+      const timer = window.setTimeout(
+        () => reject(new Error("Could not rasterize equation")),
+        8000,
+      );
+      img.onload = () => {
+        window.clearTimeout(timer);
+        resolve();
+      };
+      img.onerror = () => {
+        window.clearTimeout(timer);
+        reject(new Error("Could not rasterize equation"));
+      };
       img.src = url;
     });
     await img.decode?.().catch(() => undefined);
@@ -414,6 +446,7 @@ async function captureEquation(wrapper: HTMLElement): Promise<Capture> {
         "display:inline-block",
         "width:max-content",
         "max-width:none",
+        `min-width:${Math.ceil(inner.width)}px`,
         "white-space:nowrap",
         `font-size:${fontSize}`,
         "overflow:visible",
@@ -449,13 +482,25 @@ export function svgMarkupFromDataUrl(dataUrl: string): string {
   return decodeURIComponent(payload);
 }
 
+async function captureWithTimeout(wrapper: HTMLElement): Promise<Capture> {
+  return Promise.race([
+    captureEquation(wrapper),
+    new Promise<never>((_, reject) => {
+      window.setTimeout(
+        () => reject(new Error("Equation snapshot timed out")),
+        12000,
+      );
+    }),
+  ]);
+}
+
 export async function equationToPngBlob(wrapper: HTMLElement): Promise<Blob> {
-  const { png } = await captureEquation(wrapper);
+  const { png } = await captureWithTimeout(wrapper);
   return png;
 }
 
 export async function equationToSvgMarkup(wrapper: HTMLElement): Promise<string> {
-  const { png, pixelWidth, pixelHeight } = await captureEquation(wrapper);
+  const { png, pixelWidth, pixelHeight } = await captureWithTimeout(wrapper);
   const dataUrl = await blobToDataUrl(png);
   return pngToSvg(dataUrl, pixelWidth, pixelHeight);
 }

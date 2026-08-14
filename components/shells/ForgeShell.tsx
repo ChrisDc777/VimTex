@@ -24,7 +24,6 @@ import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
-import { RightPanelSwitcher } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { SidePanel } from "@/components/SidePanel";
@@ -681,44 +680,34 @@ export function ForgeShell({
             ) : null}
             {previewOpen ? <ForgePreviewPane note={note} /> : null}
             {roomId && user && (chatOpen || historyOpen) ? (
-              <div className="flex h-full min-h-0 flex-col">
-                <RightPanelSwitcher
-                  active={chatOpen ? "chat" : "history"}
-                  onSelectChat={openChatPanel}
-                  onSelectHistory={openHistoryPanel}
-                  onClose={closeRightPanel}
-                />
-                <div
-                  key={chatOpen ? "chat" : "history"}
-                  className="vt-right-panel-content flex min-h-0 flex-1 flex-col"
-                >
-                  {historyOpen ? (
-                    <RoomHistoryPanel
-                      roomId={roomId}
-                      readOnly={readOnly}
-                      chromeless
-                      onClose={closeRightPanel}
-                      auth={{
-                        editSecret,
-                        viewToken: effectiveViewToken,
-                        authToken: gate.authToken,
-                      }}
-                    />
-                  ) : (
-                    <RoomChatSidebar
-                      open={chatOpen}
-                      chromeless
-                      onClose={closeRightPanel}
-                      peers={peers}
-                      selfClientId={selfClientId}
-                      user={user}
-                      chatReady={ready}
-                      getEditorContext={() =>
-                        editorRef.current?.getEditorContext() ?? null
-                      }
-                    />
-                  )}
-                </div>
+              <div
+                key={chatOpen ? "chat" : "history"}
+                className="vt-right-panel-content flex h-full min-h-0 flex-col"
+              >
+                {historyOpen ? (
+                  <RoomHistoryPanel
+                    roomId={roomId}
+                    readOnly={readOnly}
+                    onClose={closeRightPanel}
+                    auth={{
+                      editSecret,
+                      viewToken: effectiveViewToken,
+                      authToken: gate.authToken,
+                    }}
+                  />
+                ) : (
+                  <RoomChatSidebar
+                    open={chatOpen}
+                    onClose={closeRightPanel}
+                    peers={peers}
+                    selfClientId={selfClientId}
+                    user={user}
+                    chatReady={ready}
+                    getEditorContext={() =>
+                      editorRef.current?.getEditorContext() ?? null
+                    }
+                  />
+                )}
               </div>
             ) : null}
           </SidePanel>

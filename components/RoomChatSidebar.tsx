@@ -20,8 +20,6 @@ export type RoomChatSidebarProps = {
   chatReady: boolean;
   /** Live editor snapshot for AI context (#57). Forge omits selection. */
   getEditorContext?: () => EditorContextSnapshot | null;
-  /** Parent supplies `RightPanelSwitcher` chrome. */
-  chromeless?: boolean;
 };
 
 export function RoomChatSidebar({
@@ -32,7 +30,6 @@ export function RoomChatSidebar({
   user,
   chatReady,
   getEditorContext,
-  chromeless = false,
 }: RoomChatSidebarProps) {
   const chat = useRoomChat({
     open,
@@ -47,32 +44,30 @@ export function RoomChatSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {chromeless ? null : (
-        <SidePanelHeader
-          title="Chat"
-          meta={
-            <>
-              <AvatarStack
-                peers={peers}
-                selfClientId={selfClientId}
-                max={3}
-                size={22}
-              />
-              <span>{peers.length} online</span>
-            </>
-          }
-          actions={
-            <button
-              type="button"
-              onClick={onClose}
-              className="vt-panel-header__icon-btn"
-              aria-label="Close chat"
-            >
-              <CloseIcon />
-            </button>
-          }
-        />
-      )}
+      <SidePanelHeader
+        title="Chat"
+        meta={
+          <>
+            <AvatarStack
+              peers={peers}
+              selfClientId={selfClientId}
+              max={3}
+              size={22}
+            />
+            <span>{peers.length} online</span>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={onClose}
+            className="vt-panel-header__icon-btn"
+            aria-label="Close chat"
+          >
+            <CloseIcon />
+          </button>
+        }
+      />
 
       <ChatMessageList
         messages={chat.messages}
