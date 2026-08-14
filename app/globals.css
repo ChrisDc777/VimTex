@@ -4378,14 +4378,12 @@ body[data-pane-resizing] * {
 }
 
 .vt-copy-equation-bar {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  z-index: 3;
+  position: fixed;
+  z-index: 200;
   display: none;
   align-items: center;
   gap: 1px;
-  padding: 2px;
+  padding: 6px;
   border: 1px solid var(--hairline-strong);
   border-radius: 9999px;
   background: var(--canvas-elevated);

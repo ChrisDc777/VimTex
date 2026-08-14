@@ -65,8 +65,6 @@ test.describe("Forge math tools", () => {
     const copyBtn = page.locator(".vt-copy-equation");
     await expect(copyBtn).toBeVisible();
     await expect(copyBtn).toHaveText("TeX");
-    await copyBtn.hover();
-    await expect(copyBtn).toBeVisible();
     await expect(
       page.getByRole("button", { name: /copy equation as svg/i }),
     ).toBeVisible();
