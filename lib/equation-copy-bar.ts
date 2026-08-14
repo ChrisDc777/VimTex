@@ -1,6 +1,7 @@
 /**
  * Hover / click copy bar on preview equations: TeX, SVG, PNG.
- * Fixed overlay that overlaps the equation so there is no hover gap.
+ * Pill sits just above the glyphs with a few pixels of overlap; an invisible
+ * hit-bridge below keeps hover stable without extra padding under the labels.
  */
 
 import { copyEquationPng, copyEquationSvg } from "./equation-image.ts";
@@ -152,12 +153,14 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
   };
 
   const positionBar = (el: HTMLElement) => {
-    const rect = el.getBoundingClientRect();
+    const glyph = el.querySelector<HTMLElement>(".katex") ?? el;
+    const rect = glyph.getBoundingClientRect();
     const toolbar = ensureBar();
     toolbar.style.display = "flex";
-    const barWidth = toolbar.offsetWidth || 118;
-    const barHeight = toolbar.offsetHeight || 28;
-    const overlap = 8;
+    const barRect = toolbar.getBoundingClientRect();
+    const barWidth = barRect.width || 118;
+    const barHeight = barRect.height || 22;
+    const overlap = 3;
     const top = Math.max(4, rect.top - barHeight + overlap);
     const left = Math.min(
       window.innerWidth - barWidth - 8,

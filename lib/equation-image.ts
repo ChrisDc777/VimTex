@@ -1,20 +1,32 @@
 /**
- * Snapshot a rendered KaTeX node as PNG / SVG.
- * Embeds KaTeX fonts without html-to-image's cssRules walk (that throws on
- * extension / cross-origin stylesheets). Pads the frame so glyphs are not cropped.
+ * Snapshot a KaTeX equation as PNG / SVG by re-rendering the TeX on a light
+ * host. html-to-image copies computed styles onto every node and that breaks
+ * KaTeX .vlist layout (fractions / sqrts collapse to empty).
  */
 
-import { toBlob, toCanvas } from "html-to-image";
+import { renderMathToHtml } from "./render-note.ts";
 
 const INK = "#111111";
 const PAPER = "#ffffff";
-const PAD = 16;
+const PAD = 24;
+const SCALE = 2;
 
-let fontCssCache: Promise<string> | null = null;
+const KATEX_FONTS = [
+  "KaTeX_Main",
+  "KaTeX_Math",
+  "KaTeX_Size1",
+  "KaTeX_Size2",
+  "KaTeX_Size3",
+  "KaTeX_Size4",
+  "KaTeX_AMS",
+  "KaTeX_Caligraphic",
+  "KaTeX_Fraktur",
+  "KaTeX_SansSerif",
+  "KaTeX_Script",
+  "KaTeX_Typewriter",
+];
 
-function katexRoot(wrapper: HTMLElement): HTMLElement | null {
-  return wrapper.querySelector<HTMLElement>(".katex");
-}
+let cssCache: Promise<string> | null = null;
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -26,7 +38,26 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
   return btoa(binary);
 }
 
-async function inlineFontUrls(cssText: string, baseHref: string | null): Promise<string> {
+/** Pull KaTeX @font-face and .katex rules out of a (possibly bundled) stylesheet. */
+export function extractKatexCss(css: string): string {
+  const out: string[] = [];
+  const faces = css.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
+  for (const face of faces) {
+    if (/KaTeX/i.test(face)) out.push(face);
+  }
+  const rest = css.replace(/@font-face\s*\{[^{}]*\}/gi, "");
+  const rules = rest.match(/[^{}]*katex[^{}]*\{[^{}]*\}/gi) ?? [];
+  for (const rule of rules) {
+    const trimmed = rule.trim();
+    if (trimmed) out.push(trimmed);
+  }
+  return out.join("\n");
+}
+
+async function inlineFontUrls(
+  cssText: string,
+  baseHref: string | null,
+): Promise<string> {
   const urlRe = /url\((['"]?)([^)'"]+)\1\)/g;
   const matches = [...cssText.matchAll(urlRe)];
   let out = cssText;
@@ -47,46 +78,101 @@ async function inlineFontUrls(cssText: string, baseHref: string | null): Promise
   return out;
 }
 
-/** KaTeX @font-face only. Skips sheets we cannot read (no console error). */
-export async function embedKatexFontCss(): Promise<string> {
-  if (fontCssCache) return fontCssCache;
-  fontCssCache = (async () => {
-    const chunks: string[] = [];
-    const seen = new Set<string>();
-    for (const sheet of Array.from(document.styleSheets)) {
-      let rules: CSSRuleList;
-      try {
-        rules = sheet.cssRules;
-      } catch {
-        continue;
-      }
-      const baseHref = sheet.href;
-      for (const rule of Array.from(rules)) {
-        if (!(rule instanceof CSSFontFaceRule)) continue;
-        if (!/KaTeX/i.test(rule.style.fontFamily)) continue;
-        const key = rule.cssText;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        chunks.push(await inlineFontUrls(key, baseHref));
-      }
-    }
-    return chunks.join("\n");
-  })();
-  return fontCssCache;
+function allStyleSheets(): CSSStyleSheet[] {
+  const sheets: CSSStyleSheet[] = [];
+  for (const sheet of Array.from(document.styleSheets)) sheets.push(sheet);
+  if (document.adoptedStyleSheets) {
+    for (const sheet of document.adoptedStyleSheets) sheets.push(sheet);
+  }
+  return sheets;
 }
 
-function paintInk(root: HTMLElement): void {
-  root.querySelector(".katex-mathml")?.remove();
-  root.style.setProperty("color", INK, "important");
-  root.style.setProperty("overflow", "visible", "important");
-  root.style.setProperty("max-width", "none", "important");
-  const display = root.querySelector<HTMLElement>(".katex-display");
-  if (display) {
-    display.style.setProperty("overflow", "visible", "important");
+function* walkRules(rules: CSSRuleList): Generator<CSSRule> {
+  for (const rule of Array.from(rules)) {
+    yield rule;
+    const sheet = (rule as CSSImportRule).styleSheet;
+    if (sheet) {
+      try {
+        yield* walkRules(sheet.cssRules);
+      } catch {
+        /* cross-origin import */
+      }
+      continue;
+    }
+    const grouped = rule as CSSGroupingRule;
+    if (grouped.cssRules) {
+      try {
+        yield* walkRules(grouped.cssRules);
+      } catch {
+        /* unreadable group */
+      }
+    }
   }
 }
 
-function unionContentSize(el: HTMLElement): { width: number; height: number } {
+async function cssFromRules(): Promise<string> {
+  const parts: string[] = [];
+  for (const sheet of allStyleSheets()) {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    }
+    for (const rule of walkRules(rules)) {
+      if (!/katex|KaTeX/i.test(rule.cssText)) continue;
+      parts.push(await inlineFontUrls(rule.cssText, sheet.href));
+    }
+  }
+  return parts.join("\n");
+}
+
+async function cssFromFetchedSheets(): Promise<string> {
+  const hrefs = new Set<string>();
+  for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+    if (link instanceof HTMLLinkElement && link.href) hrefs.add(link.href);
+  }
+  for (const sheet of allStyleSheets()) {
+    if (sheet.href) hrefs.add(sheet.href);
+  }
+  const parts: string[] = [];
+  for (const style of document.querySelectorAll("style")) {
+    const text = style.textContent ?? "";
+    if (!/katex|KaTeX/i.test(text)) continue;
+    parts.push(await inlineFontUrls(extractKatexCss(text), null));
+  }
+  for (const href of hrefs) {
+    try {
+      const res = await fetch(href);
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (!/katex|KaTeX/i.test(text)) continue;
+      parts.push(await inlineFontUrls(extractKatexCss(text), href));
+    } catch {
+      /* skip */
+    }
+  }
+  return parts.join("\n");
+}
+
+/** KaTeX CSS + inlined fonts. Skips unreadable sheets (no console error). */
+export async function collectEquationCss(): Promise<string> {
+  if (cssCache) return cssCache;
+  cssCache = (async () => {
+    const fetched = await cssFromFetchedSheets();
+    const fromRules = /vlist/i.test(fetched) ? "" : await cssFromRules();
+    return [
+      fetched,
+      fromRules,
+      `.katex,.katex *{color:${INK}!important}`,
+      `.katex,.katex-display,.katex-html,.katex-display>.katex{overflow:visible!important;margin:0!important;max-width:none!important}`,
+      `.katex-mathml{display:none!important}`,
+    ].join("\n");
+  })();
+  return cssCache;
+}
+
+function unionSize(el: HTMLElement): { width: number; height: number } {
   const origin = el.getBoundingClientRect();
   let minL = origin.left;
   let minT = origin.top;
@@ -114,74 +200,94 @@ async function nextFrame(): Promise<void> {
   });
 }
 
-type Snapshot = {
-  host: HTMLElement;
-  width: number;
-  height: number;
-  fontEmbedCSS: string;
-};
-
-async function mountSnapshot(wrapper: HTMLElement): Promise<Snapshot> {
-  const live = katexRoot(wrapper);
-  if (!live) throw new Error("No rendered equation");
+async function waitKatexFonts(): Promise<void> {
   await document.fonts.ready;
-  const fontEmbedCSS = await embedKatexFontCss();
+  await Promise.all(
+    KATEX_FONTS.map((family) =>
+      document.fonts.load(`16px "${family}"`).catch(() => undefined),
+    ),
+  );
+}
+
+function isDisplayEquation(wrapper: HTMLElement): boolean {
+  return (
+    wrapper.classList.contains("katex-display-wrap") ||
+    Boolean(wrapper.querySelector(".katex-display"))
+  );
+}
+
+function mountFresh(wrapper: HTMLElement): HTMLElement {
+  const tex = wrapper.getAttribute("data-tex") ?? "";
+  const { html, error } = renderMathToHtml(tex, isDisplayEquation(wrapper));
+  if (error) throw new Error(error);
 
   const host = document.createElement("div");
   host.className = "vt-equation-export-host";
-  const target = live.cloneNode(true) as HTMLElement;
-  paintInk(target);
-  const liveSize = window.getComputedStyle(live).fontSize;
-  if (liveSize) target.style.fontSize = liveSize;
-  host.appendChild(target);
-  document.body.appendChild(host);
-  void host.offsetWidth;
-  await nextFrame();
-
-  const inner = unionContentSize(target);
-  const width = Math.ceil(inner.width) + PAD * 2;
-  const height = Math.ceil(inner.height) + PAD * 2;
-  host.style.width = `${width}px`;
-  host.style.height = `${height}px`;
-  return { host, width, height, fontEmbedCSS };
-}
-
-function snapshotOptions(snap: Snapshot) {
-  return {
-    backgroundColor: PAPER,
-    pixelRatio: 2,
-    width: snap.width,
-    height: snap.height,
-    fontEmbedCSS: snap.fontEmbedCSS,
-    skipFonts: true,
-    cacheBust: false,
-    style: {
-      color: INK,
-      backgroundColor: PAPER,
-      transform: "none",
-      overflow: "visible",
-      inset: "auto",
-      left: "0",
-      top: "0",
-      margin: "0",
-    } as Partial<CSSStyleDeclaration>,
-  };
-}
-
-export function svgMarkupFromDataUrl(dataUrl: string): string {
-  const comma = dataUrl.indexOf(",");
-  const payload = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-  if (dataUrl.includes(";base64,")) {
-    const bytes = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
-    return new TextDecoder("utf-8").decode(bytes);
+  const live = wrapper.querySelector(".katex");
+  if (live) {
+    host.style.fontSize = getComputedStyle(live).fontSize;
   }
-  return decodeURIComponent(payload);
+  host.innerHTML = html;
+  host.querySelector(".katex-mathml")?.remove();
+  document.body.appendChild(host);
+  return host;
+}
+
+function equationSvgMarkup(
+  xhtml: string,
+  width: number,
+  height: number,
+): string {
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" overflow="visible">` +
+    `<foreignObject x="0" y="0" width="${width}" height="${height}" overflow="visible">${xhtml}</foreignObject>` +
+    `</svg>`
+  );
+}
+
+type Raster = { blob: Blob; pixelWidth: number; pixelHeight: number };
+
+async function rasterizeSvg(
+  svg: string,
+  width: number,
+  height: number,
+): Promise<Raster> {
+  const url = URL.createObjectURL(
+    new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+  );
+  try {
+    const img = new Image();
+    img.decoding = "sync";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Could not rasterize equation"));
+      img.src = url;
+    });
+    await img.decode?.().catch(() => undefined);
+    const pixelWidth = Math.max(1, Math.round(width * SCALE));
+    const pixelHeight = Math.max(1, Math.round(height * SCALE));
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not create canvas");
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(0, 0, pixelWidth, pixelHeight);
+    ctx.drawImage(img, 0, 0, pixelWidth, pixelHeight);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), "image/png");
+    });
+    if (!blob) throw new Error("Could not render PNG");
+    return { blob, pixelWidth, pixelHeight };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function pngToSvg(pngDataUrl: string, width: number, height: number): string {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
-    `<image href="${pngDataUrl}" width="${width}" height="${height}"/>` +
+    `<image href="${pngDataUrl}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>` +
     `</svg>`
   );
 }
@@ -195,50 +301,65 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function pngNaturalSize(blob: Blob): Promise<{ width: number; height: number }> {
-  if (typeof createImageBitmap === "function") {
-    const bitmap = await createImageBitmap(blob);
-    const size = { width: bitmap.width, height: bitmap.height };
-    bitmap.close();
-    return size;
-  }
-  const url = URL.createObjectURL(blob);
+type Capture = { png: Blob; pixelWidth: number; pixelHeight: number };
+
+async function captureEquation(wrapper: HTMLElement): Promise<Capture> {
+  const host = mountFresh(wrapper);
   try {
-    const img = new Image();
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Could not read PNG"));
-      img.src = url;
-    });
-    return { width: img.naturalWidth, height: img.naturalHeight };
+    await waitKatexFonts();
+    await nextFrame();
+    const katexEl = host.querySelector<HTMLElement>(".katex");
+    if (!katexEl) throw new Error("No rendered equation");
+    const inner = unionSize(katexEl);
+    const width = Math.ceil(inner.width) + PAD * 2;
+    const height = Math.ceil(inner.height) + PAD * 2;
+
+    const css = await collectEquationCss();
+    const box = document.createElement("div");
+    box.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+    box.setAttribute(
+      "style",
+      `background:${PAPER};color:${INK};padding:${PAD}px;box-sizing:border-box;width:${width}px;height:${height}px;overflow:visible;`,
+    );
+    const style = document.createElement("style");
+    style.textContent = css;
+    box.appendChild(style);
+    box.appendChild(katexEl.cloneNode(true));
+    const xhtml = new XMLSerializer().serializeToString(box);
+    const raster = await rasterizeSvg(
+      equationSvgMarkup(xhtml, width, height),
+      width,
+      height,
+    );
+    return {
+      png: raster.blob,
+      pixelWidth: raster.pixelWidth,
+      pixelHeight: raster.pixelHeight,
+    };
   } finally {
-    URL.revokeObjectURL(url);
+    host.remove();
   }
+}
+
+export function svgMarkupFromDataUrl(dataUrl: string): string {
+  const comma = dataUrl.indexOf(",");
+  const payload = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  if (dataUrl.includes(";base64,")) {
+    const bytes = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  return decodeURIComponent(payload);
 }
 
 export async function equationToPngBlob(wrapper: HTMLElement): Promise<Blob> {
-  const snap = await mountSnapshot(wrapper);
-  try {
-    const blob = await toBlob(snap.host, snapshotOptions(snap));
-    if (blob && blob.size > 0) return blob;
-    const canvas = await toCanvas(snap.host, snapshotOptions(snap));
-    const fromCanvas = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((b) => resolve(b), "image/png");
-    });
-    if (!fromCanvas || fromCanvas.size === 0) {
-      throw new Error("Could not render PNG");
-    }
-    return fromCanvas;
-  } finally {
-    snap.host.remove();
-  }
+  const { png } = await captureEquation(wrapper);
+  return png;
 }
 
 export async function equationToSvgMarkup(wrapper: HTMLElement): Promise<string> {
-  const png = await equationToPngBlob(wrapper);
-  const { width, height } = await pngNaturalSize(png);
+  const { png, pixelWidth, pixelHeight } = await captureEquation(wrapper);
   const dataUrl = await blobToDataUrl(png);
-  return pngToSvg(dataUrl, width, height);
+  return pngToSvg(dataUrl, pixelWidth, pixelHeight);
 }
 
 function downloadBlob(blob: Blob, filename: string): void {
