@@ -1,7 +1,7 @@
 /**
  * Hover / click copy bar on preview equations: TeX, SVG, PNG.
- * Pill sits just above the glyphs with a few pixels of overlap; an invisible
- * hit-bridge below keeps hover stable without extra padding under the labels.
+ * Pill sits just above the glyphs with a small gap; an invisible hit-bridge
+ * below keeps hover stable without covering the math.
  */
 
 import { copyEquationPng, copyEquationSvg } from "./equation-image.ts";
@@ -160,8 +160,8 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     const barRect = toolbar.getBoundingClientRect();
     const barWidth = barRect.width || 118;
     const barHeight = barRect.height || 22;
-    const overlap = 3;
-    const top = Math.max(4, rect.top - barHeight + overlap);
+    const gap = 6;
+    const top = Math.max(4, rect.top - barHeight - gap);
     const left = Math.min(
       window.innerWidth - barWidth - 8,
       Math.max(8, rect.right - barWidth + 8),
