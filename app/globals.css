@@ -4383,7 +4383,7 @@ body[data-pane-resizing] * {
   display: none;
   align-items: center;
   gap: 1px;
-  padding: 6px;
+  padding: 4px 6px 10px;
   border: 1px solid var(--hairline-strong);
   border-radius: 9999px;
   background: var(--canvas-elevated);
