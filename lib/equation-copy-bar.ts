@@ -155,11 +155,9 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     const rect = el.getBoundingClientRect();
     const toolbar = ensureBar();
     toolbar.style.display = "flex";
-    const barWidth = toolbar.offsetWidth || 168;
-    const barHeight = toolbar.offsetHeight || 36;
-    // Sit just above the equation with ~10px overlap so the pointer never
-    // crosses an empty gap, without covering the click target.
-    const overlap = 10;
+    const barWidth = toolbar.offsetWidth || 118;
+    const barHeight = toolbar.offsetHeight || 28;
+    const overlap = 8;
     const top = Math.max(4, rect.top - barHeight + overlap);
     const left = Math.min(
       window.innerWidth - barWidth - 8,
