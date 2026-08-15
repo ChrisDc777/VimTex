@@ -1,21 +1,15 @@
 /**
- * Snapshot a KaTeX equation as PNG / SVG by re-rendering the TeX on a light
- * host. html-to-image copies computed styles onto every node and that breaks
- * KaTeX .vlist layout (fractions / sqrts collapse to empty).
+ * Snapshot a KaTeX equation as PNG / SVG by painting the laid-out DOM.
+ * SVG foreignObject → canvas is rejected or tainted in Chromium, which made
+ * PNG/SVG copy fail entirely.
  */
 
 import { renderMathToHtml } from "./render-note.ts";
 
 const INK = "#111111";
 const PAPER = "#ffffff";
-/** Padding inside the HTML snapshot, in CSS pixels. */
-const PAD = 24;
-/** Extra foreignObject slack — Chrome clips FO even with overflow:visible. */
-const FO_SLACK = 96;
-/** Padding kept after trimming white canvas edges, in CSS pixels. */
-const TRIM_PAD = 16;
+const PAD = 20;
 const SCALE = 2;
-/** RGB at or above this is treated as paper when trimming. */
 const WHITE_THRESHOLD = 250;
 
 const KATEX_FONTS = [
@@ -33,18 +27,6 @@ const KATEX_FONTS = [
   "KaTeX_Typewriter",
 ];
 
-let cssCache: Promise<string> | null = null;
-
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
 /** Pull KaTeX @font-face and .katex rules out of a (possibly bundled) stylesheet. */
 export function extractKatexCss(css: string): string {
   const out: string[] = [];
@@ -61,19 +43,6 @@ export function extractKatexCss(css: string): string {
   return out.join("\n");
 }
 
-async function fetchOk(
-  url: string,
-  ms = 2000,
-): Promise<Response | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(ms) });
-    if (!res.ok) return null;
-    return res;
-  } catch {
-    return null;
-  }
-}
-
 /** Drop non-data URLs so SVG rasterization cannot taint the canvas. */
 export function dropExternalCssUrls(css: string): string {
   return css.replace(
@@ -85,150 +54,28 @@ export function dropExternalCssUrls(css: string): string {
   );
 }
 
-async function inlineFontUrls(
-  cssText: string,
-  baseHref: string | null,
-): Promise<string> {
-  const urlRe = /url\((['"]?)([^)'"]+)\1\)/g;
-  const matches = [...cssText.matchAll(urlRe)];
-  const replacements = await Promise.all(
-    matches.map(async (match) => {
-      const raw = match[2];
-      if (!raw || raw.startsWith("data:")) return null;
-      const abs = new URL(raw, baseHref || document.baseURI).href;
-      const res = await fetchOk(abs);
-      if (!res) return null;
-      const mime = res.headers.get("content-type") || "font/woff2";
-      const b64 = arrayBufferToBase64(await res.arrayBuffer());
-      return { from: match[0], to: `url("data:${mime};base64,${b64}")` };
-    }),
-  );
-  let out = cssText;
-  for (const rep of replacements) {
-    if (rep) out = out.split(rep.from).join(rep.to);
-  }
-  return dropExternalCssUrls(out);
-}
+type Box = { left: number; top: number; right: number; bottom: number };
 
-function allStyleSheets(): CSSStyleSheet[] {
-  const sheets: CSSStyleSheet[] = [];
-  for (const sheet of Array.from(document.styleSheets)) sheets.push(sheet);
-  if (document.adoptedStyleSheets) {
-    for (const sheet of document.adoptedStyleSheets) sheets.push(sheet);
-  }
-  return sheets;
-}
-
-function* walkRules(rules: CSSRuleList): Generator<CSSRule> {
-  for (const rule of Array.from(rules)) {
-    yield rule;
-    const sheet = (rule as CSSImportRule).styleSheet;
-    if (sheet) {
-      try {
-        yield* walkRules(sheet.cssRules);
-      } catch {
-        /* cross-origin import */
-      }
-      continue;
-    }
-    const grouped = rule as CSSGroupingRule;
-    if (grouped.cssRules) {
-      try {
-        yield* walkRules(grouped.cssRules);
-      } catch {
-        /* unreadable group */
-      }
-    }
-  }
-}
-
-async function cssFromRules(): Promise<string> {
-  const parts: string[] = [];
-  for (const sheet of allStyleSheets()) {
-    let rules: CSSRuleList;
-    try {
-      rules = sheet.cssRules;
-    } catch {
-      continue;
-    }
-    for (const rule of walkRules(rules)) {
-      if (!/katex|KaTeX/i.test(rule.cssText)) continue;
-      parts.push(await inlineFontUrls(rule.cssText, sheet.href));
-    }
-  }
-  return parts.join("\n");
-}
-
-async function cssFromFetchedSheets(): Promise<string> {
-  const hrefs = new Set<string>();
-  for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
-    if (link instanceof HTMLLinkElement && link.href) hrefs.add(link.href);
-  }
-  for (const sheet of allStyleSheets()) {
-    if (sheet.href) hrefs.add(sheet.href);
-  }
-  const parts: string[] = [];
-  for (const style of document.querySelectorAll("style")) {
-    const text = style.textContent ?? "";
-    if (!/katex|KaTeX/i.test(text)) continue;
-    parts.push(await inlineFontUrls(extractKatexCss(text), null));
-  }
-  for (const href of hrefs) {
-    const res = await fetchOk(href, 2500);
-    if (!res) continue;
-    const text = await res.text();
-    if (!/katex|KaTeX/i.test(text)) continue;
-    parts.push(await inlineFontUrls(extractKatexCss(text), href));
-  }
-  return parts.join("\n");
-}
-
-/** KaTeX CSS + inlined fonts. Skips unreadable sheets (no console error). */
-export async function collectEquationCss(): Promise<string> {
-  if (cssCache) return cssCache;
-  cssCache = (async () => {
-    let body = await cssFromRules();
-    if (!/vlist/i.test(body)) {
-      body += `\n${await cssFromFetchedSheets()}`;
-    }
-    return [
-      dropExternalCssUrls(body),
-      `.katex,.katex *{color:${INK}!important}`,
-      `.katex,.katex-display,.katex-html,.katex-display>.katex{overflow:visible!important;margin:0!important;max-width:none!important}`,
-      `.katex{white-space:nowrap!important}`,
-      `.katex-mathml{display:none!important}`,
-    ].join("\n");
-  })();
-  return cssCache;
-}
-
-function unionSize(el: HTMLElement): { width: number; height: number } {
+function unionBox(el: HTMLElement): Box {
   const origin = el.getBoundingClientRect();
-  let minL = origin.left;
-  let minT = origin.top;
-  let maxR = origin.right;
-  let maxB = origin.bottom;
+  let left = origin.left;
+  let top = origin.top;
+  let right = origin.right;
+  let bottom = origin.bottom;
   const visit = (node: Element) => {
     for (const r of node.getClientRects()) {
-      minL = Math.min(minL, r.left);
-      minT = Math.min(minT, r.top);
-      maxR = Math.max(maxR, r.right);
-      maxB = Math.max(maxB, r.bottom);
-    }
-    if (node instanceof HTMLElement) {
-      maxR = Math.max(maxR, minL + node.scrollWidth);
-      maxB = Math.max(maxB, minT + node.scrollHeight);
+      left = Math.min(left, r.left);
+      top = Math.min(top, r.top);
+      right = Math.max(right, r.right);
+      bottom = Math.max(bottom, r.bottom);
     }
   };
   visit(el);
   for (const node of el.querySelectorAll("*")) visit(node);
-  return {
-    width: Math.max(1, maxR - minL, el.scrollWidth, el.offsetWidth),
-    height: Math.max(1, maxB - minT, el.scrollHeight, el.offsetHeight),
-  };
+  return { left, top, right, bottom };
 }
 
-/** Bounding box of non-paper pixels. Used to crop FO slack after rasterizing. */
+/** Bounding box of non-paper pixels. Used to crop extra canvas padding. */
 export function contentBoundingBox(
   data: Uint8ClampedArray,
   width: number,
@@ -285,8 +132,6 @@ function mountFresh(wrapper: HTMLElement): HTMLElement {
 
   const host = document.createElement("div");
   host.className = "vt-equation-export-host";
-  // Use the wrapper size, not .katex's computed px — that already includes
-  // KaTeX's 1.21em, and setting it on the host would apply 1.21em twice.
   host.style.fontSize = getComputedStyle(wrapper).fontSize;
   host.innerHTML = html;
   host.querySelector(".katex-mathml")?.remove();
@@ -294,66 +139,200 @@ function mountFresh(wrapper: HTMLElement): HTMLElement {
   return host;
 }
 
-function equationSvgMarkup(
-  xhtml: string,
-  width: number,
-  height: number,
-): string {
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" overflow="visible">` +
-    `<foreignObject x="0" y="0" width="${width}" height="${height}" overflow="visible">${xhtml}</foreignObject>` +
-    `</svg>`
-  );
+function parsePx(value: string): number {
+  const n = Number.parseFloat(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
-type Raster = { blob: Blob; pixelWidth: number; pixelHeight: number };
+function paintBorders(
+  ctx: CanvasRenderingContext2D,
+  el: Element,
+  style: CSSStyleDeclaration,
+): void {
+  const r = el.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return;
+  const sides = [
+    {
+      w: parsePx(style.borderTopWidth),
+      c: style.borderTopColor,
+      s: style.borderTopStyle,
+      x: r.left,
+      y: r.top,
+      width: r.width,
+      height: parsePx(style.borderTopWidth),
+    },
+    {
+      w: parsePx(style.borderBottomWidth),
+      c: style.borderBottomColor,
+      s: style.borderBottomStyle,
+      x: r.left,
+      y: r.bottom - parsePx(style.borderBottomWidth),
+      width: r.width,
+      height: parsePx(style.borderBottomWidth),
+    },
+    {
+      w: parsePx(style.borderLeftWidth),
+      c: style.borderLeftColor,
+      s: style.borderLeftStyle,
+      x: r.left,
+      y: r.top,
+      width: parsePx(style.borderLeftWidth),
+      height: r.height,
+    },
+    {
+      w: parsePx(style.borderRightWidth),
+      c: style.borderRightColor,
+      s: style.borderRightStyle,
+      x: r.right - parsePx(style.borderRightWidth),
+      y: r.top,
+      width: parsePx(style.borderRightWidth),
+      height: r.height,
+    },
+  ];
+  for (const side of sides) {
+    if (side.w <= 0 || side.s === "none") continue;
+    ctx.fillStyle = side.c || INK;
+    ctx.fillRect(side.x, side.y, side.width, Math.max(side.height, 0.5));
+  }
+}
 
-async function rasterizeSvg(
-  svg: string,
-  width: number,
-  height: number,
-): Promise<Raster> {
-  const url = URL.createObjectURL(
-    new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
-  );
+function paintText(ctx: CanvasRenderingContext2D, node: Text): void {
+  const text = node.data;
+  if (!text) return;
+  if (!text.trim() && !text.includes("\u00a0")) return;
+  const parent = node.parentElement;
+  if (!parent) return;
+  const style = getComputedStyle(parent);
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  const rects = [...range.getClientRects()];
+  range.detach();
+  if (rects.length === 0) return;
+  ctx.fillStyle = style.color || INK;
+  ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  ctx.textBaseline = "bottom";
+  ctx.textAlign = "left";
+  if (rects.length === 1) {
+    const r = rects[0]!;
+    ctx.fillText(text, r.left, r.bottom);
+    return;
+  }
+  // Split by character so wrapped/kerned runs still land on their boxes.
+  let offset = 0;
+  for (const r of rects) {
+    let taken = "";
+    while (offset < text.length) {
+      const next = taken + text[offset];
+      if (ctx.measureText(next).width > r.width + 0.75 && taken) break;
+      taken = next;
+      offset += 1;
+    }
+    if (taken) ctx.fillText(taken, r.left, r.bottom);
+  }
+}
+
+function paintNode(ctx: CanvasRenderingContext2D, node: Node): void {
+  if (node.nodeType === Node.TEXT_NODE) {
+    paintText(ctx, node as Text);
+    return;
+  }
+  if (!(node instanceof Element)) return;
+  if (node.classList.contains("katex-mathml")) return;
+  const style = getComputedStyle(node);
+  if (style.display === "none" || style.visibility === "hidden") return;
+  const clip =
+    style.overflow === "hidden" ||
+    style.overflowX === "hidden" ||
+    style.overflowY === "hidden";
+  if (clip) {
+    const r = node.getBoundingClientRect();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.left, r.top, r.width, r.height);
+    ctx.clip();
+  }
+  paintBorders(ctx, node, style);
+  for (const child of node.childNodes) paintNode(ctx, child);
+  if (clip) ctx.restore();
+}
+
+function trimCanvas(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+): HTMLCanvasElement {
+  let box: ReturnType<typeof contentBoundingBox> = null;
   try {
-    const img = new Image();
-    img.decoding = "sync";
-    await new Promise<void>((resolve, reject) => {
-      const timer = window.setTimeout(
-        () => reject(new Error("Could not rasterize equation")),
-        8000,
-      );
-      img.onload = () => {
-        window.clearTimeout(timer);
-        resolve();
-      };
-      img.onerror = () => {
-        window.clearTimeout(timer);
-        reject(new Error("Could not rasterize equation"));
-      };
-      img.src = url;
-    });
-    await img.decode?.().catch(() => undefined);
-    const pixelWidth = Math.max(1, Math.round(width * SCALE));
-    const pixelHeight = Math.max(1, Math.round(height * SCALE));
+    box = contentBoundingBox(
+      ctx.getImageData(0, 0, canvas.width, canvas.height).data,
+      canvas.width,
+      canvas.height,
+    );
+  } catch {
+    return canvas;
+  }
+  if (!box) return canvas;
+  const pad = PAD * SCALE;
+  const x = Math.max(0, box.minX - pad);
+  const y = Math.max(0, box.minY - pad);
+  const x2 = Math.min(canvas.width, box.maxX + 1 + pad);
+  const y2 = Math.min(canvas.height, box.maxY + 1 + pad);
+  const w = Math.max(1, x2 - x);
+  const h = Math.max(1, y2 - y);
+  if (w >= canvas.width && h >= canvas.height) return canvas;
+  const out = document.createElement("canvas");
+  out.width = w;
+  out.height = h;
+  const outCtx = out.getContext("2d");
+  if (!outCtx) return canvas;
+  outCtx.fillStyle = PAPER;
+  outCtx.fillRect(0, 0, w, h);
+  outCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+  return out;
+}
+
+function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error("Could not render PNG"));
+      else resolve(blob);
+    }, "image/png");
+  });
+}
+
+type Capture = { png: Blob; pixelWidth: number; pixelHeight: number };
+
+async function captureEquation(wrapper: HTMLElement): Promise<Capture> {
+  const host = mountFresh(wrapper);
+  try {
+    await waitKatexFonts();
+    await nextFrame();
+    const katexEl = host.querySelector<HTMLElement>(".katex");
+    if (!katexEl) throw new Error("No rendered equation");
+    const box = unionBox(katexEl);
+    const cssW = Math.max(1, Math.ceil(box.right - box.left) + PAD * 2);
+    const cssH = Math.max(1, Math.ceil(box.bottom - box.top) + PAD * 2);
     const canvas = document.createElement("canvas");
-    canvas.width = pixelWidth;
-    canvas.height = pixelHeight;
+    canvas.width = Math.max(1, Math.round(cssW * SCALE));
+    canvas.height = Math.max(1, Math.round(cssH * SCALE));
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Could not create canvas");
     ctx.fillStyle = PAPER;
-    ctx.fillRect(0, 0, pixelWidth, pixelHeight);
-    ctx.drawImage(img, 0, 0, pixelWidth, pixelHeight);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(SCALE, SCALE);
+    ctx.translate(PAD - box.left, PAD - box.top);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    paintNode(ctx, katexEl);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const trimmed = trimCanvas(canvas, ctx);
-    const blob = await canvasToPng(trimmed.canvas);
+    const png = await canvasToPng(trimmed);
     return {
-      blob,
-      pixelWidth: trimmed.canvas.width,
-      pixelHeight: trimmed.canvas.height,
+      png,
+      pixelWidth: trimmed.width,
+      pixelHeight: trimmed.height,
     };
   } finally {
-    URL.revokeObjectURL(url);
+    host.remove();
   }
 }
 
@@ -374,104 +353,6 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-type Capture = { png: Blob; pixelWidth: number; pixelHeight: number };
-
-function trimCanvas(
-  canvas: HTMLCanvasElement,
-  ctx: CanvasRenderingContext2D,
-): { canvas: HTMLCanvasElement } {
-  let box: ReturnType<typeof contentBoundingBox> = null;
-  try {
-    box = contentBoundingBox(
-      ctx.getImageData(0, 0, canvas.width, canvas.height).data,
-      canvas.width,
-      canvas.height,
-    );
-  } catch {
-    return { canvas };
-  }
-  if (!box) return { canvas };
-  const pad = TRIM_PAD * SCALE;
-  const x = Math.max(0, box.minX - pad);
-  const y = Math.max(0, box.minY - pad);
-  const x2 = Math.min(canvas.width, box.maxX + 1 + pad);
-  const y2 = Math.min(canvas.height, box.maxY + 1 + pad);
-  const w = Math.max(1, x2 - x);
-  const h = Math.max(1, y2 - y);
-  if (w >= canvas.width && h >= canvas.height) return { canvas };
-  const out = document.createElement("canvas");
-  out.width = w;
-  out.height = h;
-  const outCtx = out.getContext("2d");
-  if (!outCtx) return { canvas };
-  outCtx.fillStyle = PAPER;
-  outCtx.fillRect(0, 0, w, h);
-  outCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
-  return { canvas: out };
-}
-
-function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) reject(new Error("Could not render PNG"));
-      else resolve(blob);
-    }, "image/png");
-  });
-}
-
-async function captureEquation(wrapper: HTMLElement): Promise<Capture> {
-  const host = mountFresh(wrapper);
-  try {
-    await waitKatexFonts();
-    await nextFrame();
-    const katexEl = host.querySelector<HTMLElement>(".katex");
-    if (!katexEl) throw new Error("No rendered equation");
-    const inner = unionSize(katexEl);
-    // FO always clips in Chromium; size the viewport larger than the math,
-    // then trim white edges after rasterizing.
-    const width = Math.ceil(inner.width * 1.4) + PAD * 2 + FO_SLACK;
-    const height = Math.ceil(inner.height * 1.4) + PAD * 2 + FO_SLACK;
-    const fontSize = getComputedStyle(wrapper).fontSize;
-
-    const css = await collectEquationCss();
-    const box = document.createElement("div");
-    box.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-    box.setAttribute(
-      "style",
-      [
-        `background:${PAPER}`,
-        `color:${INK}`,
-        `padding:${PAD}px`,
-        "box-sizing:content-box",
-        "display:inline-block",
-        "width:max-content",
-        "max-width:none",
-        `min-width:${Math.ceil(inner.width)}px`,
-        "white-space:nowrap",
-        `font-size:${fontSize}`,
-        "overflow:visible",
-      ].join(";"),
-    );
-    const style = document.createElement("style");
-    style.textContent = css;
-    box.appendChild(style);
-    box.appendChild(katexEl.cloneNode(true));
-    const xhtml = new XMLSerializer().serializeToString(box);
-    const raster = await rasterizeSvg(
-      equationSvgMarkup(xhtml, width, height),
-      width,
-      height,
-    );
-    return {
-      png: raster.blob,
-      pixelWidth: raster.pixelWidth,
-      pixelHeight: raster.pixelHeight,
-    };
-  } finally {
-    host.remove();
-  }
-}
-
 export function svgMarkupFromDataUrl(dataUrl: string): string {
   const comma = dataUrl.indexOf(",");
   const payload = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
@@ -488,7 +369,7 @@ async function captureWithTimeout(wrapper: HTMLElement): Promise<Capture> {
     new Promise<never>((_, reject) => {
       window.setTimeout(
         () => reject(new Error("Equation snapshot timed out")),
-        12000,
+        8000,
       );
     }),
   ]);

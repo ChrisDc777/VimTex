@@ -4437,9 +4437,9 @@ body[data-pane-resizing] * {
 
 .vt-equation-export-host {
   position: fixed;
-  left: 8px;
-  top: 8px;
-  z-index: -1;
+  left: -12000px;
+  top: 0;
+  z-index: 0;
   box-sizing: border-box;
   width: max-content;
   max-width: none;
@@ -4448,7 +4448,7 @@ body[data-pane-resizing] * {
   overflow: visible;
   background: #fff;
   color: #111;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
   white-space: nowrap;
 }
