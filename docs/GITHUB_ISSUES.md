@@ -1,7 +1,7 @@
 # GitHub issues index
 
 **Repository:** [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex)  
-**Last synced:** 2026-08-12
+**Last synced:** 2026-08-15
 
 > Studio = default shell; Forge = optional multi-tab workbench (`lib/ui-variant.ts`).
 
@@ -96,25 +96,26 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 
 ---
 
-## M4 - Import, export, and polish
+## M4 - Import, export, and polish — complete ✅
 
-**Epic:** [#30](https://github.com/ChrisDc777/VimTex/issues/30)
+**Epic:** [#30](https://github.com/ChrisDc777/VimTex/issues/30) (closed 2026-08-15)
 
-| # | Issue | Priority |
-|---|-------|----------|
+| # | Issue | Status |
+|---|-------|--------|
 | 31 | Import LaTeX / Markdown | ✅ shipped |
 | — | Overleaf `.tex` wrap, `.md` `$` math, Copy VimTex source | ✅ shipped (handoff; not #32) |
-| 32 | PDF / equation image export | ✅ shipped (print PDF + SVG/PNG copy) |
-| 33 | Delight polish | P1 |
-| 79 | Docs-style history panel | ✅ shipped (PR #131); Level C → #126 |
+| 32 | PDF / equation image export | ✅ shipped (print PDF + SVG/PNG copy; paint snapshot #144) |
+| 33 | Delight polish | ✅ shipped (toasts, waiting empty, OG; audited 2026-08-15) |
+| 79 | Docs-style history panel | ✅ shipped (PR #131 + Levels C–E); closed |
 
-### History expansion (backlog)
+### History expansion (shipped + follow-ups)
 
 | # | Issue | Priority |
 |---|-------|----------|
 | 126 | Autosnapshots, pin/rename, observability (Level C) | ✅ shipped |
 | 127 | Indexed metadata store + search (Level D) | ✅ shipped |
 | 128 | Fork-as-new-room + account authorship (Level E) | ✅ fork shipped; authorship remapping deferred → #37/#78 |
+| — | History panel visual redesign | **Next** (Chat/History already separated in #144) |
 | 130 | Motion library evaluation for panel transitions | P3 |
 
 ### Chat polish (backlog)
@@ -147,4 +148,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. Next work: M4 [#33](https://github.com/ChrisDc777/VimTex/issues/33).
+Live tracking: GitHub issues + this index. **Next:** History panel redesign; then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60).

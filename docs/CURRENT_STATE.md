@@ -9,10 +9,10 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Trust | Doc |
 |-------|-----|
 | Shipped vs not | This file |
-| Next work | M4: [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish (toasts/OG/waiting mostly shipped — audit leftovers); motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
+| Next work | History panel redesign (Chat already separated); then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36); motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | History internals | [`HISTORY.md`](./HISTORY.md) |
 | AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
-| Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M2 done, M3 Level A largely shipped |
+| Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M4 complete; M3 Level A largely shipped |
 | Do **not** treat as live backlog | `scripts/issue-backlog.json` (M0 seed only) |
 
 ## Continuing work (agent handoff)
@@ -20,9 +20,10 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Topic | Where to start |
 |-------|----------------|
 | Version history shipped (Level A–E) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
+| **Next:** History panel redesign | Separate from Chat (#144); plan layout/visual language before coding |
 | Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
 | History backlog | Level D/E shipped (#127/#128); authorship remap → #37/#78 |
-| M4 import/export | ✅ #31 import + handoff + [#32](https://github.com/ChrisDc777/VimTex/issues/32) PDF / equation image; next [#33](https://github.com/ChrisDc777/VimTex/issues/33) polish |
+| M4 import/export + polish | ✅ complete — epic [#30](https://github.com/ChrisDc777/VimTex/issues/30) closed |
 | Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
@@ -31,13 +32,11 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 
 ```
 Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
-then docs/HISTORY.md and open GitHub issues #33 (M4 polish) and #130.
+then docs/HISTORY.md and components/RoomHistoryPanel.tsx.
 
-Do not rebuild the Docs history panel (#79) or M3 Wave A–D Level A — those shipped
-in PR #131. History Level C–E (#126–#128), Ask/Edit chips (#129), file import
-(#31), .tex/.md handoff, and PDF / equation image export (#32) shipped.
-Next product work is M4 polish (#33) — toasts, chat waiting empty state, and OG
-share images already exist; audit leftovers only.
+M4 is complete (#30/#31/#32/#33/#79 closed). Do not rebuild History Level A–E
+(#79/#126–#128) or M3 Wave A–D Level A. Next product work is History panel
+redesign (visual/UX, independent of Chat), then AI polish #60.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
