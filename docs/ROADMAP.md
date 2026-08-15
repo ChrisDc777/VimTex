@@ -10,7 +10,7 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 | **M1** | Editing + activation | 2026-Q4 | ✅ Non-Vim mode, onboarding, templates, command palette |
 | **M2** | Collab + persistence | 2027-Q1 | ✅ Permissions, reconnect, snapshots, guest capabilities |
 | **M3** | AI workflows | 2027-Q1–Q2 | Diff accept/reject, scoped actions, streaming — see `docs/AI_ROADMAP.md` |
-| **M4** | Import/export + polish | 2027-Q2 | PDF, copy equation, import, delight UX |
+| **M4** | Import/export + polish | 2027-Q2 | ✅ PDF, equation images, import, delight UX, history panel |
 | **M5** | Production + SaaS | 2027-H1+ | Auth, observability, billing — gated on retention |
 
 ---
@@ -99,17 +99,17 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 
 ---
 
-## M4 — Import, export, and polish
+## M4 — Import, export, and polish — complete ✅
 
 | Priority | Issue theme | Size | Notes |
 |----------|-------------|------|-------|
-| P1 | Copy as TeX / Markdown / rendered equation | S | |
-| P1 | Import .md / .tex | M | |
-| P1 | Toasts, empty states, reconnect polish | S | |
+| P1 | Copy as TeX / Markdown / rendered equation | S | ✅ |
+| P1 | Import .md / .tex | M | ✅ `#31` |
+| P1 | Toasts, empty states, reconnect polish | S | ✅ `#33` |
 | P2 | Docs-style version history side panel | M | ✅ `#79` Level A–B (PR #131); Level C+ → `#126`–`#128` |
-| P2 | PNG/SVG/MathML per equation | M | |
-| P2 | PDF export (print or server render) | L | |
-| P2 | Overleaf handoff RFC | XS | |
+| P2 | PNG/SVG/MathML per equation | M | ✅ `#32` (+ paint snapshot #144); MathML not shipped |
+| P2 | PDF export (print or server render) | L | ✅ print-to-PDF `#32` |
+| P2 | Overleaf handoff RFC | XS | ✅ `.tex` wrapper shipped |
 
 ---
 
@@ -158,6 +158,8 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 
 **M3 Level A (landed):** AI accept/reject + Studio/Forge gate — [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md).
 
-**Next:** History Level C ([#126](https://github.com/ChrisDc777/VimTex/issues/126)); remaining M4 import/export; see [`CURRENT_STATE.md`](./CURRENT_STATE.md).
+**M4 (landed):** import/export, PDF, equation images, polish, Docs-style history — epic [#30](https://github.com/ChrisDc777/VimTex/issues/30) closed.
+
+**Next:** History panel redesign; then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); see [`CURRENT_STATE.md`](./CURRENT_STATE.md).
 
 See [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for issue index.
