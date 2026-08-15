@@ -87,7 +87,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 56 | Outline + TODO scanner |
 | 62 | Grammar/style review |
 | 61 | Citation completion |
-| 60 | AI polish |
+| 60 | AI polish | ✅ closed — usage/stop/regen + room prefs (#112/#116) |
 | 83 | Equation-scoped rewrite |
 | 84 | Derivation coach (Forge-friendly) |
 | 87 | Ranged AI patch format |
@@ -148,4 +148,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. **Next:** AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); optional History Phase 2 (editor time-travel).
+Live tracking: GitHub issues + this index. **Next:** optional History Phase 2 (editor time-travel); M5 gates [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36).
