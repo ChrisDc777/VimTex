@@ -30,7 +30,6 @@ type AppHeaderProps = {
   /** View-only share session — ShareRoom shows a badge instead of mint UI. */
   readOnly?: boolean;
   onOpenRoomSettings?: () => void;
-  onOpenRoomSnapshots?: () => void;
   onEditSecret?: (edit: string) => void;
 };
 
@@ -55,7 +54,6 @@ export function AppHeader({
   canvasBlank = true,
   readOnly = false,
   onOpenRoomSettings,
-  onOpenRoomSnapshots,
   onEditSecret,
 }: AppHeaderProps) {
   return (
@@ -71,7 +69,6 @@ export function AppHeader({
               roomId={roomId}
               readOnly={readOnly}
               onOpenSettings={onOpenRoomSettings}
-              onOpenSnapshots={onOpenRoomSnapshots}
               onEditSecret={onEditSecret}
             />
           ) : null}

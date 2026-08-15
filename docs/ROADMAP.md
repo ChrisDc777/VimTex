@@ -160,6 +160,6 @@ Phased delivery for [ChrisDc777/VimTex](https://github.com/ChrisDc777/VimTex). *
 
 **M4 (landed):** import/export, PDF, equation images, polish, Docs-style history — epic [#30](https://github.com/ChrisDc777/VimTex/issues/30) closed.
 
-**Next:** History panel redesign; then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); see [`CURRENT_STATE.md`](./CURRENT_STATE.md).
+**Next:** AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); optional History Phase 2 (editor time-travel); see [`CURRENT_STATE.md`](./CURRENT_STATE.md).
 
 See [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for issue index.

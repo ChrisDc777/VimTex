@@ -9,7 +9,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Trust | Doc |
 |-------|-----|
 | Shipped vs not | This file |
-| Next work | History panel redesign (Chat already separated); then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36); motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
+| Next work | AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36); History Phase 2 (editor time-travel); motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | History internals | [`HISTORY.md`](./HISTORY.md) |
 | AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
 | Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M4 complete; M3 Level A largely shipped |
@@ -20,7 +20,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Topic | Where to start |
 |-------|----------------|
 | Version history shipped (Level A–E) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
-| **Next:** History panel redesign | Separate from Chat (#144); plan layout/visual language before coding |
+| History panel redesign (Phase 1) | ✅ Docs/Notion rail — Automatic/Manual, day groups, Named-only, visual diff vs live |
 | Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
 | History backlog | Level D/E shipped (#127/#128); authorship remap → #37/#78 |
 | M4 import/export + polish | ✅ complete — epic [#30](https://github.com/ChrisDc777/VimTex/issues/30) closed |
@@ -34,9 +34,10 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and components/RoomHistoryPanel.tsx.
 
-M4 is complete (#30/#31/#32/#33/#79 closed). Do not rebuild History Level A–E
-(#79/#126–#128) or M3 Wave A–D Level A. Next product work is History panel
-redesign (visual/UX, independent of Chat), then AI polish #60.
+M4 is complete (#30/#31/#32/#33/#79 closed). History Phase 1 redesign shipped
+(Automatic/Manual checkpoints, day-grouped timeline, visual diff). Do not rebuild
+Level A–E basics or M3 Wave A–D Level A. Next product work is AI polish #60;
+optional History Phase 2 = editor time-travel overlay.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.

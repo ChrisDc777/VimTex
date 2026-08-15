@@ -115,7 +115,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 126 | Autosnapshots, pin/rename, observability (Level C) | ✅ shipped |
 | 127 | Indexed metadata store + search (Level D) | ✅ shipped |
 | 128 | Fork-as-new-room + account authorship (Level E) | ✅ fork shipped; authorship remapping deferred → #37/#78 |
-| — | History panel visual redesign | **Next** (Chat/History already separated in #144) |
+| — | History panel visual redesign (Phase 1) | ✅ Automatic/Manual, day groups, Named-only, visual diff |
 | 130 | Motion library evaluation for panel transitions | P3 |
 
 ### Chat polish (backlog)
@@ -148,4 +148,4 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 - `scripts/publish-github-backlog.mjs` — one-shot publisher used for M0
 - `scripts/created-issues.json` — last publish output
 
-Live tracking: GitHub issues + this index. **Next:** History panel redesign; then AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60).
+Live tracking: GitHub issues + this index. **Next:** AI polish [#60](https://github.com/ChrisDc777/VimTex/issues/60); optional History Phase 2 (editor time-travel).

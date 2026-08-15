@@ -10,6 +10,16 @@ import { copyVimtexSourceToClipboard } from "@/lib/copy-note";
 import type { EditorMode } from "@/lib/editor-mode";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { UiVariant } from "@/lib/ui-variant";
+import {
+  MenuBlankIcon,
+  MenuCopyIcon,
+  MenuImportIcon,
+  MenuLatexIcon,
+  MenuMarkdownIcon,
+  MenuPdfIcon,
+  MenuPrefsIcon,
+  MenuTemplateIcon,
+} from "@/components/menu-icons";
 
 type SheetMenuProps = {
   note: string;
@@ -170,7 +180,10 @@ export function SheetMenu({
           title={canNewSheet ? undefined : "Maximum 5 tabs"}
           onClick={() => run(onNewSheet)}
         >
-          <span className="vt-header-menu__label">New sheet</span>
+          <span className="vt-header-menu__lead">
+            <MenuBlankIcon />
+            <span className="vt-header-menu__label">New sheet</span>
+          </span>
           <span className="vt-header-menu__hint">
             {canNewSheet ? "Blank" : "Max 5 tabs"}
           </span>
@@ -183,7 +196,10 @@ export function SheetMenu({
           title={canNewSheet ? undefined : "Maximum 5 tabs"}
           onClick={() => run(onOpenSheetPicker)}
         >
-          <span className="vt-header-menu__label">Templates…</span>
+          <span className="vt-header-menu__lead">
+            <MenuTemplateIcon />
+            <span className="vt-header-menu__label">Templates…</span>
+          </span>
           <span className="vt-header-menu__hint">Choose a template</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
@@ -194,7 +210,10 @@ export function SheetMenu({
           className="vt-header-menu__item"
           onClick={() => run(() => openNoteImport())}
         >
-          <span className="vt-header-menu__label">Import file…</span>
+          <span className="vt-header-menu__lead">
+            <MenuImportIcon />
+            <span className="vt-header-menu__label">Import file…</span>
+          </span>
           <span className="vt-header-menu__hint">.tex / .md</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
@@ -205,7 +224,10 @@ export function SheetMenu({
           className="vt-header-menu__item"
           onClick={() => run(() => exportAsTex(note))}
         >
-          <span className="vt-header-menu__label">Export as LaTeX</span>
+          <span className="vt-header-menu__lead">
+            <MenuLatexIcon />
+            <span className="vt-header-menu__label">Export as LaTeX</span>
+          </span>
           <span className="vt-header-menu__hint">Overleaf</span>
         </button>
         <button
@@ -214,7 +236,10 @@ export function SheetMenu({
           className="vt-header-menu__item"
           onClick={() => run(() => exportAsMd(note))}
         >
-          <span className="vt-header-menu__label">Export as Markdown</span>
+          <span className="vt-header-menu__lead">
+            <MenuMarkdownIcon />
+            <span className="vt-header-menu__label">Export as Markdown</span>
+          </span>
           <span className="vt-header-menu__hint">$ math</span>
         </button>
         <button
@@ -223,7 +248,10 @@ export function SheetMenu({
           className="vt-header-menu__item"
           onClick={() => run(() => exportAsPdf(note))}
         >
-          <span className="vt-header-menu__label">Export as PDF</span>
+          <span className="vt-header-menu__lead">
+            <MenuPdfIcon />
+            <span className="vt-header-menu__label">Export as PDF</span>
+          </span>
           <span className="vt-header-menu__hint">print</span>
         </button>
         <button
@@ -232,7 +260,10 @@ export function SheetMenu({
           className="vt-header-menu__item"
           onClick={() => run(() => copyVimtexSourceToClipboard(note))}
         >
-          <span className="vt-header-menu__label">Copy VimTex source</span>
+          <span className="vt-header-menu__lead">
+            <MenuCopyIcon />
+            <span className="vt-header-menu__label">Copy VimTex source</span>
+          </span>
           <span className="vt-header-menu__hint">verbatim</span>
         </button>
         {showRecents ? (
@@ -305,7 +336,10 @@ export function SheetMenu({
                 setPrefsOpen(true);
               }}
             >
-              <span className="vt-header-menu__label">Preferences…</span>
+              <span className="vt-header-menu__lead">
+                <MenuPrefsIcon />
+                <span className="vt-header-menu__label">Preferences…</span>
+              </span>
               <span className="vt-header-menu__hint">Editor, workspace</span>
             </button>
           </>

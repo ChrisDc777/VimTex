@@ -62,13 +62,13 @@ export function RoomSnapshotsDialog({
   };
 
   const handleRestore = async (snap: RoomSnapshotMeta) => {
-    if (
-      !window.confirm(
-        `Restore “${snap.label}”? This replaces the shared note text for everyone in the room.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await notify.confirm({
+      id: "vt-snapshots-restore",
+      message: `Restore “${snap.label}” for the whole room? This replaces the shared note.`,
+      confirmLabel: "Restore",
+      cancelLabel: "Cancel",
+    });
+    if (!ok) return;
     if (!workspace || workspace.readOnly) {
       notify.error("Cannot restore in a read-only session.");
       return;
@@ -89,7 +89,14 @@ export function RoomSnapshotsDialog({
   };
 
   const handleDelete = async (snap: RoomSnapshotMeta) => {
-    if (!window.confirm(`Delete “${snap.label}”?`)) return;
+    const ok = await notify.confirm({
+      id: "vt-snapshots-delete",
+      message: `Delete “${snap.label}”? This cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await deleteRoomSnapshot(roomId, snap.id);

@@ -35,7 +35,8 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 
 - `AppHeader` + sheet menu, editor tab bar
 - Right activity rail / mobile bottom tabs
-- Unified right panel: Problem | Preview | Chat | **History** (`RightPanelSwitcher` when Chat or History is open)
+- Unified right panel: Problem | Preview | Chat | **History** (toolbar/rail icons; Chat and History are separate panels)
+
 - Resizable panes, persisted widths
 - Preferences dialog (Editor keys, relative line numbers, Workspace style)
 - Base `:root` tokens in `app/globals.css`: mineral surfaces, stepped dark neutrals

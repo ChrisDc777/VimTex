@@ -11,6 +11,7 @@ export function VtToaster() {
     <Toaster
       position="bottom-center"
       gutter={8}
+      containerClassName="vt-toaster"
       toastOptions={{
         duration: 3200,
         style: {

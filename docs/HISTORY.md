@@ -14,7 +14,7 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 | Restore | API returns note text; client applies via `WorkspaceController.restoreSnapshotText` |
 | Diff | `lib/text-diff.ts` line diff (client preview compare vs live) |
 | AI Pre-AI | `lib/ai-accept-snapshot.ts` — optional checkpoint on Confirm Accept (#89) |
-| Autosnap | Idle (45s after last **local** edit) + optional interval; prefs in Studio/Forge Preferences → Workspace |
+| Autosnap | **Automatic** checkpoint mode: idle (45s after last **local** edit) + optional interval; **Manual** mode skips autosnaps (named saves only). Live Yjs sync always continues. Prefs: History header + Preferences → Workspace (`lib/history-prefs.ts`) |
 | Observability | `vimtex.snapshot` JSON logs on create/restore/patch/fork — ids, kind, lengths only (no note bodies) |
 | Fork | `POST …/fork` → new room id + `editSecret` + seeded checkpoint (#128) |
 
@@ -31,10 +31,13 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 - FIFO eviction of unpinned only; **pinned survive**
 - Dedupe: identical hash within 5 minutes returns existing checkpoint (also coalesces multi-client autosnaps)
 
-### Autosnapshots (Level C)
+### Autosnapshots (Level C) + checkpoint mode
 
-- **Idle:** default on. Debounced 45s after a local Yjs edit; coalesces while a create is in flight; skips empty / unchanged hash / read-only.
-- **Interval:** default off. 5 / 10 / 15 minute presets in Preferences.
+- **Checkpoint mode (`automatic` \| `manual`):** Docs-like policy for *versions only*. Live collab never pauses.
+  - **Automatic (default):** idle autosnap on; optional interval from Preferences.
+  - **Manual:** no idle/interval creates; user saves via “Name this version”.
+- **Idle:** Debounced 45s after a local Yjs edit; coalesces while a create is in flight; skips empty / unchanged hash / read-only / Manual mode.
+- **Interval:** default off. 5 / 10 / 15 minute presets in Preferences (Automatic only).
 - Server hash-dedupe still applies, so overlapping clients do not stack identical checkpoints.
 
 ### Index + search (Level D)
@@ -57,17 +60,19 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 
 ## UI
 
-- **Toolbar:** dedicated History icon (clock) beside Chat in Studio; Forge rail + mobile bottom tabs
-- **In-panel:** `RightPanelSwitcher` — Chat | History segmented tabs when either panel is open; clicking toolbar icons switches views without hiding the other
-- **Share menu:** Version history… still opens History (secondary entry)
-- Read-only sessions can browse, preview, and compare; restore/delete/pin/rename/fork require edit capability
-- Pin, rename, and fork live on the selected checkpoint
+- **Toolbar:** dedicated History icon (clock) beside Chat in Studio; Forge rail + mobile bottom tabs — icons open History or Chat as separate panels (no shared Chat|History tab strip)
+- **Panel:** Docs/Notion-style rail — Automatic|Manual mode, “Name this version”, Named-only filter, day-grouped timeline, Changes/Source preview with line hunks vs live
+- Destructive actions (delete / restore / fork) use styled confirm toasts (`notify.confirm`), not browser dialogs
+- Read-only sessions can browse and compare; restore/delete/pin/rename/fork require edit capability
+- Pin, rename, and fork live on the selected version
+- Restore is **room-wide** (chat not restored); a `pre_restore` checkpoint is saved first
 - CSS transitions only (`prefers-reduced-motion` respected); no motion library yet
 
 ## Deferred
 
 | Topic | Notes |
 |-------|-------|
+| Editor time-travel overlay | Select version → ghost/read-only past in main editor (Phase 2) — main Docs/Notion gap vs Phase 1 panel preview |
 | Shared SQL index | Multi-node / Postgres when RFC B lands |
 | Authorship remapping | After accounts (#37) + claim-guest (#78) |
 | Motion library | [#130](https://github.com/ChrisDc777/VimTex/issues/130) if shared-element restore UX needs it |

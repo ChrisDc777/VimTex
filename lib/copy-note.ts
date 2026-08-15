@@ -1,5 +1,5 @@
 import { copyVimtexSource } from "./export.ts";
-import { notify } from "./toasts.ts";
+import { notify } from "./toasts.tsx";
 
 /** Clipboard copy of the live buffer (lossless VimTex source). */
 export function copyVimtexSourceToClipboard(note: string): void {

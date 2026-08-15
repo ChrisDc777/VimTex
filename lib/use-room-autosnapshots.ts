@@ -7,6 +7,7 @@ import {
   shouldCreateAutosnap,
 } from "@/lib/autosnap-policy";
 import {
+  autosnapEnabled,
   HISTORY_PREFS_EVENT,
   IDLE_AUTOSNAP_MS,
   loadHistoryPrefs,
@@ -47,6 +48,7 @@ export function useRoomAutosnapshots({
     const snap = async (kind: "auto_idle" | "auto_interval") => {
       if (disposed) return;
       const prefs = loadHistoryPrefs();
+      if (!autosnapEnabled(prefs)) return;
       const enabled =
         kind === "auto_idle" ? prefs.idleAutosnap : prefs.intervalAutosnap;
       const decision = shouldCreateAutosnap({
@@ -82,7 +84,8 @@ export function useRoomAutosnapshots({
 
     const armIdle = () => {
       if (idleTimer) clearTimeout(idleTimer);
-      if (!loadHistoryPrefs().idleAutosnap) return;
+      const prefs = loadHistoryPrefs();
+      if (!autosnapEnabled(prefs) || !prefs.idleAutosnap) return;
       idleTimer = setTimeout(() => {
         void snap("auto_idle");
       }, IDLE_AUTOSNAP_MS);
@@ -101,7 +104,7 @@ export function useRoomAutosnapshots({
         intervalTimer = null;
       }
       const prefs = loadHistoryPrefs();
-      if (!prefs.intervalAutosnap) return;
+      if (!autosnapEnabled(prefs) || !prefs.intervalAutosnap) return;
       const ms = prefs.intervalMinutes * 60_000;
       intervalTimer = setInterval(() => {
         void snap("auto_interval");

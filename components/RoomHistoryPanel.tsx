@@ -4,7 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import { CloseIcon } from "@/components/chat/icons";
 import { SidePanelHeader } from "@/components/SidePanelHeader";
-import { diffLines, summarizeDiff } from "@/lib/text-diff";
+import {
+  diffLines,
+  summarizeDiff,
+  type DiffLine,
+} from "@/lib/text-diff";
+import {
+  HISTORY_PREFS_EVENT,
+  loadHistoryPrefs,
+  setCheckpointMode,
+  type CheckpointMode,
+  type HistoryPrefs,
+} from "@/lib/history-prefs";
 import {
   createRoomSnapshot,
   deleteRoomSnapshot,
@@ -16,6 +27,7 @@ import {
   snapshotKindLabel,
   type RoomSnapshotMeta,
   type SnapshotAuth,
+  type SnapshotKind,
 } from "@/lib/room-snapshots";
 import { writeRoomToLocation } from "@/lib/collab";
 import { saveEditSecret } from "@/lib/room-auth";
@@ -29,6 +41,88 @@ export type RoomHistoryPanelProps = {
   auth?: SnapshotAuth;
 };
 
+type PreviewTab = "changes" | "source";
+
+type DayGroup = {
+  key: string;
+  label: string;
+  items: RoomSnapshotMeta[];
+};
+
+function dayKeyFromDate(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function dayKey(createdAt: number): string {
+  return dayKeyFromDate(new Date(createdAt));
+}
+
+function dayLabel(createdAt: number, now: number): string {
+  const d = new Date(createdAt);
+  const today = new Date(now);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const key = dayKeyFromDate(d);
+  if (key === dayKeyFromDate(today)) return "Today";
+  if (key === dayKeyFromDate(yesterday)) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function groupByDay(snaps: RoomSnapshotMeta[], now: number): DayGroup[] {
+  const map = new Map<string, DayGroup>();
+  for (const snap of snaps) {
+    const key = dayKey(snap.createdAt);
+    let group = map.get(key);
+    if (!group) {
+      group = { key, label: dayLabel(snap.createdAt, now), items: [] };
+      map.set(key, group);
+    }
+    group.items.push(snap);
+  }
+  return [...map.values()];
+}
+
+function isNamedVersion(snap: RoomSnapshotMeta): boolean {
+  if (snap.pinned) return true;
+  if (snap.kind === "named" || snap.kind === "manual") return true;
+  // Labeled non-auto snaps count as milestones.
+  if (
+    snap.label &&
+    snap.kind !== "auto_idle" &&
+    snap.kind !== "auto_interval" &&
+    snap.kind !== "pre_ai" &&
+    snap.kind !== "pre_restore"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function displayTitle(snap: RoomSnapshotMeta): string {
+  if (snap.kind === "named" || snap.kind === "manual") return snap.label;
+  if (snap.pinned && snap.label) return snap.label;
+  return snapshotKindLabel(snap.kind);
+}
+
+function quietMeta(snap: RoomSnapshotMeta, now: number): string {
+  const time = formatRelativeTime(snap.createdAt, now);
+  if (snap.kind === "auto_idle" || snap.kind === "auto_interval") {
+    return `Auto · ${time}`;
+  }
+  return time;
+}
+
+function kindChip(kind: SnapshotKind | undefined): string | null {
+  if (kind === "pre_ai" || kind === "pre_restore") {
+    return snapshotKindLabel(kind);
+  }
+  return null;
+}
+
 export function RoomHistoryPanel({
   roomId,
   onClose,
@@ -39,7 +133,8 @@ export function RoomHistoryPanel({
   const [snapshots, setSnapshots] = useState<RoomSnapshotMeta[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
-  const [compareMode, setCompareMode] = useState(false);
+  const [previewTab, setPreviewTab] = useState<PreviewTab>("changes");
+  const [namedOnly, setNamedOnly] = useState(false);
   const [label, setLabel] = useState("");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,10 +142,20 @@ export function RoomHistoryPanel({
   const [now, setNow] = useState(() => Date.now());
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [historyPrefs, setHistoryPrefs] = useState<HistoryPrefs>(() =>
+    loadHistoryPrefs(),
+  );
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setHistoryPrefs(loadHistoryPrefs());
+    sync();
+    window.addEventListener(HISTORY_PREFS_EVENT, sync);
+    return () => window.removeEventListener(HISTORY_PREFS_EVENT, sync);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -74,14 +179,19 @@ export function RoomHistoryPanel({
   }, [refresh]);
 
   const filtered = useMemo(() => {
+    let list = snapshots;
+    if (namedOnly) list = list.filter(isNamedVersion);
     const q = query.trim().toLowerCase();
-    if (!q) return snapshots;
-    return snapshots.filter(
+    if (!q) return list;
+    return list.filter(
       (s) =>
         s.label.toLowerCase().includes(q) ||
-        snapshotKindLabel(s.kind).toLowerCase().includes(q),
+        snapshotKindLabel(s.kind).toLowerCase().includes(q) ||
+        (s.createdBy?.name ?? "").toLowerCase().includes(q),
     );
-  }, [snapshots, query]);
+  }, [snapshots, query, namedOnly]);
+
+  const groups = useMemo(() => groupByDay(filtered, now), [filtered, now]);
 
   const selected = snapshots.find((s) => s.id === selectedId) ?? null;
 
@@ -114,22 +224,32 @@ export function RoomHistoryPanel({
   }, [roomId, selectedId, auth]);
 
   const liveText = workspace?.getText() ?? "";
+  const diffRows = useMemo((): DiffLine[] | null => {
+    if (previewText == null) return null;
+    return diffLines(previewText, liveText);
+  }, [previewText, liveText]);
+
   const diffSummary = useMemo(() => {
-    if (!compareMode || previewText == null) return null;
-    return summarizeDiff(diffLines(previewText, liveText));
-  }, [compareMode, previewText, liveText]);
+    if (!diffRows) return null;
+    return summarizeDiff(diffRows);
+  }, [diffRows]);
+
+  const onModeChange = (mode: CheckpointMode) => {
+    setHistoryPrefs(setCheckpointMode(mode));
+  };
 
   const handleCreate = async () => {
     setBusy(true);
     try {
       const text =
         workspace && !workspace.readOnly ? workspace.getText() : undefined;
-      await createRoomSnapshot(roomId, label, text, {
+      const trimmed = label.trim();
+      await createRoomSnapshot(roomId, trimmed, text, {
         auth,
-        kind: label.trim() ? "named" : "manual",
+        kind: trimmed ? "named" : "manual",
       });
       setLabel("");
-      notify.success("Checkpoint saved");
+      notify.success(trimmed ? "Named version saved" : "Version saved");
       await refresh();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Save failed");
@@ -139,13 +259,13 @@ export function RoomHistoryPanel({
   };
 
   const handleRestore = async (snap: RoomSnapshotMeta) => {
-    if (
-      !window.confirm(
-        `Restore “${snap.label}”? This replaces the shared note text for everyone in the room.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await notify.confirm({
+      id: "vt-history-restore",
+      message: `Restore “${snap.label}” for the whole room? A “before restore” checkpoint is saved first.`,
+      confirmLabel: "Restore",
+      cancelLabel: "Cancel",
+    });
+    if (!ok) return;
     if (!workspace || workspace.readOnly || readOnly) {
       notify.error("Cannot restore in a read-only session.");
       return;
@@ -159,7 +279,7 @@ export function RoomHistoryPanel({
         currentText,
       });
       workspace.restoreSnapshotText(text);
-      notify.success("Checkpoint restored");
+      notify.success("Version restored for the room");
       await refresh();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Restore failed");
@@ -169,11 +289,18 @@ export function RoomHistoryPanel({
   };
 
   const handleDelete = async (snap: RoomSnapshotMeta) => {
-    if (!window.confirm(`Delete “${snap.label}”?`)) return;
+    const ok = await notify.confirm({
+      id: "vt-history-delete",
+      message: `Delete “${snap.label}”? This cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await deleteRoomSnapshot(roomId, snap.id, auth);
-      notify.success("Checkpoint deleted");
+      notify.success("Version deleted");
       await refresh();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Delete failed");
@@ -193,7 +320,7 @@ export function RoomHistoryPanel({
     try {
       await patchRoomSnapshot(roomId, snap.id, { label: next }, auth);
       setRenaming(false);
-      notify.success("Checkpoint renamed");
+      notify.success("Version renamed");
       await refresh();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Rename failed");
@@ -211,7 +338,9 @@ export function RoomHistoryPanel({
         { pinned: !snap.pinned },
         auth,
       );
-      notify.success(snap.pinned ? "Unpinned" : "Pinned — kept when history fills up");
+      notify.success(
+        snap.pinned ? "Unpinned" : "Pinned — kept when history fills up",
+      );
       await refresh();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Pin failed");
@@ -221,13 +350,13 @@ export function RoomHistoryPanel({
   };
 
   const handleFork = async (snap: RoomSnapshotMeta) => {
-    if (
-      !window.confirm(
-        `Fork “${snap.label}” into a new room? You’ll leave this room and open the fork with edit access.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await notify.confirm({
+      id: "vt-history-fork",
+      message: `Fork “${snap.label}” into a new room? You’ll leave this room and open the fork with edit access.`,
+      confirmLabel: "Fork",
+      cancelLabel: "Cancel",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const forked = await forkRoomSnapshot(roomId, snap.id, {
@@ -251,11 +380,16 @@ export function RoomHistoryPanel({
     }
   };
 
+  const emptyMessage =
+    namedOnly || historyPrefs.checkpointMode === "manual"
+      ? "No named versions yet."
+      : "No versions yet — keep editing and Automatic will checkpoint after idle.";
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <SidePanelHeader
         title="History"
-        meta={<span>{snapshots.length} checkpoints</span>}
+        meta={<span>{snapshots.length} versions</span>}
         actions={
           <button
             type="button"
@@ -270,14 +404,52 @@ export function RoomHistoryPanel({
 
       <div className="vt-history-panel flex min-h-0 flex-1 flex-col">
         {!readOnly ? (
+          <div className="vt-history-panel__mode" role="group" aria-label="Checkpoint mode">
+            <button
+              type="button"
+              className={
+                historyPrefs.checkpointMode === "automatic"
+                  ? "vt-history-panel__mode-btn vt-history-panel__mode-btn--active"
+                  : "vt-history-panel__mode-btn"
+              }
+              aria-pressed={historyPrefs.checkpointMode === "automatic"}
+              onClick={() => onModeChange("automatic")}
+            >
+              Automatic
+            </button>
+            <button
+              type="button"
+              className={
+                historyPrefs.checkpointMode === "manual"
+                  ? "vt-history-panel__mode-btn vt-history-panel__mode-btn--active"
+                  : "vt-history-panel__mode-btn"
+              }
+              aria-pressed={historyPrefs.checkpointMode === "manual"}
+              onClick={() => onModeChange("manual")}
+            >
+              Manual
+            </button>
+          </div>
+        ) : null}
+
+        {historyPrefs.checkpointMode === "manual" && !readOnly ? (
+          <p className="vt-history-panel__hint">
+            Live editing still syncs. Versions are only saved when you name them.
+          </p>
+        ) : null}
+
+        {!readOnly ? (
           <div className="vt-history-panel__create">
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Label (optional)"
+              placeholder="Name this version…"
               className="vt-history-panel__label-input"
               disabled={busy}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleCreate();
+              }}
             />
             <button
               type="button"
@@ -290,19 +462,27 @@ export function RoomHistoryPanel({
           </div>
         ) : (
           <p className="vt-history-panel__ro-hint">
-            Read-only — browse and compare checkpoints.
+            Read-only — browse and compare versions.
           </p>
         )}
 
-        <div className="vt-history-panel__search">
+        <div className="vt-history-panel__filters">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search checkpoints…"
+            placeholder="Search versions…"
             className="vt-history-panel__search-input"
-            aria-label="Search checkpoints"
+            aria-label="Search versions"
           />
+          <label className="vt-history-panel__named-only">
+            <input
+              type="checkbox"
+              checked={namedOnly}
+              onChange={(e) => setNamedOnly(e.target.checked)}
+            />
+            Named only
+          </label>
         </div>
 
         {loadError ? (
@@ -310,47 +490,68 @@ export function RoomHistoryPanel({
         ) : null}
 
         <div className="vt-history-panel__body">
-          <ul className="vt-history-timeline" role="listbox" aria-label="Checkpoints">
+          <div className="vt-history-timeline" role="listbox" aria-label="Versions">
             {filtered.length === 0 ? (
-              <li className="vt-history-timeline__empty">No checkpoints yet.</li>
+              <p className="vt-history-timeline__empty">{emptyMessage}</p>
             ) : (
-              filtered.map((snap) => {
-                const active = snap.id === selectedId;
-                return (
-                  <li key={snap.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={active}
-                      className={
-                        active
-                          ? "vt-history-timeline__item vt-history-timeline__item--active"
-                          : "vt-history-timeline__item"
-                      }
-                      onClick={() => setSelectedId(snap.id)}
-                    >
-                      <span className="vt-history-timeline__label">
-                        {snap.pinned ? (
-                          <span className="vt-history-timeline__pin" aria-label="Pinned">
-                            ★
-                          </span>
-                        ) : null}
-                        {snap.label}
-                      </span>
-                      <span className="vt-history-timeline__meta">
-                        <span className="vt-history-timeline__kind">
-                          {snapshotKindLabel(snap.kind)}
-                        </span>
-                        <span className="vt-history-timeline__time">
-                          {formatRelativeTime(snap.createdAt, now)}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })
+              groups.map((group) => (
+                <div key={group.key} className="vt-history-timeline__group">
+                  <div className="vt-history-timeline__day">{group.label}</div>
+                  <ul className="vt-history-timeline__list">
+                    {group.items.map((snap) => {
+                      const active = snap.id === selectedId;
+                      const chip = kindChip(snap.kind);
+                      const named = isNamedVersion(snap);
+                      return (
+                        <li key={snap.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            className={
+                              active
+                                ? "vt-history-timeline__item vt-history-timeline__item--active"
+                                : named
+                                  ? "vt-history-timeline__item vt-history-timeline__item--named"
+                                  : "vt-history-timeline__item"
+                            }
+                            onClick={() => setSelectedId(snap.id)}
+                          >
+                            <span className="vt-history-timeline__label">
+                              {snap.pinned ? (
+                                <span
+                                  className="vt-history-timeline__pin"
+                                  aria-label="Pinned"
+                                >
+                                  ★
+                                </span>
+                              ) : null}
+                              {displayTitle(snap)}
+                            </span>
+                            <span className="vt-history-timeline__meta">
+                              <span className="vt-history-timeline__time">
+                                {quietMeta(snap, now)}
+                              </span>
+                              {snap.createdBy?.name ? (
+                                <span className="vt-history-timeline__author">
+                                  {snap.createdBy.name}
+                                </span>
+                              ) : null}
+                            </span>
+                            {chip ? (
+                              <span className="vt-history-timeline__chip">
+                                {chip}
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))
             )}
-          </ul>
+          </div>
 
           <div className="vt-history-preview">
             {selected ? (
@@ -369,39 +570,103 @@ export function RoomHistoryPanel({
                         }
                       }}
                       className="vt-history-preview__rename"
-                      aria-label="Checkpoint name"
+                      aria-label="Version name"
                       autoFocus
                       disabled={busy}
                     />
                   ) : (
-                    <p className="vt-history-preview__title">{selected.label}</p>
+                    <p className="vt-history-preview__title">
+                      {selected.label}
+                    </p>
                   )}
-                  <label className="vt-history-preview__compare">
-                    <input
-                      type="checkbox"
-                      checked={compareMode}
-                      onChange={(e) => setCompareMode(e.target.checked)}
-                    />
-                    Compare to live
-                  </label>
+                  <div
+                    className="vt-history-preview__tabs"
+                    role="tablist"
+                    aria-label="Preview"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={previewTab === "changes"}
+                      className={
+                        previewTab === "changes"
+                          ? "vt-history-preview__tab vt-history-preview__tab--active"
+                          : "vt-history-preview__tab"
+                      }
+                      onClick={() => setPreviewTab("changes")}
+                    >
+                      Changes
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={previewTab === "source"}
+                      className={
+                        previewTab === "source"
+                          ? "vt-history-preview__tab vt-history-preview__tab--active"
+                          : "vt-history-preview__tab"
+                      }
+                      onClick={() => setPreviewTab("source")}
+                    >
+                      Source
+                    </button>
+                  </div>
                 </div>
-                {compareMode && diffSummary ? (
+                {previewTab === "changes" && diffSummary ? (
                   <p className="vt-history-preview__diff-summary">
-                    +{diffSummary.added} / −{diffSummary.removed} lines vs live
+                    {diffSummary.added === 0 && diffSummary.removed === 0
+                      ? "Identical to live note"
+                      : `+${diffSummary.added} / −${diffSummary.removed} lines vs live`}
                   </p>
                 ) : null}
-                <pre className="vt-history-preview__text">
-                  {previewText ?? "Loading preview…"}
-                </pre>
+                {previewTab === "changes" ? (
+                  <div className="vt-history-preview__diff" aria-label="Diff vs live">
+                    {previewText == null ? (
+                      <p className="vt-history-preview__loading">
+                        Loading preview…
+                      </p>
+                    ) : diffRows &&
+                      diffSummary &&
+                      diffSummary.added === 0 &&
+                      diffSummary.removed === 0 ? (
+                      <pre className="vt-history-preview__text">
+                        {previewText || "(empty)"}
+                      </pre>
+                    ) : (
+                      (diffRows ?? []).map((row, i) => (
+                        <div
+                          key={`${row.kind}-${i}`}
+                          className={`vt-history-diff__line vt-history-diff__line--${row.kind}`}
+                        >
+                          <span className="vt-history-diff__mark" aria-hidden>
+                            {row.kind === "add"
+                              ? "+"
+                              : row.kind === "del"
+                                ? "−"
+                                : " "}
+                          </span>
+                          <span className="vt-history-diff__body">
+                            {row.text || " "}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <pre className="vt-history-preview__text">
+                    {previewText ?? "Loading preview…"}
+                  </pre>
+                )}
                 {!readOnly ? (
                   <div className="vt-history-preview__actions">
                     <button
                       type="button"
                       className="vt-pill"
                       disabled={busy || workspace?.readOnly}
+                      title="Replaces the shared note for everyone in the room"
                       onClick={() => void handleRestore(selected)}
                     >
-                      Restore
+                      Restore for room
                     </button>
                     {renaming ? (
                       <button
@@ -455,7 +720,7 @@ export function RoomHistoryPanel({
               </>
             ) : (
               <p className="vt-history-preview__empty">
-                Select a checkpoint to preview.
+                Select a version to preview changes vs the live note.
               </p>
             )}
           </div>

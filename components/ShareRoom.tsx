@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { SafeSvg } from "@/components/SafeSvg";
 import {
+  MenuLinkIcon,
+  MenuSettingsIcon,
+  MenuViewLinkIcon,
+} from "@/components/menu-icons";
+import {
   buildRoomUrl,
   ensureRoomCapabilities,
   resolveEditSecret,
@@ -18,8 +23,6 @@ type ShareRoomProps = {
   readOnly?: boolean;
   /** Open room password / TTL settings. */
   onOpenSettings?: () => void;
-  /** Open version history / snapshots. */
-  onOpenSnapshots?: () => void;
   /**
    * Called after Share upgrades/returns an edit secret so the shell can
    * reconnect WS with `edit` (and keep the URL in sync).
@@ -32,7 +35,6 @@ export function ShareRoom({
   variant = "forge",
   readOnly = false,
   onOpenSettings,
-  onOpenSnapshots,
   onEditSecret,
 }: ShareRoomProps) {
   const [copied, setCopied] = useState<"edit" | "view" | null>(null);
@@ -221,44 +223,34 @@ export function ShareRoom({
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+            className="vt-share-menu__item"
             onClick={() => void copyEditLink()}
           >
+            <MenuLinkIcon />
             Copy edit link
           </button>
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+            className="vt-share-menu__item"
             onClick={() => void copyViewLink()}
             disabled={busy}
           >
+            <MenuViewLinkIcon />
             Copy view-only link
           </button>
           {onOpenSettings ? (
             <button
               type="button"
               role="menuitem"
-              className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
+              className="vt-share-menu__item"
               onClick={() => {
                 setMenuOpen(false);
                 onOpenSettings();
               }}
             >
+              <MenuSettingsIcon />
               Room settings…
-            </button>
-          ) : null}
-          {onOpenSnapshots ? (
-            <button
-              type="button"
-              role="menuitem"
-              className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--hairline)]"
-              onClick={() => {
-                setMenuOpen(false);
-                onOpenSnapshots();
-              }}
-            >
-              Version history…
             </button>
           ) : null}
         </div>
