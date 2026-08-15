@@ -20,7 +20,6 @@ import { RoomPasswordDialog } from "@/components/RoomPasswordDialog";
 import { RoomSettingsDialog } from "@/components/RoomSettingsDialog";
 import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
-import { RightPanelSwitcher, type RightPanelTab } from "@/components/RightPanelSwitcher";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
 import { VtToaster } from "@/components/VtToaster";
@@ -126,7 +125,7 @@ export function StudioShell({
   const [user, setUser] = useState<CollabUser | null>(null);
   const [needsName, setNeedsName] = useState(false);
   const [editingName, setEditingName] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<RightPanelTab | null>(
+  const [rightPanelView, setRightPanelView] = useState<"chat" | "history" | null>(
     null,
   );
   const [outlineOpen, setOutlineOpen] = useState(false);
@@ -719,46 +718,36 @@ export function StudioShell({
             onResetMobile={() => resetPane("mobileBottomHeight")}
           >
             {rightPanelOpen && rightPanelView && roomId ? (
-              <div className="flex h-full min-h-0 flex-col">
-                <RightPanelSwitcher
-                  active={rightPanelView}
-                  onSelectChat={openChatPanel}
-                  onSelectHistory={openHistoryPanel}
-                  onClose={closeRightPanel}
-                />
-                <div
-                  key={rightPanelView}
-                  className="vt-right-panel-content flex min-h-0 flex-1 flex-col"
-                >
-                  {rightPanelView === "history" ? (
-                    <RoomHistoryPanel
-                      roomId={roomId}
-                      readOnly={readOnly}
-                      chromeless
-                      onClose={closeRightPanel}
-                      auth={{
-                        editSecret,
-                        viewToken,
-                        authToken: gate.authToken,
-                      }}
-                    />
-                  ) : (
-                    <StudioRoomChat
-                      open
-                      embedded
-                      chromeless
-                      onClose={closeRightPanel}
-                      peers={peers}
-                      selfClientId={selfClientId}
-                      user={user}
-                      chatReady={ready}
-                      getEditorContext={() =>
-                        editorRef.current?.getEditorContext() ?? null
-                      }
-                      aiRunnerRef={aiRunnerRef}
-                    />
-                  )}
-                </div>
+              <div
+                key={rightPanelView}
+                className="vt-right-panel-content flex h-full min-h-0 flex-col"
+              >
+                {rightPanelView === "history" ? (
+                  <RoomHistoryPanel
+                    roomId={roomId}
+                    readOnly={readOnly}
+                    onClose={closeRightPanel}
+                    auth={{
+                      editSecret,
+                      viewToken,
+                      authToken: gate.authToken,
+                    }}
+                  />
+                ) : (
+                  <StudioRoomChat
+                    open
+                    embedded
+                    onClose={closeRightPanel}
+                    peers={peers}
+                    selfClientId={selfClientId}
+                    user={user}
+                    chatReady={ready}
+                    getEditorContext={() =>
+                      editorRef.current?.getEditorContext() ?? null
+                    }
+                    aiRunnerRef={aiRunnerRef}
+                  />
+                )}
               </div>
             ) : null}
           </SidePanel>

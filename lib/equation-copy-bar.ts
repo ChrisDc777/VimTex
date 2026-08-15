@@ -99,7 +99,9 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
 
     wrap.append(tex, svg, png);
     wrap.addEventListener("pointerenter", cancelHide);
+    wrap.addEventListener("pointerdown", cancelHide);
     wrap.addEventListener("pointerleave", (event) => {
+      if (busy) return;
       if (wrapperFrom(event.relatedTarget) === current) return;
       scheduleHide();
     });
@@ -119,8 +121,14 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
   };
 
   const copyImage = async (kind: "png" | "svg") => {
-    if (!current || busy) return;
-    if (current.querySelector(".math-error")) {
+    cancelHide();
+    const target = current;
+    if (!target) {
+      notify.error("Hover the equation, then click PNG or SVG");
+      return;
+    }
+    if (busy) return;
+    if (target.querySelector(".math-error")) {
       notify.error("That equation has a render error");
       return;
     }
@@ -128,8 +136,8 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
     try {
       const result =
         kind === "png"
-          ? await copyEquationPng(current)
-          : await copyEquationSvg(current);
+          ? await copyEquationPng(target)
+          : await copyEquationSvg(target);
       reportImageResult(result, kind === "png" ? "PNG" : "SVG");
     } finally {
       busy = false;
@@ -142,6 +150,7 @@ export function attachEquationCopyBar(container: HTMLElement): () => void {
   };
 
   const hideBar = () => {
+    if (busy) return;
     cancelHide();
     current = null;
     if (bar) bar.style.display = "none";

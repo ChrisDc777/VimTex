@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { STRIP_EXTENSION_HYDRATION_ATTRS_SCRIPT } from "@/lib/strip-extension-hydration-attrs";
 import "./globals.css";
 
@@ -14,10 +15,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
+/** Local files avoid Turbopack's flaky Google Fonts resolver for JetBrains Mono. */
+const jetbrainsMono = localFont({
+  src: [
+    {
+      path: "./fonts/jetbrains-mono-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/jetbrains-mono-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+  ],
   variable: "--font-brand-mono",
-  subsets: ["latin"],
-  weight: ["500", "600"],
+  display: "swap",
 });
 
 const appUrl =

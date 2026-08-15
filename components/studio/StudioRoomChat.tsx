@@ -36,8 +36,6 @@ export type StudioRoomChatProps = {
   open?: boolean;
   /** Render inner panel only — parent supplies sizing chrome (SidePanel). */
   embedded?: boolean;
-  /** Parent supplies `RightPanelSwitcher` — hide duplicate header/close. */
-  chromeless?: boolean;
   onClose: () => void;
   peers: PeerInfo[];
   selfClientId?: number | null;
@@ -53,7 +51,6 @@ export type StudioRoomChatProps = {
 export function StudioRoomChat({
   open = true,
   embedded = false,
-  chromeless = false,
   onClose,
   peers,
   selfClientId,
@@ -89,27 +86,25 @@ export function StudioRoomChat({
 
   const panel = (
     <>
-      {chromeless ? null : (
-        <div className="vt-chat-panel__header">
-          <p className="vt-chat-panel__title">
-            Chat <span>· {peers.length} online</span>
-          </p>
-          <AvatarStack
-            peers={peers}
-            selfClientId={selfClientId}
-            max={3}
-            size={22}
-          />
-          <button
-            type="button"
-            onClick={onClose}
-            className="vt-chat-icon-btn"
-            aria-label="Close chat"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <div className="vt-chat-panel__header">
+        <p className="vt-chat-panel__title">
+          Chat <span>· {peers.length} online</span>
+        </p>
+        <AvatarStack
+          peers={peers}
+          selfClientId={selfClientId}
+          max={3}
+          size={22}
+        />
+        <button
+          type="button"
+          onClick={onClose}
+          className="vt-chat-icon-btn"
+          aria-label="Close chat"
+        >
+          ×
+        </button>
+      </div>
 
       <ChatMessageList
         messages={chat.messages}
