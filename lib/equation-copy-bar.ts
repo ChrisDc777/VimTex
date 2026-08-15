@@ -5,7 +5,7 @@
  */
 
 import { copyEquationPng, copyEquationSvg } from "./equation-image.ts";
-import { notify } from "./toasts.ts";
+import { notify } from "./toasts.tsx";
 
 async function copyText(text: string): Promise<boolean> {
   if (navigator.clipboard?.writeText) {

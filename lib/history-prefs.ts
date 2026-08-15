@@ -1,19 +1,30 @@
 /**
- * Version history prefs (#126) — autosnapshot idle + interval.
+ * Version history prefs — checkpoint mode + idle/interval autosnap.
  * Browser-local; not a capability gate.
+ *
+ * Automatic | Manual is checkpoint policy only: live Yjs sync always continues.
+ * Manual stops idle/interval creates; named versions are still saved explicitly.
  */
 
 export const HISTORY_INTERVAL_MINUTES = [5, 10, 15] as const;
 export type HistoryIntervalMinutes = (typeof HISTORY_INTERVAL_MINUTES)[number];
 
+export type CheckpointMode = "automatic" | "manual";
+
 export type HistoryPrefs = {
-  /** Snapshot after the note has been idle (no local edits). */
+  /**
+   * automatic — idle (+ optional interval) checkpoints
+   * manual — only explicit “Name this version” / Save
+   */
+  checkpointMode: CheckpointMode;
+  /** Snapshot after the note has been idle (no local edits). Ignored in manual. */
   idleAutosnap: boolean;
-  /** Snapshot on a wall-clock interval while the room is open. */
+  /** Snapshot on a wall-clock interval while the room is open. Ignored in manual. */
   intervalAutosnap: boolean;
   intervalMinutes: HistoryIntervalMinutes;
 };
 
+const MODE_KEY = "vimtex:historyCheckpointMode";
 const IDLE_KEY = "vimtex:historyIdleAutosnap";
 const INTERVAL_ON_KEY = "vimtex:historyIntervalAutosnap";
 const INTERVAL_MIN_KEY = "vimtex:historyIntervalMinutes";
@@ -21,6 +32,7 @@ const INTERVAL_MIN_KEY = "vimtex:historyIntervalMinutes";
 export const HISTORY_PREFS_EVENT = "vimtex:history-prefs";
 
 export const DEFAULT_HISTORY_PREFS: HistoryPrefs = {
+  checkpointMode: "automatic",
   idleAutosnap: true,
   intervalAutosnap: false,
   intervalMinutes: 10,
@@ -36,6 +48,10 @@ export function isHistoryIntervalMinutes(
     typeof value === "number" &&
     (HISTORY_INTERVAL_MINUTES as readonly number[]).includes(value)
   );
+}
+
+export function isCheckpointMode(value: unknown): value is CheckpointMode {
+  return value === "automatic" || value === "manual";
 }
 
 function readFlag(key: string, defaultValue: boolean): boolean {
@@ -58,6 +74,31 @@ function writeFlag(key: string, enabled: boolean): void {
   }
 }
 
+function readMode(): CheckpointMode {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_HISTORY_PREFS.checkpointMode;
+    }
+    const raw = localStorage.getItem(MODE_KEY);
+    if (isCheckpointMode(raw)) return raw;
+  } catch {
+    // ignore
+  }
+  // Migrate: both autosnap flags off ⇒ treat as manual.
+  if (
+    !readFlag(IDLE_KEY, DEFAULT_HISTORY_PREFS.idleAutosnap) &&
+    !readFlag(INTERVAL_ON_KEY, DEFAULT_HISTORY_PREFS.intervalAutosnap)
+  ) {
+    return "manual";
+  }
+  return DEFAULT_HISTORY_PREFS.checkpointMode;
+}
+
+/** Whether idle/interval autosnaps may run for the current prefs. */
+export function autosnapEnabled(prefs: HistoryPrefs = loadHistoryPrefs()): boolean {
+  return prefs.checkpointMode === "automatic";
+}
+
 export function loadHistoryPrefs(): HistoryPrefs {
   let intervalMinutes: HistoryIntervalMinutes =
     DEFAULT_HISTORY_PREFS.intervalMinutes;
@@ -69,7 +110,9 @@ export function loadHistoryPrefs(): HistoryPrefs {
   } catch {
     // ignore
   }
+  const checkpointMode = readMode();
   return {
+    checkpointMode,
     idleAutosnap: readFlag(IDLE_KEY, DEFAULT_HISTORY_PREFS.idleAutosnap),
     intervalAutosnap: readFlag(
       INTERVAL_ON_KEY,
@@ -80,15 +123,16 @@ export function loadHistoryPrefs(): HistoryPrefs {
 }
 
 export function saveHistoryPrefs(prefs: HistoryPrefs): void {
-  writeFlag(IDLE_KEY, prefs.idleAutosnap);
-  writeFlag(INTERVAL_ON_KEY, prefs.intervalAutosnap);
   try {
     if (typeof localStorage !== "undefined") {
+      localStorage.setItem(MODE_KEY, prefs.checkpointMode);
       localStorage.setItem(INTERVAL_MIN_KEY, String(prefs.intervalMinutes));
     }
   } catch {
     // ignore
   }
+  writeFlag(IDLE_KEY, prefs.idleAutosnap);
+  writeFlag(INTERVAL_ON_KEY, prefs.intervalAutosnap);
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(HISTORY_PREFS_EVENT));
   }
@@ -98,5 +142,20 @@ export function saveHistoryPref<K extends keyof HistoryPrefs>(
   key: K,
   value: HistoryPrefs[K],
 ): void {
-  saveHistoryPrefs({ ...loadHistoryPrefs(), [key]: value });
+  const next = { ...loadHistoryPrefs(), [key]: value };
+  // Switching mode keeps idle/interval flags for when Automatic returns,
+  // except Manual must not fire autosnaps (enforced via autosnapEnabled).
+  if (key === "checkpointMode" && value === "automatic") {
+    // Ensure at least idle is on when entering Automatic with both off.
+    if (!next.idleAutosnap && !next.intervalAutosnap) {
+      next.idleAutosnap = true;
+    }
+  }
+  saveHistoryPrefs(next);
+}
+
+/** Set mode and persist; used by History header + Preferences. */
+export function setCheckpointMode(mode: CheckpointMode): HistoryPrefs {
+  saveHistoryPref("checkpointMode", mode);
+  return loadHistoryPrefs();
 }

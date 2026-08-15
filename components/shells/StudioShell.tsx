@@ -468,7 +468,6 @@ export function StudioShell({
               onOpenSettings={
                 readOnly ? undefined : () => setRoomSettingsOpen(true)
               }
-              onOpenSnapshots={openHistoryPanel}
             />
           ) : null}
           {aiFeatureEnabled("studio", "outlineTodo") ? (

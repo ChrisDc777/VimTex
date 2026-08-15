@@ -379,57 +379,87 @@ export function PreferencesDialog({
               </PrefRow>
 
               <PrefRow
-                title="Idle autosnapshot"
-                description="Save a checkpoint after 45s without local edits"
+                title="Version checkpoints"
+                description="Automatic saves versions after idle edits. Manual only saves when you name a version. Live editing always syncs."
               >
                 <Segment
-                  label="Idle autosnapshot"
+                  label="Version checkpoints"
                   options={[
-                    { value: "on", label: "On" },
-                    { value: "off", label: "Off" },
+                    { value: "automatic", label: "Automatic" },
+                    { value: "manual", label: "Manual" },
                   ]}
-                  value={historyPrefs.idleAutosnap ? "on" : "off"}
+                  value={historyPrefs.checkpointMode}
                   onChange={(value) => {
-                    saveHistoryPref("idleAutosnap", value === "on");
+                    saveHistoryPref(
+                      "checkpointMode",
+                      value as "automatic" | "manual",
+                    );
                     setHistoryPrefs(loadHistoryPrefs());
                   }}
                 />
               </PrefRow>
 
-              <PrefRow
-                title="Interval autosnapshot"
-                description="Also checkpoint on a timer while the room is open"
-              >
-                <Segment
-                  label="Interval autosnapshot"
-                  options={[
-                    { value: "off", label: "Off" },
-                    ...HISTORY_INTERVAL_MINUTES.map((minutes) => ({
-                      value: String(minutes),
-                      label: `${minutes}m`,
-                    })),
-                  ]}
-                  value={
-                    historyPrefs.intervalAutosnap
-                      ? String(historyPrefs.intervalMinutes)
-                      : "off"
-                  }
-                  onChange={(value) => {
-                    if (value === "off") {
-                      saveHistoryPref("intervalAutosnap", false);
-                    } else {
-                      saveHistoryPrefs({
-                        ...loadHistoryPrefs(),
-                        intervalAutosnap: true,
-                        intervalMinutes: Number(
-                          value,
-                        ) as HistoryIntervalMinutes,
-                      });
-                    }
-                    setHistoryPrefs(loadHistoryPrefs());
-                  }}
-                />
-              </PrefRow>
+              {historyPrefs.checkpointMode === "automatic" ? (
+                <>
+                  <PrefRow
+                    title="Idle autosnapshot"
+                    description="Save a checkpoint after 45s without local edits"
+                  >
+                    <Segment
+                      label="Idle autosnapshot"
+                      options={[
+                        { value: "on", label: "On" },
+                        { value: "off", label: "Off" },
+                      ]}
+                      value={historyPrefs.idleAutosnap ? "on" : "off"}
+                      onChange={(value) => {
+                        saveHistoryPref("idleAutosnap", value === "on");
+                        setHistoryPrefs(loadHistoryPrefs());
+                      }}
+                    />
+                  </PrefRow>
+
+                  <PrefRow
+                    title="Interval autosnapshot"
+                    description="Also checkpoint on a timer while the room is open"
+                  >
+                    <Segment
+                      label="Interval autosnapshot"
+                      options={[
+                        { value: "off", label: "Off" },
+                        ...HISTORY_INTERVAL_MINUTES.map((minutes) => ({
+                          value: String(minutes),
+                          label: `${minutes}m`,
+                        })),
+                      ]}
+                      value={
+                        historyPrefs.intervalAutosnap
+                          ? String(historyPrefs.intervalMinutes)
+                          : "off"
+                      }
+                      onChange={(value) => {
+                        if (value === "off") {
+                          saveHistoryPref("intervalAutosnap", false);
+                        } else {
+                          saveHistoryPrefs({
+                            ...loadHistoryPrefs(),
+                            intervalAutosnap: true,
+                            intervalMinutes: Number(
+                              value,
+                            ) as HistoryIntervalMinutes,
+                          });
+                        }
+                        setHistoryPrefs(loadHistoryPrefs());
+                      }}
+                    />
+                  </PrefRow>
+                </>
+              ) : (
+                <p className="text-[11px] leading-relaxed text-[var(--mute)]">
+                  Live editing still syncs with the room. Versions are only
+                  saved when you name them in History.
+                </p>
+              )}
             </div>
           ) : null}
 

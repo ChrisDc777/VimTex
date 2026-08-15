@@ -590,7 +590,6 @@ export function ForgeShell({
         onOpenRoomSettings={
           readOnly ? undefined : () => setRoomSettingsOpen(true)
         }
-        onOpenRoomSnapshots={openHistoryPanel}
         onEditSecret={setEditSecret}
         headerExtra={
           <SnippetMenu
