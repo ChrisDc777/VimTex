@@ -78,6 +78,8 @@ type VimEditorProps = {
   onSelectionRangeChange?: (state: {
     hasRange: boolean;
     hasEquation: boolean;
+    /** Viewport coords under the selection bottom, past the gutter. */
+    anchor: { top: number; left: number } | null;
   }) => void;
 };
 
@@ -344,14 +346,14 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
           inlineMathRef.current.of(inlineMath ? [mathInlineWidgets] : []),
           ...(showPlaceholder ? editorPlaceholder(EDITOR_PLACEHOLDER) : []),
           EditorView.updateListener.of((update) => {
-            if (!update.selectionSet && !update.docChanged) return;
-            const sel = update.state.selection.main;
-            const text = update.state.doc.toString();
-            const hasRange = sel.from !== sel.to;
-            const hasEquation = Boolean(
-              findEquationScope(text, sel.from, sel.to),
-            );
-            onSelectionRangeChangeRef.current?.({ hasRange, hasEquation });
+            if (
+              !update.selectionSet &&
+              !update.docChanged &&
+              !update.geometryChanged
+            ) {
+              return;
+            }
+            publishSelectionAnchor(update.view);
           }),
         ],
       });
@@ -361,6 +363,38 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
         parent: host,
       });
       viewRef.current = view;
+
+      /** Viewport coords under the lowest selected line, past gutters. */
+      function publishSelectionAnchor(v: EditorView) {
+        const sel = v.state.selection.main;
+        const text = v.state.doc.toString();
+        const hasRange = sel.from !== sel.to;
+        const hasEquation = Boolean(
+          findEquationScope(text, sel.from, sel.to),
+        );
+        const from = Math.min(sel.from, sel.to);
+        const to = Math.max(sel.from, sel.to);
+        // lineBlockAt works even when the range end is scrolled out of view
+        // (coordsAtPos returns null then, which stuck the bar to the top).
+        const startBlock = v.lineBlockAt(from);
+        const endBlock = v.lineBlockAt(to);
+        const docBottom = Math.max(startBlock.bottom, endBlock.bottom);
+        const gutters = v.dom.querySelector(".cm-gutters");
+        const contentLeft = gutters
+          ? gutters.getBoundingClientRect().right + 8
+          : v.contentDOM.getBoundingClientRect().left + 4;
+        onSelectionRangeChangeRef.current?.({
+          hasRange,
+          hasEquation,
+          anchor: {
+            top: v.documentTop + docBottom + 14,
+            left: contentLeft,
+          },
+        });
+      }
+
+      const onScroll = () => publishSelectionAnchor(view);
+      view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
 
       const onMode = (e: { mode?: string }) => {
         if (e?.mode) {
@@ -376,6 +410,7 @@ export const VimEditor = forwardRef<VimEditorHandle, VimEditorProps>(
       requestAnimationFrame(() => view.focus());
 
       return () => {
+        view.scrollDOM.removeEventListener("scroll", onScroll);
         if (vimEnabled) {
           cm?.off("vim-mode-change", onMode);
         }

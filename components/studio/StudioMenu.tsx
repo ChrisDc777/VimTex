@@ -45,6 +45,8 @@ type StudioMenuProps = {
   onClearRecentRooms: () => void;
   relativeLineNumbers: boolean;
   onRelativeLineNumbersChange: (enabled: boolean) => void;
+  /** Enhanced Studio lifts Import/Export to Bloom and Prefs to the dock. */
+  compactTransfer?: boolean;
 };
 
 type MenuPosition = {
@@ -82,6 +84,7 @@ export function StudioMenu({
   onClearRecentRooms,
   relativeLineNumbers,
   onRelativeLineNumbersChange,
+  compactTransfer = false,
 }: StudioMenuProps) {
   const [open, setOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -195,70 +198,74 @@ export function StudioMenu({
           <span className="vt-header-menu__hint">Choose a template</span>
         </button>
         <div className="vt-header-menu__divider" role="separator" />
-        <div className="vt-caption px-2 py-1 text-mute">Import</div>
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => run(() => openNoteImport())}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuImportIcon />
-            <span className="vt-header-menu__label">Import file…</span>
-          </span>
-          <span className="vt-header-menu__hint">.tex / .md</span>
-        </button>
-        <div className="vt-header-menu__divider" role="separator" />
-        <div className="vt-caption px-2 py-1 text-mute">Export</div>
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => run(() => exportAsTex(note))}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuLatexIcon />
-            <span className="vt-header-menu__label">Export as LaTeX</span>
-          </span>
-          <span className="vt-header-menu__hint">Overleaf</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => run(() => exportAsMd(note))}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuMarkdownIcon />
-            <span className="vt-header-menu__label">Export as Markdown</span>
-          </span>
-          <span className="vt-header-menu__hint">$ math</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => run(() => exportAsPdf(note))}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuPdfIcon />
-            <span className="vt-header-menu__label">Export as PDF</span>
-          </span>
-          <span className="vt-header-menu__hint">print</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => run(() => copyVimtexSourceToClipboard(note))}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuCopyIcon />
-            <span className="vt-header-menu__label">Copy VimTex source</span>
-          </span>
-          <span className="vt-header-menu__hint">verbatim</span>
-        </button>
-        <div className="vt-header-menu__divider" role="separator" />
+        {!compactTransfer ? (
+          <>
+            <div className="vt-caption px-2 py-1 text-mute">Import</div>
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => run(() => openNoteImport())}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuImportIcon />
+                <span className="vt-header-menu__label">Import file…</span>
+              </span>
+              <span className="vt-header-menu__hint">.tex / .md</span>
+            </button>
+            <div className="vt-header-menu__divider" role="separator" />
+            <div className="vt-caption px-2 py-1 text-mute">Export</div>
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => run(() => exportAsTex(note))}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuLatexIcon />
+                <span className="vt-header-menu__label">Export as LaTeX</span>
+              </span>
+              <span className="vt-header-menu__hint">Overleaf</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => run(() => exportAsMd(note))}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuMarkdownIcon />
+                <span className="vt-header-menu__label">Export as Markdown</span>
+              </span>
+              <span className="vt-header-menu__hint">$ math</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => run(() => exportAsPdf(note))}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuPdfIcon />
+                <span className="vt-header-menu__label">Export as PDF</span>
+              </span>
+              <span className="vt-header-menu__hint">print</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => run(() => copyVimtexSourceToClipboard(note))}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuCopyIcon />
+                <span className="vt-header-menu__label">Copy VimTex source</span>
+              </span>
+              <span className="vt-header-menu__hint">verbatim</span>
+            </button>
+            <div className="vt-header-menu__divider" role="separator" />
+          </>
+        ) : null}
         <div className="flex items-center justify-between px-2 py-1">
           <span className="vt-caption text-mute">Recent</span>
           {recentRooms.length > 0 ? (
@@ -295,22 +302,26 @@ export function StudioMenu({
             No recent rooms
           </div>
         )}
-        <div className="vt-header-menu__divider" role="separator" />
-        <button
-          type="button"
-          role="menuitem"
-          className="vt-header-menu__item"
-          onClick={() => {
-            setOpen(false);
-            setPrefsOpen(true);
-          }}
-        >
-          <span className="vt-header-menu__lead">
-            <MenuPrefsIcon />
-            <span className="vt-header-menu__label">Preferences…</span>
-          </span>
-          <span className="vt-header-menu__hint">Editor, workspace</span>
-        </button>
+        {!compactTransfer ? (
+          <>
+            <div className="vt-header-menu__divider" role="separator" />
+            <button
+              type="button"
+              role="menuitem"
+              className="vt-header-menu__item"
+              onClick={() => {
+                setOpen(false);
+                setPrefsOpen(true);
+              }}
+            >
+              <span className="vt-header-menu__lead">
+                <MenuPrefsIcon />
+                <span className="vt-header-menu__label">Preferences…</span>
+              </span>
+              <span className="vt-header-menu__hint">Editor, workspace</span>
+            </button>
+          </>
+        ) : null}
       </div>
     ) : null;
 
@@ -325,7 +336,11 @@ export function StudioMenu({
         aria-expanded={open}
         aria-controls={menuId}
         aria-label="Room menu"
-        title="New room, import, export, editor options"
+        title={
+          compactTransfer
+            ? "New room and recent sessions"
+            : "New room, import, export, editor options"
+        }
         onClick={() => setOpen((v) => !v)}
       >
         <MenuIcon />

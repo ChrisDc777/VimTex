@@ -22,7 +22,7 @@ import { EASE_OUT, SPRING_PANEL } from "@/components/beui/lib/ease";
 import { cn } from "@/components/beui/lib/utils";
 
 type Side = "top" | "bottom";
-type Align = "start" | "end";
+type Align = "start" | "center" | "end";
 
 type MorphContextValue = {
   open: boolean;
@@ -94,8 +94,12 @@ export function MorphPopover({
         setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    window.addEventListener("pointerdown", onPointer);
+    // Defer so the opening click's late events cannot immediately dismiss.
+    const attachId = window.setTimeout(() => {
+      window.addEventListener("pointerdown", onPointer);
+    }, 0);
     return () => {
+      window.clearTimeout(attachId);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("pointerdown", onPointer);
     };
@@ -164,14 +168,16 @@ export function MorphPopoverTrigger({ children }: MorphPopoverTriggerProps) {
 }
 
 const originFor = (side: Side, align: Align) =>
-  `${side === "bottom" ? "top" : "bottom"} ${align === "end" ? "right" : "left"}`;
+  `${side === "bottom" ? "top" : "bottom"} ${
+    align === "end" ? "right" : align === "start" ? "left" : "center"
+  }`;
 
 // A clip that hides everything but the corner nearest the trigger, so the
 // panel appears to grow out of it. inset(top right bottom left).
 function clipHidden(side: Side, align: Align, radius: number) {
   const top = side === "bottom" ? "0%" : "92%";
   const bottom = side === "bottom" ? "92%" : "0%";
-  const right = align === "end" ? "0%" : "92%";
+  const right = align === "start" ? "92%" : "0%";
   const left = align === "end" ? "92%" : "0%";
   return `inset(${top} ${right} ${bottom} ${left} round ${radius}px)`;
 }
@@ -213,7 +219,11 @@ export function MorphPopoverContent({
   const left = layout
     ? align === "end"
       ? layout.trigger.left + layout.trigger.width - layout.content.width
-      : layout.trigger.left
+      : align === "center"
+        ? layout.trigger.left +
+          layout.trigger.width / 2 -
+          layout.content.width / 2
+        : layout.trigger.left
     : 0;
   const top = layout
     ? side === "bottom"
@@ -260,7 +270,8 @@ export function MorphPopoverContent({
           style={{
             left,
             top,
-            visibility: layout ? "visible" : "hidden",
+            // Hide only until the trigger is measured; content size may lag one frame.
+            visibility: layout?.trigger ? "visible" : "hidden",
             transformOrigin: originFor(side, align),
           }}
           className="fixed z-[9999] [filter:drop-shadow(0_10px_18px_rgba(0,0,0,0.14))]"

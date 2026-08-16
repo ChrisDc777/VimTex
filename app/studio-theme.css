@@ -1123,12 +1123,75 @@
   gap: 8px;
 }
 
-.ui-studio .vt-chat-list {
-  overflow-x: clip;
+.ui-studio .vt-studio-dock {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-.ui-studio .vt-side-panel {
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: clip;
+.ui-studio .vt-studio-dock [aria-pressed="true"] {
+  color: var(--accent-breeze, var(--focus));
+}
+
+.ui-studio .vt-dock-item-pill {
+  background: color-mix(
+    in srgb,
+    var(--accent-breeze, var(--focus)) 16%,
+    transparent
+  );
+}
+
+.ui-studio .vt-dock-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  padding: 4px 8px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--canvas-elevated) 94%, transparent);
+  color: var(--ink);
+  font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.ui-studio .vt-dock-item:hover .vt-dock-tooltip,
+.ui-studio .vt-dock-item:focus-visible .vt-dock-tooltip,
+.ui-studio .vt-dock-item:focus-within .vt-dock-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-studio .vt-dock-tooltip {
+    transition: none;
+  }
+}
+
+/* Bloom / Morph token bridge extras */
+.ui-studio .bg-card {
+  background: var(--canvas-elevated);
+}
+
+.ui-studio .bg-background {
+  background: var(--canvas);
+}
+
+.ui-studio .border-border {
+  border-color: var(--hairline-strong);
+}
+
+.ui-studio .text-foreground {
+  color: var(--ink);
+}
+
+.ui-studio .text-muted-foreground {
+  color: var(--mute);
 }

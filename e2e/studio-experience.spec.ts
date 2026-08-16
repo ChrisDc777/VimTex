@@ -24,6 +24,39 @@ test.describe("Studio Enhanced / Basic experience", () => {
     await expect(chat.locator(".beui-prompt-chip")).toHaveCount(0);
   });
 
+  test("Enhanced chrome: Import & Export on topbar, Share+Chat on dock", async ({
+    page,
+  }) => {
+    await joinStudioRoom(page, { studioExperience: "enhanced" });
+
+    await expect(
+      page.locator("header").getByRole("button", { name: /import & export/i }),
+    ).toBeVisible();
+    await expect(
+      page.locator("header").getByRole("button", { name: /^chat$/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator("header").getByRole("button", { name: /share room/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".vt-studio-dock").getByRole("button", { name: /^chat$/i }),
+    ).toBeVisible();
+
+    const share = page
+      .locator(".vt-studio-dock")
+      .getByRole("button", { name: /share room/i });
+    await expect(share).toBeVisible();
+    await share.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: /copy edit link/i }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: /copy view-only link/i }),
+    ).toBeVisible();
+  });
+
   test("Basic restores Ask/Edit chips", async ({ page }) => {
     await joinStudioRoom(page, { studioExperience: "basic" });
 

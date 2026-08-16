@@ -1,6 +1,24 @@
 /**
  * Map raw OpenRouter / SDK errors into short, actionable copy for chat + toasts.
  */
+
+/** True when the user (or shell) aborted a fetch / stream on purpose. */
+export function isAbortError(err: unknown): boolean {
+  if (err == null) return false;
+  if (typeof err === "object") {
+    const e = err as { name?: unknown; message?: unknown; code?: unknown };
+    if (e.name === "AbortError") return true;
+    if (e.code === 20) return true; // DOMException.ABORT_ERR
+    if (typeof e.message === "string") {
+      const m = e.message.toLowerCase();
+      if (m.includes("aborted without reason")) return true;
+      if (m.includes("the operation was aborted")) return true;
+      if (m.includes("bodystreambuffer was aborted")) return true;
+    }
+  }
+  return false;
+}
+
 export function formatAiError(
   raw: string,
   opts?: { model?: string; modelLabel?: string },
@@ -8,6 +26,13 @@ export function formatAiError(
   const text = raw.trim() || "Unknown error";
   const lower = text.toLowerCase();
   const label = opts?.modelLabel || opts?.model || "That model";
+
+  if (
+    lower.includes("aborted") ||
+    lower.includes("aborterror")
+  ) {
+    return "Cancelled.";
+  }
 
   if (
     lower.includes("no endpoints") ||
