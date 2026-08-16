@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import {
   editorDocText,
   joinStudioRoom,
+  openStudioChat,
   replaceDocWithMarker,
+  studioChatButton,
   waitConnected,
 } from "./helpers";
 
@@ -11,7 +13,9 @@ test.describe("Studio collaboration (#10)", () => {
     await joinStudioRoom(page, { name: "Gate" });
     await expect(page.getByText("VimTex").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /share room/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^(open|close) chat$/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: studioChatButton }),
+    ).toBeVisible();
   });
 
   test("two clients sync note edits both ways", async ({ browser }) => {
@@ -66,8 +70,8 @@ test.describe("Studio collaboration (#10)", () => {
       await waitConnected(pageA);
       await waitConnected(pageB);
 
-      await pageA.getByRole("button", { name: /^(open|close) chat$/i }).click();
-      await pageB.getByRole("button", { name: /^(open|close) chat$/i }).click();
+      await openStudioChat(pageA);
+      await openStudioChat(pageB);
 
       const chatA = pageA.getByRole("complementary", { name: /room chat/i });
       const chatB = pageB.getByRole("complementary", { name: /room chat/i });

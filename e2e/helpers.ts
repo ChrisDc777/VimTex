@@ -79,6 +79,29 @@ export async function joinStudioRoom(
   return room;
 }
 
+/** Enhanced dock "Chat" / Basic header "Open chat" / "Close chat". */
+export const studioChatButton = /^(open |close )?chat$/i;
+
+/** Open room chat from Enhanced dock or Basic topbar. */
+export async function openStudioChat(page: Page) {
+  const dockChat = page
+    .locator(".vt-studio-dock")
+    .getByRole("button", { name: studioChatButton });
+  if ((await dockChat.count()) > 0) {
+    await dockChat.click();
+    return;
+  }
+  await page.getByRole("button", { name: studioChatButton }).click();
+}
+
+/** Enhanced Import & Export Bloom panel (role=menu). */
+export async function openImportExportMenu(page: Page) {
+  await page.getByRole("button", { name: /import\s*&\s*export/i }).click();
+  const menu = page.getByRole("menu", { name: /import\s*&\s*export/i });
+  await expect(menu).toBeVisible({ timeout: 10_000 });
+  return menu;
+}
+
 /** Forge: no required name gate; editor ready immediately. */
 export async function openForge(
   page: Page,
