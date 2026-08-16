@@ -54,23 +54,7 @@
 
   color: var(--ink);
   background-color: var(--canvas);
-  background-image:
-    radial-gradient(
-      ellipse 100% 60% at 8% -12%,
-      color-mix(in srgb, var(--accent-breeze) 22%, transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse 80% 50% at 100% -5%,
-      color-mix(in srgb, var(--accent-sunset) 16%, transparent),
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse 55% 40% at 50% 115%,
-      color-mix(in srgb, var(--accent-midnight) 90%, transparent),
-      transparent 62%
-    );
-  background-attachment: fixed;
+  /* Mesh atmosphere comes from app/studio-themes.css via data-vt-theme. */
 }
 
 /* True outline pills — uppercase mono captions */

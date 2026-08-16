@@ -10,6 +10,8 @@ type UseShellShortcutsOptions = {
   onToggleChat?: () => void;
   /** Studio: cycle Live ↔ Split preview. */
   onToggleViewMode?: () => void;
+  /** Studio: toggle light / dark appearance. */
+  onToggleAppearance?: () => void;
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -25,13 +27,15 @@ function isEditableTarget(target: EventTarget | null): boolean {
 /**
  * Shared Studio/Forge chrome shortcuts:
  * Ctrl/Cmd+K palette, Ctrl/Cmd+, preferences, ? cheatsheet.
- * Studio extras: Ctrl/Cmd+Shift+C chat, Ctrl/Cmd+Shift+V Live/Split.
+ * Studio extras: Ctrl/Cmd+Shift+C chat, Ctrl/Cmd+Shift+V Live/Split,
+ * Ctrl/Cmd+Shift+D light/dark.
  */
 export function useShellShortcuts({
   onTogglePalette,
   onToggleCheatsheet,
   onToggleChat,
   onToggleViewMode,
+  onToggleAppearance,
 }: UseShellShortcutsOptions): void {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -64,6 +68,15 @@ export function useShellShortcuts({
           onToggleViewMode();
           return;
         }
+        if (
+          event.shiftKey &&
+          event.key.toLowerCase() === "d" &&
+          onToggleAppearance
+        ) {
+          event.preventDefault();
+          onToggleAppearance();
+          return;
+        }
         return;
       }
       if (event.key === "?") {
@@ -74,5 +87,11 @@ export function useShellShortcuts({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onTogglePalette, onToggleCheatsheet, onToggleChat, onToggleViewMode]);
+  }, [
+    onTogglePalette,
+    onToggleCheatsheet,
+    onToggleChat,
+    onToggleViewMode,
+    onToggleAppearance,
+  ]);
 }
