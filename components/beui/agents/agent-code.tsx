@@ -149,12 +149,13 @@ export function AgentCode({
   className,
 }: AgentCodeProps) {
   const tokens = useAgentCodeTokens(code, language);
-  let offset = 0;
-  const lines = code.split("\n").map((content) => {
-    const line = { content, offset };
-    offset += content.length + 1;
-    return line;
-  });
+  const parts = code.split("\n");
+  const lines = parts.map((content, index) => ({
+    content,
+    offset: parts
+      .slice(0, index)
+      .reduce((sum, part) => sum + part.length + 1, 0),
+  }));
 
   return (
     <pre
