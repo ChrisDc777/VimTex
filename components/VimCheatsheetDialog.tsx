@@ -30,6 +30,10 @@ function appRows(): Array<{ keys: string; action: string }> {
       keys: formatShortcut({ mod: true, shift: true, key: "V" }),
       action: "Live / Split view",
     },
+    {
+      keys: formatShortcut({ mod: true, shift: true, key: "D" }),
+      action: "Light / dark theme",
+    },
     { keys: "/", action: "Slash commands in chat" },
   ];
 }

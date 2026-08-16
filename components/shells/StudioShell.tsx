@@ -46,6 +46,7 @@ import { findEquationScope } from "@/lib/render-note";
 import type { SelectionAiAction } from "@/lib/selection-ai-actions";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useStudioExperience } from "@/lib/use-studio-experience";
+import { useStudioColorTheme } from "@/lib/use-studio-color-theme";
 import {
   createCollabUser,
   createRoomId,
@@ -55,6 +56,7 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import {
+  loadEditSecret,
   readViewTokenFromLocation,
   resolveEditSecret,
   mintEditCapabilityForNewRoom,
@@ -170,6 +172,7 @@ export function StudioShell({
   const editorRef = useRef<VimEditorHandle>(null);
   const aiRunnerRef = useRef<StudioAiRunner | null>(null);
   const { isEnhanced } = useStudioExperience();
+  const { theme: colorTheme, appearance, setAppearance } = useStudioColorTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -283,22 +286,36 @@ export function StudioShell({
     (content: string, roomIdOverride?: string) => {
       const room = roomIdOverride ?? createRoomId();
       const createdHere = !roomIdOverride;
-      writeRoomToLocation(room, { clearViewToken: true, clearEditSecret: true });
       setRoomId(room);
       setViewToken(null);
-      setEditSecret(null);
       setNote("");
-      setSeed(content || STARTER_NOTE);
+      // Reopening a recent room must not seed starter content into an empty
+      // (or GC'd) server doc — only brand-new rooms get a template/starter.
+      setSeed(createdHere ? content || STARTER_NOTE : content || null);
       setRightPanelView(null);
       setCollabStatus("connecting");
       setPeers([]);
       setVimMode("normal");
       if (createdHere) {
+        writeRoomToLocation(room, {
+          clearViewToken: true,
+          clearEditSecret: true,
+        });
+        setEditSecret(null);
         void mintEditCapabilityForNewRoom(room)
           .then(({ edit }) => setEditSecret(edit))
           .catch(() => setEditSecret(null));
       } else {
-        setEditSecret(resolveEditSecret(room));
+        // Keep the stored edit capability — do not call resolveEditSecret after
+        // clearing the URL (that would wipe sessionStorage and deny access).
+        const edit = loadEditSecret(room);
+        writeRoomToLocation(room, {
+          clearViewToken: true,
+          ...(edit
+            ? { editSecret: edit }
+            : { clearEditSecret: true }),
+        });
+        setEditSecret(edit);
       }
       requestAnimationFrame(() => editorRef.current?.focus());
     },
@@ -389,6 +406,9 @@ export function StudioShell({
     onToggleViewMode: useCallback(() => {
       setViewMode((prev) => (prev === "split" ? "realtime" : "split"));
     }, []),
+    onToggleAppearance: useCallback(() => {
+      setAppearance(appearance === "dark" ? "light" : "dark");
+    }, [appearance, setAppearance]),
   });
 
   const isSplit = viewMode === "split";
@@ -465,8 +485,11 @@ export function StudioShell({
       }}
     />
     <StudioAiDiffBridge editorRef={editorRef} />
-    <div className="app-shell ui-studio flex h-dvh flex-col text-ink">
-      <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
+    <div
+      className="app-shell ui-studio flex h-dvh flex-col text-ink"
+      data-vt-theme={colorTheme}
+      data-vt-appearance={appearance}
+    >      <header className="flex min-h-[var(--header-h)] shrink-0 flex-col gap-2 border-b border-hairline px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start sm:gap-4">
           <span className="vt-brand text-ink">VimTex</span>
           <span className="vt-caption text-mute sm:hidden">

@@ -41,7 +41,8 @@ AI polish #60 closed. Studio defaults to Enhanced (vendored BEUI under
 components/beui/ + studio/enhanced adapters); Preferences → Workspace →
 Studio experience: Basic restores the pre-BEUI chat/chrome trees. Enhanced
 chrome: Morphing Modal Share on the bottom dock, topbar Import & Export Bloom (opens downward),
-bottom Dock (Share/Outline/History/Chat/Preferences).
+bottom Dock (Share/Outline/History/Chat/Preferences). Studio Preferences → Color theme
+offers mesh palettes (Studio, Cobalt, Rose, Grove, Ocean, Ember, Iris) with Light/Dark.
 Forge stays Basic (no BEUI imports).
 Edit is the implicit AI default; Enhanced + menu adds removable Ask or Plan
 chips. prefers-reduced-motion is independent of Basic. Next: History Phase 2

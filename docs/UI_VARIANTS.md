@@ -43,7 +43,7 @@ Basic is **not** “Enhanced with animation off.” It renders the shipped pre-B
 - Split Live / Split preview (`ViewToggle`)
 - Name picker on first visit; Preferences (dialog in Basic, BEUI Drawer in Enhanced)
 - Status bar: vim mode, collab status, peers, editable name
-- Tokens scoped under `.ui-studio` (`app/studio-theme.css`): near-black canvas, sunset/breeze atmosphere, outline pill controls
+- Tokens scoped under `.ui-studio` (`app/studio-theme.css` + `app/studio-themes.css`): near-black canvas by default, mesh atmosphere; Preferences → Color theme adds Cobalt / Rose / Grove / Ocean / Ember / Iris with Light/Dark
 - **Experience default Enhanced:** vendored BEUI under `components/beui/` + adapters in `components/studio/enhanced/` (Prompt Input + Ask/Plan chips, Action Swap, Thinking Shimmer, focused note-diff, Streaming Response, Command Palette, Drawer, Bloom Import & Export, Morphing Modal Share, bottom Dock)
 - **Basic fallback:** Preferences → Workspace → Studio experience: Basic — same room data, pre-BEUI trees
 

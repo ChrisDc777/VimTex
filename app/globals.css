@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 @import "./studio-theme.css";
+@import "./studio-themes.css";
 
 :root {
   /* Surfaces — stepped dark neutrals */

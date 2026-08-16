@@ -43,6 +43,8 @@ import {
   studioExperienceLabel,
 } from "@/lib/studio-experience-prefs";
 import { useStudioExperience } from "@/lib/use-studio-experience";
+import { useStudioColorTheme } from "@/lib/use-studio-color-theme";
+import { ThemePicker } from "@/components/studio/ThemePicker";
 
 type PrefSection = "editor" | "workspace" | "ai";
 
@@ -99,18 +101,29 @@ function PrefRow({
   title,
   description,
   children,
+  /** Stack title above controls (full width) instead of side-by-side. */
+  stack = false,
 }: {
   title: string;
   description: string;
   children: ReactNode;
+  stack?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <div
+      className={
+        stack
+          ? "flex flex-col gap-3"
+          : "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      }
+    >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-ink">{title}</p>
         <p className="mt-0.5 text-xs text-mute">{description}</p>
       </div>
-      <div className="shrink-0 self-end sm:self-auto">{children}</div>
+      <div className={stack ? "w-full min-w-0" : "shrink-0 self-end sm:self-auto"}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -211,8 +224,9 @@ export function PreferencesDialog({
   const chrome = useAiChromePrefs();
   const workspace = useWorkspace();
   const { experience, setExperience } = useStudioExperience();
+  const { theme, appearance, setTheme, setAppearance } = useStudioColorTheme();
   const roomId = workspace?.roomId ?? null;
-  const [section, setSection] = useState<PrefSection>("editor");
+  const [section, setSection] = useState<PrefSection>("workspace");
   const [temperature, setTemperature] = useState<AiTemperaturePreset>(
     DEFAULT_AI_TEMPERATURE as AiTemperaturePreset,
   );
@@ -287,13 +301,13 @@ export function PreferencesDialog({
 
   const sections: { id: PrefSection; label: string }[] = showAiReviewPrefs
     ? [
-        { id: "editor", label: "Editor" },
         { id: "workspace", label: "Workspace" },
         { id: "ai", label: "AI" },
+        { id: "editor", label: "Editor" },
       ]
     : [
-        { id: "editor", label: "Editor" },
         { id: "workspace", label: "Workspace" },
+        { id: "editor", label: "Editor" },
       ];
 
   if (!open) return null;
@@ -409,20 +423,35 @@ export function PreferencesDialog({
               </PrefRow>
 
               {showStudioExperience ? (
-                <PrefRow
-                  title="Studio experience"
-                  description="Basic keeps the simple, pre-BEUI interface"
-                >
-                  <Segment
-                    label="Studio experience"
-                    options={STUDIO_EXPERIENCES.map((value) => ({
-                      value,
-                      label: studioExperienceLabel(value),
-                    }))}
-                    value={experience}
-                    onChange={setExperience}
-                  />
-                </PrefRow>
+                <>
+                  <PrefRow
+                    title="Studio experience"
+                    description="Basic keeps the simple, pre-BEUI interface"
+                  >
+                    <Segment
+                      label="Studio experience"
+                      options={STUDIO_EXPERIENCES.map((value) => ({
+                        value,
+                        label: studioExperienceLabel(value),
+                      }))}
+                      value={experience}
+                      onChange={setExperience}
+                    />
+                  </PrefRow>
+
+                  <PrefRow
+                    title="Color theme"
+                    description="Mesh palettes with light and dark — Ctrl/Cmd+Shift+D toggles appearance"
+                    stack
+                  >
+                    <ThemePicker
+                      theme={theme}
+                      appearance={appearance}
+                      onThemeChange={setTheme}
+                      onAppearanceChange={setAppearance}
+                    />
+                  </PrefRow>
+                </>
               ) : null}
 
               <PrefRow
