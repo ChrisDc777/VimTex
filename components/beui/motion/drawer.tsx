@@ -51,7 +51,7 @@ export function Drawer({
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[100]">
           <motion.button
             type="button"
             aria-label="Close"
@@ -74,16 +74,18 @@ export function Drawer({
             animate={reduce ? { opacity: 1 } : { x: 0 }}
             exit={reduce ? { opacity: 0 } : { x: offscreen }}
             transition={reduce ? { duration: 0.2, ease: EASE_OUT } : SPRING_PANEL}
-            className={cn(
-              "absolute inset-y-0 flex w-80 max-w-[85vw] flex-col bg-background shadow-2xl",
-              side === "right"
-                ? "right-0 border-l border-border"
-                : "left-0 border-r border-border",
-              className,
-            )}
-          >
-            {children}
-          </motion.aside>
+    className={cn(
+      "absolute inset-y-0 flex h-full w-80 max-w-[85vw] flex-col bg-background shadow-2xl",
+      side === "right"
+        ? "right-0 border-l border-border"
+        : "left-0 border-r border-border",
+      className,
+    )}
+  >
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {children}
+    </div>
+  </motion.aside>
         </div>
       ) : null}
     </AnimatePresence>

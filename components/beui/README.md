@@ -14,3 +14,8 @@
 - `streaming-response`
 - `file-diff`
 - `prompt-input`
+- `dock`
+- `bloom-menu` (Import & Export topbar menu)
+- `popover-morph` (chat + / mode menu)
+- `morphing-modal` (Enhanced Share + room settings sheet)
+- `select` (room TTL + chat model)

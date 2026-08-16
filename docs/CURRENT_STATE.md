@@ -39,10 +39,13 @@ then docs/HISTORY.md and components/RoomHistoryPanel.tsx.
 M4 is complete (#30/#31/#32/#33/#79 closed). History Phase 1 redesign shipped.
 AI polish #60 closed. Studio defaults to Enhanced (vendored BEUI under
 components/beui/ + studio/enhanced adapters); Preferences → Workspace →
-Studio experience: Basic restores the pre-BEUI chat/chrome trees. Forge
-stays Basic (no BEUI imports). Edit is the implicit AI default; Enhanced +
-menu adds removable Ask or Plan chips. prefers-reduced-motion is independent
-of Basic. Next: History Phase 2 or M5 gates #35/#36.
+Studio experience: Basic restores the pre-BEUI chat/chrome trees. Enhanced
+chrome: Morphing Modal Share on the bottom dock, topbar Import & Export Bloom (opens downward),
+bottom Dock (Share/Outline/History/Chat/Preferences).
+Forge stays Basic (no BEUI imports).
+Edit is the implicit AI default; Enhanced + menu adds removable Ask or Plan
+chips. prefers-reduced-motion is independent of Basic. Next: History Phase 2
+or M5 gates #35/#36.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -87,13 +90,13 @@ Browser                    Node (server.mjs :3001)
 | Forge editor tabs + panels | ✅ | `EditorTabBar.tsx`, `SidePanel.tsx` |
 | Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, Ask/Edit/Plan modes, `ChatMessageList` / Enhanced adapters, `api/chat/route.ts` |
 | Studio Enhanced (BEUI) | ✅ | `components/beui/`, `components/studio/enhanced/`, `lib/studio-experience-prefs.ts` |
-| Share copy + capability links | ✅ | `ShareRoom.tsx` |
+| Share copy + capability links | ✅ | `ShareRoom.tsx`; Enhanced Morphing Modal Share on dock |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
 | Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |
 | Templates + recent rooms | ✅ | `lib/templates.ts`, `lib/recent-rooms.ts` |
 | Command palette | ✅ | Studio / shared palette |
-| Import .tex / .md | ✅ | Menu + palette file picker, `$` → `\( \)`, `lib/import-note.ts`, #31 |
-| Export .tex / .md + Copy source | ✅ | Overleaf wrapper, `$` math `.md`, lossless Copy; `lib/export.ts` |
+| Import .tex / .md | ✅ | Enhanced topbar **Import & Export** Bloom + Basic/Forge Menu + palette; `$` → `\( \)`, `lib/import-note.ts`, #31 |
+| Export .tex / .md + Copy source | ✅ | Same Bloom / Menu; Overleaf wrapper, `$` math `.md`, lossless Copy; `lib/export.ts` |
 | Export PDF + equation SVG/PNG | ✅ | Print-to-PDF; preview hover Copy / SVG / PNG; #32 |
 | CI / E2E | ✅ | `.github/workflows/ci.yml`, `e2e/` |
 | Follow-user / presenter mode | ⏸️ | Deferred → later collab (#81) |

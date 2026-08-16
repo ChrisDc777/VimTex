@@ -49,7 +49,7 @@ Open the printed `https://*.trycloudflare.com` link on two devices with the same
 | **Room chat** | Sidebar for humans; `@vimothy` for model edits |
 | **Two UI shells** | **Studio** (default) or **Forge** (tabs, problem panel, mobile bottom nav) |
 | **Studio layouts** | Split (source + preview) or Live (inline math) |
-| **Export** | `.tex` / `.md` download |
+| **Export** | `.tex` / `.md` / PDF; Studio Enhanced uses topbar **Import & Export** |
 
 Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inline and `\[...\]` for display when you want them.
 
@@ -62,9 +62,10 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 - **Without** `YPERSISTENCE`, a server restart clears all rooms (in-memory only).
 - **With** `YPERSISTENCE=/path/to/dir`, docs are stored in LevelDB (`y-leveldb`) and survive restarts. See `docs/RFC-collab-persistence.md`.
 - Forge also keeps a **browser localStorage** copy per room as a solo refresh cache (not authoritative after sync).
-- **Share → Copy edit / view-only link** upgrades the room to guest ACL (`editSecret` in `ROOM_DATA_DIR`). Edit links carry `?edit=`; view-only links carry `?view=` only. Stripping `?view=` does **not** grant edit. Before the first Share, bare `?room=` still edits (legacy).
-- **Share → Room settings** can set an optional PIN and absolute TTL. Password rooms require unlock once per browser session; expired rooms refuse WS joins.
-- **History icon** (toolbar / Forge rail) opens version checkpoints of the note. Share → Version history is a secondary entry. Restore replaces the live buffer for everyone in the room.
+- **Share → Copy edit / view-only link** upgrades the room to guest ACL (`editSecret` in `ROOM_DATA_DIR`). Edit links carry `?edit=`; view-only links carry `?view=` only. Stripping `?view=` does **not** grant edit. Before the first Share, bare `?room=` still edits (legacy). In Studio Enhanced, Share lives on the bottom dock and opens a Morphing Modal sheet.
+- **Share → Room settings** can set an optional PIN and absolute TTL (same Morphing Modal sheet in Enhanced). Password rooms require unlock once per browser session; expired rooms refuse WS joins.
+- **History icon** (dock / toolbar / Forge rail) opens version checkpoints of the note. Restore replaces the live buffer for everyone in the room.
+- **Import & Export** (Studio Enhanced topbar Bloom; Basic/Forge Menu) covers `.tex` / `.md` import, LaTeX/Markdown/PDF export, and copy source.
 
 ---
 

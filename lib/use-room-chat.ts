@@ -25,7 +25,7 @@ import {
 import { buildAuxiliaryAiContext } from "@/lib/ai-aux-context";
 import { buildAiHistoryFromRoomChat } from "@/lib/ai-chat-history";
 import { postAiChat, streamAiChat } from "@/lib/ai-client";
-import { formatAiError } from "@/lib/ai-errors";
+import { formatAiError, isAbortError } from "@/lib/ai-errors";
 import {
   aiFeatureEnabled,
   aiMayMutateDocument,
@@ -399,9 +399,18 @@ export function useRoomChat({
   );
 
   const cancelAi = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
+    const ac = abortRef.current;
+    if (ac) {
+      try {
+        ac.abort();
+      } catch {
+        // ignore
+      }
+      abortRef.current = null;
+    }
     setStreamingText(null);
+    setError(null);
+    setErrorForId(null);
     setBusy(false);
   }, [setBusy]);
 
@@ -603,12 +612,10 @@ export function useRoomChat({
           ws.applyAiEdit(proposedAfter);
         }
       } catch (err) {
-        if (
-          ac.signal.aborted ||
-          (err instanceof Error && err.name === "AbortError")
-        ) {
-          setError("Cancelled.");
-          setErrorForId(userMsg.id);
+        if (ac.signal.aborted || isAbortError(err)) {
+          // Intentional stop — don't surface as a chat/runtime error.
+          setError(null);
+          setErrorForId(null);
           return;
         }
         const raw = err instanceof Error ? err.message : "Unknown error";

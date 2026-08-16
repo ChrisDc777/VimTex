@@ -36,13 +36,15 @@ Basic is **not** “Enhanced with animation off.” It renders the shipped pre-B
 
 ### Studio (`studio`)
 
-- Header: brand, Share, Outline, **History**, Chat, Live/Split toggle
+- Header: brand, **Import & Export (Bloom ↓)** (Enhanced), Live/Split, snippets, Menu —
+  Enhanced moves **Share (Morphing Modal)** / Outline / History / Chat / Preferences to a
+  **bottom dock**; Basic keeps Share + panel toggles as topbar pills
 - Side rail + mobile bottom tabs; command palette (Ctrl/Cmd+K)
 - Split Live / Split preview (`ViewToggle`)
 - Name picker on first visit; Preferences (dialog in Basic, BEUI Drawer in Enhanced)
 - Status bar: vim mode, collab status, peers, editable name
 - Tokens scoped under `.ui-studio` (`app/studio-theme.css`): near-black canvas, sunset/breeze atmosphere, outline pill controls
-- **Experience default Enhanced:** vendored BEUI under `components/beui/` + adapters in `components/studio/enhanced/` (Prompt Input + Ask/Plan chips, Action Swap, Thinking Shimmer, File Diff, Streaming Response, Command Palette, Drawer)
+- **Experience default Enhanced:** vendored BEUI under `components/beui/` + adapters in `components/studio/enhanced/` (Prompt Input + Ask/Plan chips, Action Swap, Thinking Shimmer, focused note-diff, Streaming Response, Command Palette, Drawer, Bloom Import & Export, Morphing Modal Share, bottom Dock)
 - **Basic fallback:** Preferences → Workspace → Studio experience: Basic — same room data, pre-BEUI trees
 
 ### Forge (`forge`)

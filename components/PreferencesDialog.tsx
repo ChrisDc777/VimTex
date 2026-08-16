@@ -308,9 +308,21 @@ export function PreferencesDialog({
       onPointerDown={surface === "panel" ? undefined : (e) => e.stopPropagation()}
     >
       <div className="vt-prefs-dialog__header">
-        <p id={titleId} className="vt-caption text-ink">
-          Preferences
-        </p>
+        <div className="vt-prefs-dialog__title-row">
+          <p id={titleId} className="vt-caption text-ink">
+            Preferences
+          </p>
+          {surface === "panel" ? (
+            <button
+              type="button"
+              className="vt-prefs-dialog__close"
+              aria-label="Close preferences"
+              onClick={onClose}
+            >
+              <span aria-hidden>×</span>
+            </button>
+          ) : null}
+        </div>
         <div
           className="vt-segment vt-prefs-dialog__nav"
           role="tablist"
@@ -731,15 +743,17 @@ export function PreferencesDialog({
           ) : null}
         </div>
 
-      <div className="vt-prefs-dialog__footer">
-        <button
-          type="button"
-          onClick={onClose}
-          className="vt-pill vt-pill--solid vt-pill--label min-w-[7.5rem]"
-        >
-          Done
-        </button>
-      </div>
+      {surface === "dialog" ? (
+        <div className="vt-prefs-dialog__footer">
+          <button
+            type="button"
+            onClick={onClose}
+            className="vt-pill vt-pill--solid vt-pill--label min-w-[7.5rem]"
+          >
+            Done
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 

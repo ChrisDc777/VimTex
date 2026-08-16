@@ -45,6 +45,7 @@ import { aiFeatureEnabled } from "@/lib/ai-features";
 import { findEquationScope } from "@/lib/render-note";
 import type { SelectionAiAction } from "@/lib/selection-ai-actions";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
+import { useStudioExperience } from "@/lib/use-studio-experience";
 import {
   createCollabUser,
   createRoomId,
@@ -104,6 +105,22 @@ const VimEditor = dynamic(
   },
 );
 
+const EnhancedNoteBloom = dynamic(
+  () =>
+    import("@/components/studio/enhanced/EnhancedNoteBloom").then((m) => ({
+      default: m.EnhancedNoteBloom,
+    })),
+  { ssr: false },
+);
+
+const EnhancedStudioDock = dynamic(
+  () =>
+    import("@/components/studio/enhanced/EnhancedStudioDock").then((m) => ({
+      default: m.EnhancedStudioDock,
+    })),
+  { ssr: false },
+);
+
 type StudioShellProps = {
   uiVariant: UiVariant;
   onUiVariantChange: (variant: UiVariant) => void;
@@ -146,8 +163,13 @@ export function StudioShell({
   const [roomSettingsOpen, setRoomSettingsOpen] = useState(false);
   const [hasSelectionRange, setHasSelectionRange] = useState(false);
   const [hasEquationScope, setHasEquationScope] = useState(false);
+  const [selectionAnchor, setSelectionAnchor] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const editorRef = useRef<VimEditorHandle>(null);
   const aiRunnerRef = useRef<StudioAiRunner | null>(null);
+  const { isEnhanced } = useStudioExperience();
 
   useEffect(() => {
     let cancelled = false;
@@ -460,17 +482,31 @@ export function StudioShell({
           aria-label="Workspace tools"
         >
           {roomId ? (
-            <ShareRoom
-              roomId={roomId}
-              variant="studio"
-              readOnly={readOnly}
-              onEditSecret={setEditSecret}
-              onOpenSettings={
-                readOnly ? undefined : () => setRoomSettingsOpen(true)
-              }
-            />
+            isEnhanced ? (
+              readOnly ? (
+                <span
+                  className="vt-pill vt-pill--ghost text-xs text-mute"
+                  title="You opened a view-only link"
+                >
+                  View only
+                </span>
+              ) : null
+            ) : (
+              <ShareRoom
+                roomId={roomId}
+                variant="studio"
+                readOnly={readOnly}
+                onEditSecret={setEditSecret}
+                onOpenSettings={
+                  readOnly ? undefined : () => setRoomSettingsOpen(true)
+                }
+              />
+            )
           ) : null}
-          {aiFeatureEnabled("studio", "outlineTodo") ? (
+          {isEnhanced ? (
+            <EnhancedNoteBloom note={note} disabled={!ready} />
+          ) : null}
+          {!isEnhanced && aiFeatureEnabled("studio", "outlineTodo") ? (
             <button
               type="button"
               aria-pressed={outlineOpen}
@@ -487,40 +523,44 @@ export function StudioShell({
               <OutlineIcon />
             </button>
           ) : null}
-          <button
-            type="button"
-            aria-pressed={historyOpen}
-            aria-label={historyOpen ? "Close version history" : "Open version history"}
-            title={historyOpen ? "Close version history" : "Version history"}
-            disabled={!ready || !roomId}
-            onClick={toggleHistory}
-            className={
-              historyOpen
-                ? "vt-pill vt-pill--solid vt-pill--icon"
-                : "vt-pill vt-pill--ghost vt-pill--icon"
-            }
-          >
-            <HistoryIcon />
-          </button>
-          <button
-            type="button"
-            aria-pressed={chatOpen}
-            aria-label={chatOpen ? "Close chat" : "Open chat"}
-            title={
-              chatOpen
-                ? `Close chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
-                : `Room chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
-            }
-            disabled={!ready}
-            onClick={toggleChat}
-            className={
-              chatOpen
-                ? "vt-pill vt-pill--solid vt-pill--icon"
-                : "vt-pill vt-pill--ghost vt-pill--icon"
-            }
-          >
-            <ChatIcon />
-          </button>
+          {!isEnhanced ? (
+            <button
+              type="button"
+              aria-pressed={historyOpen}
+              aria-label={historyOpen ? "Close version history" : "Open version history"}
+              title={historyOpen ? "Close version history" : "Version history"}
+              disabled={!ready || !roomId}
+              onClick={toggleHistory}
+              className={
+                historyOpen
+                  ? "vt-pill vt-pill--solid vt-pill--icon"
+                  : "vt-pill vt-pill--ghost vt-pill--icon"
+              }
+            >
+              <HistoryIcon />
+            </button>
+          ) : null}
+          {!isEnhanced ? (
+            <button
+              type="button"
+              aria-pressed={chatOpen}
+              aria-label={chatOpen ? "Close chat" : "Open chat"}
+              title={
+                chatOpen
+                  ? `Close chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
+                  : `Room chat (${formatShortcut({ mod: true, shift: true, key: "C" })})`
+              }
+              disabled={!ready}
+              onClick={toggleChat}
+              className={
+                chatOpen
+                  ? "vt-pill vt-pill--solid vt-pill--icon"
+                  : "vt-pill vt-pill--ghost vt-pill--icon"
+              }
+            >
+              <ChatIcon />
+            </button>
+          ) : null}
           <ViewToggle value={viewMode} onChange={handleViewMode} />
           <SnippetMenu
             disabled={!ready}
@@ -543,13 +583,14 @@ export function StudioShell({
             onClearRecentRooms={clearTrackedRecentRooms}
             relativeLineNumbers={relativeLineNumbers}
             onRelativeLineNumbersChange={setRelativeLineNumbers}
+            compactTransfer={isEnhanced}
           />
         </div>
       </header>
 
       <ReconnectBanner status={collabStatus} localBuffer={false} />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip md:flex-row">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip md:flex-row">
         {aiFeatureEnabled("studio", "outlineTodo") ? (
           <SidePanel
             side="left"
@@ -603,9 +644,10 @@ export function StudioShell({
                   !readOnly && aiFeatureEnabled("studio", "diffAcceptReject")
                 }
                 onVimModeChange={setVimMode}
-                  onSelectionRangeChange={({ hasRange, hasEquation }) => {
+                  onSelectionRangeChange={({ hasRange, hasEquation, anchor }) => {
                     setHasSelectionRange(hasRange);
                     setHasEquationScope(hasEquation);
+                    setSelectionAnchor(anchor);
                   }}
                 />
               ) : (
@@ -627,6 +669,7 @@ export function StudioShell({
                     hasEquationScope
                   }
                   showCoach={aiFeatureEnabled("studio", "derivationCoach")}
+                  anchor={selectionAnchor}
                   onAction={(action: SelectionAiAction) => {
                     const ctx = editorRef.current?.getEditorContext();
                     if (
@@ -750,6 +793,22 @@ export function StudioShell({
               </div>
             ) : null}
           </SidePanel>
+        ) : null}
+
+        {isEnhanced ? (
+          <EnhancedStudioDock
+            ready={ready}
+            roomId={roomId}
+            readOnly={readOnly}
+            outlineOpen={outlineOpen}
+            historyOpen={historyOpen}
+            chatOpen={chatOpen}
+            onToggleOutline={() => setOutlineOpen((v) => !v)}
+            onToggleHistory={toggleHistory}
+            onToggleChat={toggleChat}
+            onEditSecret={setEditSecret}
+            onSavedSettings={gate.applyMeta}
+          />
         ) : null}
       </div>
 

@@ -44,9 +44,9 @@ export function usePopoverPortalPosition<
 
   const update = useCallback(() => {
     const trigger = triggerRef.current;
-    const content = contentRef.current;
-    if (!trigger || !content) return;
+    if (!trigger) return;
 
+    const content = contentRef.current;
     const rect = trigger.getBoundingClientRect();
     const next: PortalLayout = {
       trigger: {
@@ -56,26 +56,36 @@ export function usePopoverPortalPosition<
         height: rect.height,
       },
       content: {
-        width: content.offsetWidth,
-        height: content.offsetHeight,
+        width: content?.offsetWidth ?? 0,
+        height: content?.offsetHeight ?? 0,
       },
     };
     setLayout((current) => (sameLayout(current, next) ? current : next));
   }, [contentRef, triggerRef]);
 
   useLayoutEffect(() => {
+    if (!active) {
+      setLayout(null);
+      return;
+    }
+
     update();
-    if (!active) return;
 
     const trigger = triggerRef.current;
-    const content = contentRef.current;
     const observer = new ResizeObserver(update);
     if (trigger) observer.observe(trigger);
-    if (content) observer.observe(content);
+
+    // AnimatePresence / motion may attach the panel ref one frame later.
+    const raf = window.requestAnimationFrame(() => {
+      update();
+      const content = contentRef.current;
+      if (content) observer.observe(content);
+    });
 
     window.addEventListener("scroll", update, true);
     window.addEventListener("resize", update);
     return () => {
+      window.cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);

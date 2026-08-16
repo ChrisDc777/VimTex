@@ -11,6 +11,7 @@ import {
   type AiKeySource,
   type AiTokenUsage,
 } from "@/lib/ai-usage";
+import { isAbortError } from "@/lib/ai-errors";
 
 export type AiChatRequest = {
   instruction: string;
@@ -148,12 +149,38 @@ export async function streamAiChat(
   const decoder = new TextDecoder();
   let accumulated = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    accumulated += decoder.decode(value, { stream: true });
-    const live = stripAiUsageTrailer(accumulated).message;
-    handlers.onToken?.(live);
+  try {
+    while (true) {
+      if (req.signal?.aborted) {
+        try {
+          await reader.cancel();
+        } catch {
+          // ignore
+        }
+        throw new DOMException("Aborted", "AbortError");
+      }
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch (err) {
+        if (req.signal?.aborted || isAbortError(err)) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        throw err;
+      }
+      const { done, value } = chunk;
+      if (done) break;
+      accumulated += decoder.decode(value, { stream: true });
+      const live = stripAiUsageTrailer(accumulated).message;
+      handlers.onToken?.(live);
+    }
+  } catch (err) {
+    try {
+      await reader.cancel();
+    } catch {
+      // ignore
+    }
+    throw err;
   }
   accumulated += decoder.decode();
 
