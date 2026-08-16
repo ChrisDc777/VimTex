@@ -10,7 +10,7 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { LatexPreview } from "@/components/LatexPreview";
 import { StudioMenu } from "@/components/studio/StudioMenu";
 import { NoteImportHost } from "@/components/NoteImportHost";
-import { CommandPalette } from "@/components/CommandPalette";
+import { StudioCommandPalette } from "@/components/studio/StudioCommandPalette";
 import { TemplateVariablesDialog } from "@/components/TemplateVariablesDialog";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { NewSheetDialog } from "@/components/NewSheetDialog";
@@ -549,7 +549,7 @@ export function StudioShell({
 
       <ReconnectBanner status={collabStatus} localBuffer={false} />
 
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip md:flex-row">
         {aiFeatureEnabled("studio", "outlineTodo") ? (
           <SidePanel
             side="left"
@@ -719,7 +719,7 @@ export function StudioShell({
             {rightPanelOpen && rightPanelView && roomId ? (
               <div
                 key={rightPanelView}
-                className="vt-right-panel-content flex h-full min-h-0 flex-col"
+                className="vt-right-panel-content flex h-full min-h-0 min-w-0 flex-col overflow-x-clip"
               >
                 {rightPanelView === "history" ? (
                   <RoomHistoryPanel
@@ -781,7 +781,7 @@ export function StudioShell({
         onClose={() => setCheatsheetOpen(false)}
         onOpenOnboarding={() => setOnboardingOpen(true)}
       />
-      <CommandPalette
+      <StudioCommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         roomId={roomId}

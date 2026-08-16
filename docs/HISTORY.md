@@ -66,7 +66,7 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 - Read-only sessions can browse and compare; restore/delete/pin/rename/fork require edit capability
 - Pin, rename, and fork live on the selected version
 - Restore is **room-wide** (chat not restored); a `pre_restore` checkpoint is saved first
-- CSS transitions only (`prefers-reduced-motion` respected); no motion library yet
+- History panel keeps CSS transitions (`prefers-reduced-motion` respected). Studio Enhanced BEUI chrome is separate — see [`UI_VARIANTS.md`](./UI_VARIANTS.md).
 
 ## Deferred
 
@@ -75,7 +75,7 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 | Editor time-travel overlay | Select version → ghost/read-only past in main editor (Phase 2) — main Docs/Notion gap vs Phase 1 panel preview |
 | Shared SQL index | Multi-node / Postgres when RFC B lands |
 | Authorship remapping | After accounts (#37) + claim-guest (#78) |
-| Motion library | [#130](https://github.com/ChrisDc777/VimTex/issues/130) if shared-element restore UX needs it |
+| Message scroller rail | BEUI followOutput / preview rail — defer until chat transcripts grow |
 
 Do not re-implement Level A–E basics.
 

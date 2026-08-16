@@ -154,24 +154,43 @@ export function applyAiPatch(
   return { ok: true, after: working, hunks: applied };
 }
 
-/** Extract @@@PATCH…@@@END from raw assistant text, if present. */
+/**
+ * Extract a patch block from assistant text.
+ * Prefer `@@@PATCH`…`@@@END`. Also recover orphan `@@@FIND`…`@@@THEN`…
+ * blocks the model sometimes emits without the PATCH wrapper.
+ */
 export function extractPatchBlock(
   raw: string,
 ): { before: string; body: string; after: string } | null {
   const start = raw.indexOf(PATCH_EDIT_START);
-  if (start === -1) return null;
+  if (start !== -1) {
+    const afterStart = start + PATCH_EDIT_START.length;
+    let bodyStart = afterStart;
+    if (raw[bodyStart] === "\r") bodyStart += 1;
+    if (raw[bodyStart] === "\n") bodyStart += 1;
 
-  const afterStart = start + PATCH_EDIT_START.length;
-  let bodyStart = afterStart;
-  if (raw[bodyStart] === "\r") bodyStart += 1;
-  if (raw[bodyStart] === "\n") bodyStart += 1;
+    const end = raw.indexOf(PATCH_EDIT_END, bodyStart);
+    if (end === -1) return null;
 
-  const end = raw.indexOf(PATCH_EDIT_END, bodyStart);
-  if (end === -1) return null;
+    return {
+      before: raw.slice(0, start),
+      body: raw.slice(bodyStart, end).replace(/\r?\n$/, ""),
+      after: raw.slice(end + PATCH_EDIT_END.length),
+    };
+  }
+
+  // Orphan FIND/THEN (missing @@@PATCH) — common model slip.
+  const findStart = raw.indexOf(PATCH_FIND);
+  if (findStart === -1) return null;
+
+  const end = raw.indexOf(PATCH_EDIT_END, findStart);
+  const bodyEnd = end === -1 ? raw.length : end;
+  const after =
+    end === -1 ? "" : raw.slice(end + PATCH_EDIT_END.length);
 
   return {
-    before: raw.slice(0, start),
-    body: raw.slice(bodyStart, end).replace(/\r?\n$/, ""),
-    after: raw.slice(end + PATCH_EDIT_END.length),
+    before: raw.slice(0, findStart),
+    body: raw.slice(findStart, bodyEnd).replace(/\r?\n$/, ""),
+    after,
   };
 }

@@ -45,7 +45,7 @@ export function SidePanel({
 
   const aside = (
     <aside
-      className={`vt-side-panel vt-side-panel--${side} vt-pane-sized flex min-h-0 w-full shrink-0 flex-col ${borderClass} ${surfaceClassName}${
+      className={`vt-side-panel vt-side-panel--${side} vt-pane-sized flex min-h-0 min-w-0 w-full shrink-0 flex-col overflow-x-clip ${borderClass} ${surfaceClassName}${
         open ? "" : " hidden"
       }`}
       style={

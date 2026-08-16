@@ -45,6 +45,8 @@ export type SystemPromptContext = {
   coach?: boolean;
   /** Ask mode (#129) — answer only; forbid @@@PATCH / @@@DOCUMENT. */
   ask?: boolean;
+  /** Plan mode — outline steps only; no document patches. */
+  plan?: boolean;
 };
 
 export function buildSystemPrompt(
@@ -132,6 +134,17 @@ ${ctx.document}
     return sections.join("\n\n");
   }
 
+  if (ctx.plan) {
+    sections.push(`Rules:
+- Plan mode: outline how you would change the note in numbered steps. Do not change the document yet.
+- Never emit @@@PATCH, @@@END, @@@DOCUMENT, FIND, or THEN edit markers.
+- Prefer concrete, ordered numbered steps the user can approve before Edit applies them.
+- If the user wants the plan applied, tell them to switch the composer to Edit.
+- Keep replies concise.
+- Prefer KaTeX-friendly TeX. Math in chat: use \\( \\) for inline and \\[ \\] for display. Never wrap math in backticks, **bold**, or markdown code fences.`);
+    return sections.join("\n\n");
+  }
+
   if (ctx.ask) {
     sections.push(`Rules:
 - Ask mode: answer questions about the note. Do not change the document.
@@ -198,6 +211,15 @@ export function parseAssistantReply(raw: string): ParsedAssistantReply {
         patch: proposal,
       };
     }
+    return {
+      message: stripEditMessage(
+        patchBlock.before,
+        patchBlock.after,
+        "Could not apply the proposed edit.",
+      ),
+      documentEdit: null,
+      patch: null,
+    };
   }
 
   const start = raw.indexOf(DOC_EDIT_START);
@@ -229,7 +251,7 @@ export function parseAssistantReply(raw: string): ParsedAssistantReply {
 
 /** Earliest edit-marker index for streaming UI (hide payload while tokens arrive). */
 export function earliestEditMarkerIndex(text: string): number {
-  const markers = [PATCH_EDIT_START, DOC_EDIT_START];
+  const markers = [PATCH_EDIT_START, DOC_EDIT_START, PATCH_FIND];
   let best = -1;
   for (const m of markers) {
     const i = text.indexOf(m);

@@ -509,6 +509,8 @@ export function useRoomChat({
           chatModeOverridesRef.current[userMsg.id] ?? chatMode;
         delete chatModeOverridesRef.current[userMsg.id];
         const askOnly = !coach && effectiveMode === "ask";
+        const planOnly = !coach && effectiveMode === "plan";
+        const noPatch = askOnly || planOnly;
         const req = {
           instruction,
           document: packed.document,
@@ -525,9 +527,11 @@ export function useRoomChat({
           ...(history && history.length > 0 ? { history } : {}),
           ...(coach
             ? { mode: "coach" as const }
-            : askOnly
-              ? { mode: "ask" as const }
-              : {}),
+            : planOnly
+              ? { mode: "plan" as const }
+              : askOnly
+                ? { mode: "ask" as const }
+                : {}),
         };
         const data = useStream
           ? await streamAiChat(req, {
@@ -543,13 +547,13 @@ export function useRoomChat({
         if (ac.signal.aborted) return;
 
         const parsed = parseAssistantReply(data.message ?? "");
-        // Coach / Ask: never propose or attach note mutations (#84 / #129).
+        // Coach / Ask / Plan: never propose or attach note mutations.
         let proposedAfter: string | null =
-          coach || askOnly ? null : parsed.documentEdit;
+          coach || noPatch ? null : parsed.documentEdit;
         let editKind: "document" | "patch" = "document";
         let appliedHunks: AppliedAiPatchHunk[] | undefined;
 
-        if (!coach && !askOnly && parsed.patch) {
+        if (!coach && !noPatch && parsed.patch) {
           const applied = applyAiPatch(beforeSnapshot, parsed.patch);
           if (applied.ok) {
             proposedAfter = applied.after;

@@ -11,6 +11,8 @@ import type { UiVariant } from "@/lib/ui-variant";
 import type { RecentRoom } from "@/lib/recent-rooms";
 import type { NewRoomOptions } from "@/lib/types";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
+import { useStudioExperience } from "@/lib/use-studio-experience";
+import dynamic from "next/dynamic";
 import {
   MenuBlankIcon,
   MenuCopyIcon,
@@ -21,6 +23,14 @@ import {
   MenuPrefsIcon,
   MenuTemplateIcon,
 } from "@/components/menu-icons";
+
+const EnhancedPreferencesDrawer = dynamic(
+  () =>
+    import("@/components/studio/enhanced/EnhancedPreferencesDrawer").then(
+      (m) => ({ default: m.EnhancedPreferencesDrawer }),
+    ),
+  { ssr: false },
+);
 
 type StudioMenuProps = {
   note: string;
@@ -81,6 +91,7 @@ export function StudioMenu({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const justOpenedRef = useRef(false);
   const menuId = useId();
+  const { isEnhanced } = useStudioExperience();
 
   useEffect(() => {
     setMounted(true);
@@ -321,17 +332,32 @@ export function StudioMenu({
         <span className="hidden sm:inline">Menu</span>
       </button>
       {menu && mounted ? createPortal(menu, document.body) : null}
-      <PreferencesDialog
-        open={prefsOpen}
-        onClose={() => setPrefsOpen(false)}
-        editorMode={editorMode}
-        onEditorModeChange={onEditorModeChange}
-        relativeLineNumbers={relativeLineNumbers}
-        onRelativeLineNumbersChange={onRelativeLineNumbersChange}
-        uiVariant={uiVariant}
-        onUiVariantChange={onUiVariantChange}
-        showAiReviewPrefs
-      />
+      {isEnhanced ? (
+        <EnhancedPreferencesDrawer
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          editorMode={editorMode}
+          onEditorModeChange={onEditorModeChange}
+          relativeLineNumbers={relativeLineNumbers}
+          onRelativeLineNumbersChange={onRelativeLineNumbersChange}
+          uiVariant={uiVariant}
+          onUiVariantChange={onUiVariantChange}
+          showAiReviewPrefs
+        />
+      ) : (
+        <PreferencesDialog
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          editorMode={editorMode}
+          onEditorModeChange={onEditorModeChange}
+          relativeLineNumbers={relativeLineNumbers}
+          onRelativeLineNumbersChange={onRelativeLineNumbersChange}
+          uiVariant={uiVariant}
+          onUiVariantChange={onUiVariantChange}
+          showAiReviewPrefs
+          showStudioExperience
+        />
+      )}
     </div>
   );
 }

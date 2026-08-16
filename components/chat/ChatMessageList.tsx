@@ -83,7 +83,7 @@ export function ChatMessageList({
   const blocks = groupChatMessages(messages, currentClientId, currentUserName);
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div className="relative min-h-0 min-w-0 flex-1 overflow-x-clip">
       <div ref={listRef} onScroll={onScroll} className="vt-chat-list">
         {messages.length === 0 ? (
           <div className="vt-chat-empty">
