@@ -71,6 +71,11 @@ export async function joinStudioRoom(
   await expect(dialog).toHaveCount(0);
   await expect(page.locator(".cm-editor")).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(".ui-studio")).toBeVisible();
+  if ((opts.studioExperience ?? "enhanced") === "enhanced") {
+    await expect(page.locator(".vt-studio-dock")).toBeVisible({
+      timeout: 20_000,
+    });
+  }
   return room;
 }
 
