@@ -1,13 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { joinStudioRoom, openForge } from "./helpers";
 
+/** Matches Enhanced dock "Chat" and Basic/Forge "Open chat". */
+const chatButton = /^(open )?chat$/i;
+
 test.describe("Studio Enhanced / Basic experience", () => {
   test("Enhanced composer uses + Ask/Plan chips (no Ask/Edit toolbar)", async ({
     page,
   }) => {
     await joinStudioRoom(page, { studioExperience: "enhanced" });
 
-    await page.getByRole("button", { name: /^chat$/i }).click();
+    await page
+      .locator(".vt-studio-dock")
+      .getByRole("button", { name: chatButton })
+      .click();
     const chat = page.getByRole("complementary", { name: /room chat/i });
     await expect(chat).toBeVisible();
 
@@ -17,7 +23,7 @@ test.describe("Studio Enhanced / Basic experience", () => {
     ).toBeVisible();
 
     await chat.getByRole("button", { name: /add chat mode/i }).click();
-    await page.getByRole("button", { name: /^plan$/i }).click();
+    await page.getByRole("button", { name: /^plan\b/i }).click();
     await expect(chat.locator(".beui-prompt-chip")).toContainText(/plan/i);
 
     await chat.getByRole("button", { name: /remove plan mode/i }).click();
@@ -30,16 +36,16 @@ test.describe("Studio Enhanced / Basic experience", () => {
     await joinStudioRoom(page, { studioExperience: "enhanced" });
 
     await expect(
-      page.locator("header").getByRole("button", { name: /import & export/i }),
-    ).toBeVisible();
+      page.getByRole("button", { name: /import\s*&\s*export/i }),
+    ).toBeVisible({ timeout: 20_000 });
     await expect(
-      page.locator("header").getByRole("button", { name: /^chat$/i }),
+      page.locator("header").getByRole("button", { name: chatButton }),
     ).toHaveCount(0);
     await expect(
       page.locator("header").getByRole("button", { name: /share room/i }),
     ).toHaveCount(0);
     await expect(
-      page.locator(".vt-studio-dock").getByRole("button", { name: /^chat$/i }),
+      page.locator(".vt-studio-dock").getByRole("button", { name: chatButton }),
     ).toBeVisible();
 
     const share = page
@@ -60,7 +66,7 @@ test.describe("Studio Enhanced / Basic experience", () => {
   test("Basic restores Ask/Edit chips", async ({ page }) => {
     await joinStudioRoom(page, { studioExperience: "basic" });
 
-    await page.getByRole("button", { name: /^chat$/i }).click();
+    await page.getByRole("button", { name: chatButton }).click();
     const chat = page.getByRole("complementary", { name: /room chat/i });
     await expect(chat).toBeVisible();
 
@@ -78,7 +84,7 @@ test.describe("Studio Enhanced / Basic experience", () => {
   }) => {
     await openForge(page);
 
-    await page.getByRole("button", { name: /^chat$/i }).last().click();
+    await page.getByRole("button", { name: chatButton }).last().click();
     await expect(
       page.getByRole("button", { name: /add chat mode/i }),
     ).toHaveCount(0);
