@@ -23,8 +23,8 @@ export type AiChatRequest = {
   truncated?: boolean;
   /** Prior @vimothy turns (#54). */
   history?: AiHistoryMessage[];
-  /** Chat-only derivation coach (#84). Ask mode (#129). */
-  mode?: "coach" | "ask" | "edit";
+  /** Chat-only derivation coach (#84). Ask (#129) / Plan modes. */
+  mode?: "coach" | "ask" | "plan" | "edit";
   /** Sampling temperature 0–1 (#60). */
   temperature?: number;
   /** #57 Level C — Studio auxiliary context. */

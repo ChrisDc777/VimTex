@@ -120,3 +120,54 @@ export function summarizeDiff(lines: DiffLine[]): {
   }
   return { added, removed };
 }
+
+/** Focused review rows: changed lines + nearby context, with gap markers. */
+export type FocusedDiffRow =
+  | { type: "line"; line: DiffLine }
+  | { type: "gap" };
+
+/**
+ * Collapse unchanged runs so the preview shows only edits plus `context`
+ * surrounding lines (and `…` gaps), matching a focused file-diff view.
+ */
+export function focusDiffLines(
+  lines: DiffLine[],
+  context = 1,
+): FocusedDiffRow[] {
+  if (lines.length === 0) return [];
+
+  const keep = lines.map((line) => line.kind !== "same");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]!.kind === "same") continue;
+    for (
+      let j = Math.max(0, i - context);
+      j <= Math.min(lines.length - 1, i + context);
+      j++
+    ) {
+      keep[j] = true;
+    }
+  }
+
+  // If everything is unchanged, keep a short peek of the top.
+  if (!keep.some(Boolean)) {
+    return lines.slice(0, Math.min(lines.length, context + 1)).map((line) => ({
+      type: "line" as const,
+      line,
+    }));
+  }
+
+  const out: FocusedDiffRow[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (!keep[i]) {
+      while (i < lines.length && !keep[i]) i += 1;
+      if (i < lines.length && (out.length === 0 || out[out.length - 1]?.type !== "gap")) {
+        out.push({ type: "gap" });
+      }
+      continue;
+    }
+    out.push({ type: "line", line: lines[i]! });
+    i += 1;
+  }
+  return out;
+}

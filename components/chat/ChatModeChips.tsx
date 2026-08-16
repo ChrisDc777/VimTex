@@ -10,23 +10,24 @@ type ChatModeChipsProps = {
 
 /**
  * Cursor-style Ask / Edit composer chips (#129).
- * Plan / agent depth deferred.
+ * Plan is Enhanced-only (removable chip); Basic coerces plan → ask for display.
  */
 export function ChatModeChips({
   mode,
   onChange,
   disabled = false,
 }: ChatModeChipsProps) {
+  const chipMode = mode === "plan" ? "ask" : mode;
   return (
     <div className="vt-chat-mode-chips" role="group" aria-label="Chat mode">
       <button
         type="button"
         className={
-          mode === "ask"
+          chipMode === "ask"
             ? "vt-chat-mode-chips__btn vt-chat-mode-chips__btn--active"
             : "vt-chat-mode-chips__btn"
         }
-        aria-pressed={mode === "ask"}
+        aria-pressed={chipMode === "ask"}
         disabled={disabled}
         onClick={() => onChange("ask")}
         title="Answer only — no note changes"
@@ -36,11 +37,11 @@ export function ChatModeChips({
       <button
         type="button"
         className={
-          mode === "edit"
+          chipMode === "edit"
             ? "vt-chat-mode-chips__btn vt-chat-mode-chips__btn--active"
             : "vt-chat-mode-chips__btn"
         }
-        aria-pressed={mode === "edit"}
+        aria-pressed={chipMode === "edit"}
         disabled={disabled}
         onClick={() => onChange("edit")}
         title="Propose note edits (Confirm / Auto Accept)"

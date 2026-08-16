@@ -87,7 +87,7 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 56 | Outline + TODO scanner |
 | 62 | Grammar/style review |
 | 61 | Citation completion |
-| 60 | AI polish | ✅ closed — usage/stop/regen + room prefs (#112/#116) |
+| 60 | AI polish ✅ (#112/#116 — usage, stop/regen, room prefs) |
 | 83 | Equation-scoped rewrite |
 | 84 | Derivation coach (Forge-friendly) |
 | 87 | Ranged AI patch format |
@@ -116,13 +116,15 @@ See closed milestones on GitHub. Epics [#1](https://github.com/ChrisDc777/VimTex
 | 127 | Indexed metadata store + search (Level D) | ✅ shipped |
 | 128 | Fork-as-new-room + account authorship (Level E) | ✅ fork shipped; authorship remapping deferred → #37/#78 |
 | — | History panel visual redesign (Phase 1) | ✅ Automatic/Manual, day groups, Named-only, visual diff |
-| 130 | Motion library evaluation for panel transitions | P3 |
+| 130 | Motion library evaluation for panel transitions | ✅ adopted (`motion`); Studio Enhanced BEUI uses motion; Basic/Forge stay pre-BEUI trees |
+| — | Studio Enhanced \| Basic experience | ✅ `vimtex:studioExperience`; BEUI under `components/beui/` |
 
 ### Chat polish (backlog)
 
 | # | Issue | Priority |
 |---|-------|----------|
 | 129 | Thin Ask vs Edit mode chips | ✅ shipped |
+| — | Plan mode (Enhanced removable chip) | ✅ shipped (`mode=plan`, no patches) |
 
 ---
 

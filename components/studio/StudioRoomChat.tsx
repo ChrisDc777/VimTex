@@ -1,11 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { DocActionPills } from "@/components/chat/DocActionPills";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { TypingIndicator } from "@/components/presence/TypingIndicator";
-import type { EditorContextSnapshot } from "@/lib/ai-chat-context";
 import { aiFeatureEnabled } from "@/lib/ai-features";
 import {
   DOC_AI_ACTIONS,
@@ -16,39 +16,24 @@ import { buildGrammarReviewInstruction } from "@/lib/grammar-review";
 import { renderNoteDiagnostics } from "@/lib/render-note";
 import { useAiChromePrefs } from "@/lib/use-ai-chrome-prefs";
 import { useRoomChat } from "@/lib/use-room-chat";
-import type { CollabUser, PeerInfo } from "@/lib/types";
-import { useEffect, type MutableRefObject } from "react";
+import { useStudioExperience } from "@/lib/use-studio-experience";
+import { useEffect } from "react";
+import type {
+  StudioAiRunner,
+  StudioRoomChatProps,
+} from "@/components/studio/studio-room-chat-types";
 
-export type StudioAiRunner = {
-  runInstruction: (
-    instruction: string,
-    opts?: {
-      chatText?: string;
-      attachment?: import("@/lib/ai-chat-context").SelectionContextPreview;
-      source?: import("@/lib/ai-review-store").AiEditSource;
-    },
-  ) => Promise<void>;
-  busy: boolean;
-};
+export type { StudioAiRunner, StudioRoomChatProps };
 
-export type StudioRoomChatProps = {
-  /** When false, render nothing (legacy standalone aside). */
-  open?: boolean;
-  /** Render inner panel only — parent supplies sizing chrome (SidePanel). */
-  embedded?: boolean;
-  onClose: () => void;
-  peers: PeerInfo[];
-  selfClientId?: number | null;
-  user: CollabUser;
-  /** Bumps when the room is ready so chat can resubscribe. */
-  chatReady: boolean;
-  /** Live editor snapshot for AI context (#57). */
-  getEditorContext?: () => EditorContextSnapshot | null;
-  /** Shell binds selection actions (#28) without lifting chat state. */
-  aiRunnerRef?: MutableRefObject<StudioAiRunner | null>;
-};
+const EnhancedStudioRoomChat = dynamic(
+  () =>
+    import("@/components/studio/enhanced/EnhancedStudioRoomChat").then((m) => ({
+      default: m.EnhancedStudioRoomChat,
+    })),
+  { ssr: false },
+);
 
-export function StudioRoomChat({
+function BasicStudioRoomChat({
   open = true,
   embedded = false,
   onClose,
@@ -209,7 +194,7 @@ export function StudioRoomChat({
   );
 
   if (embedded) {
-    return <div className="flex h-full min-h-0 flex-col">{panel}</div>;
+    return <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-clip">{panel}</div>;
   }
 
   return (
@@ -220,4 +205,10 @@ export function StudioRoomChat({
       {panel}
     </aside>
   );
+}
+
+export function StudioRoomChat(props: StudioRoomChatProps) {
+  const { isEnhanced } = useStudioExperience();
+  if (isEnhanced) return <EnhancedStudioRoomChat {...props} />;
+  return <BasicStudioRoomChat {...props} />;
 }

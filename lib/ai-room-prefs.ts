@@ -5,18 +5,18 @@
  * Kept free of path-alias imports so node:test can load this module.
  */
 
-/** Composer Ask / Edit chip (#129). Plan deferred. */
-export type AiChatMode = "ask" | "edit";
+/** Composer Ask / Edit / Plan (#129 + Enhanced Studio). */
+export type AiChatMode = "ask" | "edit" | "plan";
 
-export const AI_CHAT_MODES = ["ask", "edit"] as const;
+export const AI_CHAT_MODES = ["ask", "edit", "plan"] as const;
 
 export type AiRoomPrefs = {
   model?: string;
   /** 0–1 sampling temperature. Omitted → server default. */
   temperature?: number;
   /**
-   * Ask = chat-only (no patches). Edit = today's Confirm Accept patch path.
-   * Default Edit so existing rooms keep mutating behavior.
+   * Ask = chat-only (no patches). Edit = Confirm Accept patch path (default).
+   * Plan = outline steps only (no patches; no fabricated tool traces).
    */
   chatMode?: AiChatMode;
 };
@@ -54,7 +54,9 @@ function sanitizeModel(raw: unknown): string | undefined {
 }
 
 export function normalizeAiChatMode(value: unknown): AiChatMode | undefined {
-  return value === "ask" || value === "edit" ? value : undefined;
+  return value === "ask" || value === "edit" || value === "plan"
+    ? value
+    : undefined;
 }
 
 export const DEFAULT_AI_CHAT_MODE: AiChatMode = "edit";

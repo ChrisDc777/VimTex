@@ -71,6 +71,13 @@
 
   --background: var(--canvas);
   --foreground: var(--ink);
+  /* Semantic aliases for utility classes (Forge-safe; Enhanced Studio remaps) */
+  --border: var(--hairline-strong);
+  --muted: var(--canvas-mid);
+  --muted-foreground: var(--mute);
+  --primary-foreground: var(--on-primary);
+  --ring: var(--focus);
+  --card: var(--canvas-elevated);
 }
 
 @theme inline {
@@ -95,6 +102,13 @@
   --color-error: var(--error);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* BEUI / shadcn-style semantic utilities (Studio Enhanced maps under .ui-studio) */
+  --color-border: var(--border, var(--hairline-strong));
+  --color-muted: var(--muted, var(--canvas-mid));
+  --color-muted-foreground: var(--muted-foreground, var(--mute));
+  --color-primary-foreground: var(--primary-foreground, var(--on-primary));
+  --color-ring: var(--ring, var(--focus));
+  --color-card: var(--card, var(--canvas-elevated));
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   --radius-sm: var(--radius-sm);
@@ -113,6 +127,7 @@ body {
 
 html {
   color-scheme: dark;
+  overflow-x: clip;
 }
 
 body {
@@ -121,6 +136,7 @@ body {
   font-family: var(--font-geist), "Geist", ui-sans-serif, sans-serif;
   background-color: var(--canvas);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
 }
 
 /* App shell: respect notches / home indicator */
@@ -183,6 +199,8 @@ body {
 @media (min-width: 768px) {
   .vt-pane-sized {
     width: var(--pane-width);
+    max-width: var(--pane-width);
+    min-width: 0;
   }
 }
 
@@ -2178,6 +2196,7 @@ body[data-pane-resizing] * {
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px;
@@ -2188,6 +2207,7 @@ body[data-pane-resizing] * {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   max-width: 88%;
   margin-bottom: 12px;
 }
@@ -2199,12 +2219,14 @@ body[data-pane-resizing] * {
 .vt-chat-block--self {
   align-self: flex-end;
   align-items: flex-end;
+  width: fit-content;
 }
 
 .vt-chat-block--other,
 .vt-chat-block--ai {
   align-self: flex-start;
   align-items: flex-start;
+  width: 100%;
 }
 
 .vt-chat-block__meta {
@@ -2279,6 +2301,8 @@ body[data-pane-resizing] * {
   flex-direction: column;
   gap: 4px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .vt-chat-block--self .vt-chat-block__messages {
@@ -2294,7 +2318,13 @@ body[data-pane-resizing] * {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   max-width: 100%;
+}
+
+.vt-chat-block--ai .vt-chat-msg,
+.vt-chat-block--other .vt-chat-msg {
+  width: 100%;
 }
 
 .vt-chat-msg__bubble {

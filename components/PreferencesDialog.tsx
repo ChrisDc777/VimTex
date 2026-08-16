@@ -38,6 +38,11 @@ import {
   type HistoryIntervalMinutes,
   type HistoryPrefs,
 } from "@/lib/history-prefs";
+import {
+  STUDIO_EXPERIENCES,
+  studioExperienceLabel,
+} from "@/lib/studio-experience-prefs";
+import { useStudioExperience } from "@/lib/use-studio-experience";
 
 type PrefSection = "editor" | "workspace" | "ai";
 
@@ -52,6 +57,10 @@ type PreferencesDialogProps = {
   onUiVariantChange: (variant: UiVariant) => void;
   /** Show AI review prefs (Studio). Forge stays suggest-only. */
   showAiReviewPrefs?: boolean;
+  /** Dialog overlay (default) or inner panel for BEUI drawer. */
+  surface?: "dialog" | "panel";
+  /** Studio-only: Enhanced | Basic experience toggle. */
+  showStudioExperience?: boolean;
 };
 
 function Segment<T extends string>({
@@ -194,11 +203,14 @@ export function PreferencesDialog({
   uiVariant,
   onUiVariantChange,
   showAiReviewPrefs = false,
+  surface = "dialog",
+  showStudioExperience = false,
 }: PreferencesDialogProps) {
   const titleId = useId();
   const review = useAiReviewOptional();
   const chrome = useAiChromePrefs();
   const workspace = useWorkspace();
+  const { experience, setExperience } = useStudioExperience();
   const roomId = workspace?.roomId ?? null;
   const [section, setSection] = useState<PrefSection>("editor");
   const [temperature, setTemperature] = useState<AiTemperaturePreset>(
@@ -263,8 +275,6 @@ export function PreferencesDialog({
     if (section === "ai" && !showAiReviewPrefs) setSection("editor");
   }, [open, section, showAiReviewPrefs]);
 
-  if (!open) return null;
-
   const applyEditorMode = (mode: EditorMode) => {
     saveEditorMode(mode);
     onEditorModeChange(mode);
@@ -286,45 +296,53 @@ export function PreferencesDialog({
         { id: "workspace", label: "Workspace" },
       ];
 
-  return (
-    <div
-      className="vt-overlay fixed inset-0 z-50 flex items-end justify-center bg-canvas/80 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-sm sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onPointerDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="vt-dialog vt-elevated vt-prefs-dialog w-full max-w-lg rounded-[var(--radius-sm)]"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <div className="vt-prefs-dialog__header">
-          <p id={titleId} className="vt-caption text-ink">
-            Preferences
-          </p>
-          <div className="vt-segment vt-prefs-dialog__nav" role="tablist" aria-label="Preference sections">
-            {sections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={section === s.id}
-                onClick={() => setSection(s.id)}
-                className={
-                  section === s.id
-                    ? "vt-segment__btn vt-segment__btn--active"
-                    : "vt-segment__btn"
-                }
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
+  if (!open) return null;
 
-        <div className="vt-prefs-dialog__body" role="tabpanel">
+  const panel = (
+    <div
+      className={
+        surface === "panel"
+          ? "vt-prefs-dialog vt-prefs-dialog--panel flex h-full min-h-0 flex-col"
+          : "vt-dialog vt-elevated vt-prefs-dialog w-full max-w-lg rounded-[var(--radius-sm)]"
+      }
+      onPointerDown={surface === "panel" ? undefined : (e) => e.stopPropagation()}
+    >
+      <div className="vt-prefs-dialog__header">
+        <p id={titleId} className="vt-caption text-ink">
+          Preferences
+        </p>
+        <div
+          className="vt-segment vt-prefs-dialog__nav"
+          role="tablist"
+          aria-label="Preference sections"
+        >
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={section === s.id}
+              onClick={() => setSection(s.id)}
+              className={
+                section === s.id
+                  ? "vt-segment__btn vt-segment__btn--active"
+                  : "vt-segment__btn"
+              }
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div
+        className={
+          surface === "panel"
+            ? "vt-prefs-dialog__body min-h-0 flex-1 overflow-y-auto"
+            : "vt-prefs-dialog__body"
+        }
+        role="tabpanel"
+      >
           {section === "editor" ? (
             <div className="space-y-5">
               <PrefRow
@@ -377,6 +395,23 @@ export function PreferencesDialog({
                   onChange={applyUiVariant}
                 />
               </PrefRow>
+
+              {showStudioExperience ? (
+                <PrefRow
+                  title="Studio experience"
+                  description="Basic keeps the simple, pre-BEUI interface"
+                >
+                  <Segment
+                    label="Studio experience"
+                    options={STUDIO_EXPERIENCES.map((value) => ({
+                      value,
+                      label: studioExperienceLabel(value),
+                    }))}
+                    value={experience}
+                    onChange={setExperience}
+                  />
+                </PrefRow>
+              ) : null}
 
               <PrefRow
                 title="Version checkpoints"
@@ -696,16 +731,33 @@ export function PreferencesDialog({
           ) : null}
         </div>
 
-        <div className="vt-prefs-dialog__footer">
-          <button
-            type="button"
-            onClick={onClose}
-            className="vt-pill vt-pill--solid vt-pill--label min-w-[7.5rem]"
-          >
-            Done
-          </button>
-        </div>
+      <div className="vt-prefs-dialog__footer">
+        <button
+          type="button"
+          onClick={onClose}
+          className="vt-pill vt-pill--solid vt-pill--label min-w-[7.5rem]"
+        >
+          Done
+        </button>
       </div>
+    </div>
+  );
+
+  if (surface === "panel") {
+    return panel;
+  }
+
+  return (
+    <div
+      className="vt-overlay fixed inset-0 z-50 flex items-end justify-center bg-canvas/80 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {panel}
     </div>
   );
 }

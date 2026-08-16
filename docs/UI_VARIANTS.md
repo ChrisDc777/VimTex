@@ -10,15 +10,27 @@
 
 ```ts
 type UiVariant = "studio" | "forge";
+type StudioExperience = "enhanced" | "basic";
 
 interface WorkspacePreferences {
-  uiVariant: UiVariant;           // persisted localStorage "vimtex:uiVariant"
-  editorMode: "vim" | "standard"; // persisted "vimtex:editorMode"
-  relativeLineNumbers: boolean;   // persisted "vimtex:relativeLineNumbers"
+  uiVariant: UiVariant;                 // localStorage "vimtex:uiVariant"
+  studioExperience: StudioExperience;   // localStorage "vimtex:studioExperience" (Studio only)
+  editorMode: "vim" | "standard";       // "vimtex:editorMode"
+  relativeLineNumbers: boolean;         // "vimtex:relativeLineNumbers"
 }
 ```
 
 Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-variant.ts`).
+
+**Shell vs experience vs motion**
+
+| Concern | What it controls | Persistence |
+|---------|------------------|-------------|
+| **Shell** (`studio` \| `forge`) | Layout, chrome, Forge tabs / Studio session URL | `vimtex:uiVariant` |
+| **Studio experience** (`enhanced` \| `basic`) | Component trees: BEUI Enhanced vs pre-BEUI Basic | `vimtex:studioExperience` (Studio only; Forge ignored) |
+| **`prefers-reduced-motion`** | Accessibility: shorten/disable animations inside whichever tree is active | OS / browser |
+
+Basic is **not** “Enhanced with animation off.” It renders the shipped pre-BEUI composer, dialogs, palette, AI diff, and message actions. Enhanced still honors reduced motion.
 
 ## Shell responsibilities
 
@@ -27,9 +39,11 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 - Header: brand, Share, Outline, **History**, Chat, Live/Split toggle
 - Side rail + mobile bottom tabs; command palette (Ctrl/Cmd+K)
 - Split Live / Split preview (`ViewToggle`)
-- Name picker on first visit; Preferences dialog
+- Name picker on first visit; Preferences (dialog in Basic, BEUI Drawer in Enhanced)
 - Status bar: vim mode, collab status, peers, editable name
 - Tokens scoped under `.ui-studio` (`app/studio-theme.css`): near-black canvas, sunset/breeze atmosphere, outline pill controls
+- **Experience default Enhanced:** vendored BEUI under `components/beui/` + adapters in `components/studio/enhanced/` (Prompt Input + Ask/Plan chips, Action Swap, Thinking Shimmer, File Diff, Streaming Response, Command Palette, Drawer)
+- **Basic fallback:** Preferences → Workspace → Studio experience: Basic — same room data, pre-BEUI trees
 
 ### Forge (`forge`)
 
@@ -40,6 +54,7 @@ Legacy `classic`/`quietCraft` localStorage values are migrated on load (`lib/ui-
 - Resizable panes, persisted widths
 - Preferences dialog (Editor keys, relative line numbers, Workspace style)
 - Base `:root` tokens in `app/globals.css`: mineral surfaces, stepped dark neutrals
+- **Always Basic UI** for this slice — does not import BEUI / Enhanced adapters
 
 ## Differentiation policy
 
@@ -95,8 +110,9 @@ features must stay distinct; only shared plumbing converges.
 ## Toggle UX
 
 - **Preferences dialog:** “Workspace style: Studio | Forge” (both shells)
-- First visit: stay on Studio; switch is non-blocking
-- Persist `vimtex:uiVariant`
+- **Studio only:** “Studio experience: Enhanced | Basic” (helper: Basic keeps the simple, pre-BEUI interface)
+- First visit: stay on Studio + Enhanced; switches are non-blocking
+- Persist `vimtex:uiVariant` and (Studio) `vimtex:studioExperience`
 
 ## Test matrix
 

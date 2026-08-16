@@ -123,12 +123,12 @@ land and expose stable hunk ranges — see Wave D.
 
 The items below were brainstormed during the Wave B/C sprint and are explicitly **not** in M3/M4. File issues or add to M5 when the time comes.
 
-### Cursor-style Ask / Edit chips
-Composer mode chips (Ask / Edit) — analogous to Cursor's agent-mode picker. **Shipped (#129).**
-- **Ask** = chat-only; system prompt forbids `@@@PATCH` / `@@@DOCUMENT`; client strips accidental markers.
-- **Edit** = today's Confirm Accept / Auto patch path via `AiReviewStore`.
-- **Plan** = deferred (full agent depth later).
-Mode is persisted per-room in `ai-room-prefs.ts` (`chatMode`). Default **Edit** so existing rooms keep mutating behavior. Explicit rewrite runners (doc pills / selection) still use Edit for that turn while Ask is selected.
+### Cursor-style Ask / Edit / Plan
+Composer modes — analogous to Cursor's agent-mode picker.
+- **Edit** = implicit default (no chip in Enhanced). Confirm Accept / Auto patch path via `AiReviewStore`. **Shipped (#129).**
+- **Ask** = chat-only; system prompt forbids `@@@PATCH` / `@@@DOCUMENT`; client strips accidental markers. Basic: Ask/Edit chips. Enhanced: `+` → removable Ask chip.
+- **Plan** = outline numbered steps only; API `mode=plan`; no patches and no fabricated tool traces. Enhanced: `+` → removable Plan chip; dismiss returns to Edit.
+Mode is persisted per-room in `ai-room-prefs.ts` (`chatMode`). Explicit rewrite runners (doc pills / selection) still force Edit for that turn.
 
 ### Slash-command preferences (action bar toggles)
 - Let users toggle individual selection-action-bar entries on/off in Preferences → AI.

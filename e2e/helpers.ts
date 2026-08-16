@@ -13,20 +13,30 @@ export async function prepareApp(
     editorMode?: "vim" | "standard";
     /** Seed onboarding as already seen (default: true). */
     onboardingSeen?: boolean;
+    /** Studio Enhanced | Basic experience (default: enhanced). */
+    studioExperience?: "enhanced" | "basic";
   } = {},
 ) {
   const variant = opts.variant ?? "studio";
   const displayName = opts.displayName;
   const editorMode = opts.editorMode;
   const onboardingSeen = opts.onboardingSeen ?? true;
+  const studioExperience = opts.studioExperience ?? "enhanced";
   await page.addInitScript(
-    ({ variant: v, displayName: name, editorMode: mode, onboardingSeen: seen }) => {
+    ({
+      variant: v,
+      displayName: name,
+      editorMode: mode,
+      onboardingSeen: seen,
+      studioExperience: experience,
+    }) => {
       if (document.cookie.includes("vimtex_test_cleared=1")) return;
       document.cookie = "vimtex_test_cleared=1; path=/; SameSite=Lax";
       try {
         localStorage.clear();
         sessionStorage.clear();
         localStorage.setItem("vimtex:uiVariant", v);
+        localStorage.setItem("vimtex:studioExperience", experience);
         if (name) localStorage.setItem("vimtex:displayName", name);
         if (seen) localStorage.setItem("vimtex:onboardingSeen", "1");
         if (mode) localStorage.setItem("vimtex:editorMode", mode);
@@ -34,17 +44,24 @@ export async function prepareApp(
         /* ignore */
       }
     },
-    { variant, displayName, editorMode, onboardingSeen },
+    { variant, displayName, editorMode, onboardingSeen, studioExperience },
   );
 }
 
 export async function joinStudioRoom(
   page: Page,
-  opts: { room?: string; name?: string } = {},
+  opts: {
+    room?: string;
+    name?: string;
+    studioExperience?: "enhanced" | "basic";
+  } = {},
 ) {
   const room = opts.room ?? `studio-${Date.now().toString(16)}`;
   const name = opts.name ?? "Tester";
-  await prepareApp(page, { variant: "studio" });
+  await prepareApp(page, {
+    variant: "studio",
+    studioExperience: opts.studioExperience,
+  });
   await page.goto(`/?room=${room}`, { waitUntil: "domcontentloaded" });
 
   const dialog = page.getByRole("dialog", { name: /display name/i });

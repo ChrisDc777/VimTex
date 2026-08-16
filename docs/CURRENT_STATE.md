@@ -9,7 +9,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Trust | Doc |
 |-------|-----|
 | Shipped vs not | This file |
-| Next work | History Phase 2 (editor time-travel); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36); motion eval [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
+| Next work | History Phase 2 (editor time-travel); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36) |
 | History internals | [`HISTORY.md`](./HISTORY.md) |
 | AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
 | Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M4 complete; M3 Level A largely shipped |
@@ -21,10 +21,12 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 |-------|----------------|
 | Version history shipped (Level A–E) | [`docs/HISTORY.md`](./HISTORY.md), `components/RoomHistoryPanel.tsx` |
 | History panel redesign (Phase 1) | ✅ Docs/Notion rail — Automatic/Manual, day groups, Named-only, visual diff vs live |
-| Chat polish backlog (Ask/Edit chips) | ✅ shipped (#129); Plan deferred |
+| Studio experience (Enhanced \| Basic) | ✅ BEUI Enhanced default; Basic = pre-BEUI trees; Forge always Basic — [`UI_VARIANTS.md`](./UI_VARIANTS.md) |
+| BEUI registry vendor | ✅ `components/beui/` (MIT); adapters under `components/studio/enhanced/` |
+| AI polish (#60) | ✅ closed — usage/stop/regen + room prefs (#112/#116) |
+| Chat modes Ask / Edit / Plan | ✅ Ask/Edit (#129); Plan = Enhanced removable chip + `mode=plan` (no patches) |
 | History backlog | Level D/E shipped (#127/#128); authorship remap → #37/#78 |
 | M4 import/export + polish | ✅ complete — epic [#30](https://github.com/ChrisDc777/VimTex/issues/30) closed |
-| Motion library (only if shared-element UI needs it) | [#130](https://github.com/ChrisDc777/VimTex/issues/130) |
 | Full issue index | [`docs/GITHUB_ISSUES.md`](./GITHUB_ISSUES.md) |
 | AI / M3 status | [`docs/AI_ROADMAP.md`](./AI_ROADMAP.md) |
 
@@ -34,11 +36,13 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 Pull origin/main. Read docs/CURRENT_STATE.md first (doc authority + handoff),
 then docs/HISTORY.md and components/RoomHistoryPanel.tsx.
 
-M4 is complete (#30/#31/#32/#33/#79 closed). History Phase 1 redesign shipped
-(Automatic/Manual checkpoints, day-grouped timeline, visual diff). AI polish
-#60 closed (usage/stop/regen/room prefs). Do not rebuild Level A–E basics or
-M3 Wave A–D Level A. Next product work is optional History Phase 2 (editor
-time-travel overlay) or M5 gates #35/#36.
+M4 is complete (#30/#31/#32/#33/#79 closed). History Phase 1 redesign shipped.
+AI polish #60 closed. Studio defaults to Enhanced (vendored BEUI under
+components/beui/ + studio/enhanced adapters); Preferences → Workspace →
+Studio experience: Basic restores the pre-BEUI chat/chrome trees. Forge
+stays Basic (no BEUI imports). Edit is the implicit AI default; Enhanced +
+menu adds removable Ask or Plan chips. prefers-reduced-motion is independent
+of Basic. Next: History Phase 2 or M5 gates #35/#36.
 
 If ROADMAP.md, AI_PROVIDERS.md, or scripts/issue-backlog.json disagree with
 CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
@@ -58,7 +62,8 @@ Browser                    Node (server.mjs :3001)
 
 - **Single route:** `/` + room APIs under `/api/rooms/...` + `POST /api/chat`
 - **UI default:** Studio (`.ui-studio` + `app/studio-theme.css`)
-- **Optional:** Forge via `localStorage` `vimtex:uiVariant`
+- **Studio experience:** `localStorage` `vimtex:studioExperience` = `enhanced` (default) \| `basic`
+- **Optional shell:** Forge via `localStorage` `vimtex:uiVariant` (always Basic UI)
 - **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets — both shells
 - **Guest ACL:** mint `editSecret` on room **create**; WS requires `edit` or `view` once ACL is on (see `docs/RFC-collab-persistence.md`)
 - **Editor:** CodeMirror 6 + Replit Vim + y-codemirror.next + Y.UndoManager; Vim/Standard modes
@@ -80,7 +85,8 @@ Browser                    Node (server.mjs :3001)
 | Presence / typing | ✅ | awareness, #22 |
 | Studio Split / Live preview | ✅ | `ViewToggle.tsx`, `lib/studio-layout.ts` |
 | Forge editor tabs + panels | ✅ | `EditorTabBar.tsx`, `SidePanel.tsx` |
-| Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, Ask/Edit chips (#129), `ChatMessageList`, `api/chat/route.ts` |
+| Room chat + @vimothy (shared message list) | ✅ | `useRoomChat`, Ask/Edit/Plan modes, `ChatMessageList` / Enhanced adapters, `api/chat/route.ts` |
+| Studio Enhanced (BEUI) | ✅ | `components/beui/`, `components/studio/enhanced/`, `lib/studio-experience-prefs.ts` |
 | Share copy + capability links | ✅ | `ShareRoom.tsx` |
 | Vim / Standard keys | ✅ | `lib/editor-mode.ts` |
 | Onboarding + cheatsheet | ✅ | Onboarding / VimCheatsheet dialogs |

@@ -136,6 +136,7 @@ function parseBody(body: ChatRequestBody): {
   history: AiHistoryMessage[];
   coach?: boolean;
   ask?: boolean;
+  plan?: boolean;
   temperature?: number;
   diagnostics?: string;
   outline?: string;
@@ -269,6 +270,7 @@ function parseBody(body: ChatRequestBody): {
     coach:
       body.mode === "coach" || isDerivationCoachInstruction(instruction),
     ask: body.mode === "ask",
+    plan: body.mode === "plan",
     temperature:
       normalizeAiTemperature(body.temperature) ?? DEFAULT_AI_TEMPERATURE,
     diagnostics: parseOptionalString(body.diagnostics, MAX_DIAGNOSTICS_CHARS),
@@ -308,6 +310,7 @@ export async function POST(req: Request) {
     history,
     coach,
     ask,
+    plan,
     temperature = DEFAULT_AI_TEMPERATURE,
     diagnostics,
     outline,
@@ -332,7 +335,8 @@ export async function POST(req: Request) {
     outline,
     citations,
     coach: Boolean(coach),
-    ask: Boolean(ask) && !coach,
+    plan: Boolean(plan) && !coach,
+    ask: Boolean(ask) && !coach && !plan,
   });
 
   const messages = [
