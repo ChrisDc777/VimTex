@@ -146,6 +146,7 @@ export function MorphPopoverTrigger({ children }: MorphPopoverTriggerProps) {
   const ctx = useMorphContext("MorphPopoverTrigger");
   if (!isValidElement(children)) return children;
 
+  const { triggerRef, toggle, open, triggerId, contentId } = ctx;
   const child = children as ReactElement<Record<string, unknown>>;
   const childOnClick = child.props.onClick as
     | ((e: unknown) => void)
@@ -153,17 +154,17 @@ export function MorphPopoverTrigger({ children }: MorphPopoverTriggerProps) {
   const childRef = (child.props as { ref?: Ref<HTMLElement> }).ref;
 
   return cloneElement(child, {
-    id: ctx.triggerId,
+    id: triggerId,
     ref: mergeRefs(childRef, (node: HTMLElement | null) => {
-      ctx.triggerRef.current = node;
+      triggerRef.current = node;
     }),
     onClick: (e: unknown) => {
       childOnClick?.(e);
-      ctx.toggle();
+      toggle();
     },
     "aria-haspopup": "dialog",
-    "aria-expanded": ctx.open,
-    "aria-controls": ctx.open ? ctx.contentId : undefined,
+    "aria-expanded": open,
+    "aria-controls": open ? contentId : undefined,
   });
 }
 
