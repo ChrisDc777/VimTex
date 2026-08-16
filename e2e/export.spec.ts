@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { joinStudioRoom } from "./helpers";
+import { joinStudioRoom, openImportExportMenu } from "./helpers";
 
 test.describe("M4 PDF export (#32)", () => {
-  test("Studio menu Export as PDF opens the print dialog", async ({ page }) => {
+  test("Studio Import & Export PDF opens the print dialog", async ({ page }) => {
     await joinStudioRoom(page);
 
     await page.evaluate(() => {
@@ -12,10 +12,8 @@ test.describe("M4 PDF export (#32)", () => {
       };
     });
 
-    await page.getByRole("button", { name: /^room menu$/i }).click();
-    const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
-    await menu.getByRole("menuitem", { name: /export as pdf/i }).click();
+    const menu = await openImportExportMenu(page);
+    await menu.getByRole("menuitem", { name: /^pdf\b/i }).click();
 
     await expect
       .poll(async () =>

@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { editorDocText, joinStudioRoom, openForge } from "./helpers";
+import {
+  editorDocText,
+  joinStudioRoom,
+  openForge,
+  openImportExportMenu,
+} from "./helpers";
 
 const MD_BODY = "Imported heading\n\nSee $x^2$ and \\(y\\).\n";
 const TEX_DOC = [
@@ -11,18 +16,15 @@ const TEX_DOC = [
 ].join("\n");
 
 test.describe("M4 note import (#31)", () => {
-  test("Studio menu imports a Markdown file into the buffer", async ({
+  test("Studio Import & Export imports a Markdown file into the buffer", async ({
     page,
   }) => {
     await joinStudioRoom(page);
 
-    await page.getByRole("button", { name: /^room menu$/i }).click();
-    const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
-
+    const menu = await openImportExportMenu(page);
     const [chooser] = await Promise.all([
       page.waitForEvent("filechooser"),
-      menu.getByRole("menuitem", { name: /import file/i }).click(),
+      menu.getByRole("menuitem", { name: /^import\b/i }).click(),
     ]);
     await chooser.setFiles({
       name: "notes.md",
@@ -30,7 +32,9 @@ test.describe("M4 note import (#31)", () => {
       buffer: Buffer.from(MD_BODY, "utf8"),
     });
 
-    await expect(page.getByText(/imported notes\.md \(converted \$ math\)/i)).toBeVisible({
+    await expect(
+      page.getByText(/imported notes\.md \(converted \$ math\)/i),
+    ).toBeVisible({
       timeout: 8_000,
     });
     const doc = await editorDocText(page);
