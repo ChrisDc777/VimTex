@@ -14,6 +14,7 @@ const {
   listSnapshots,
   createSnapshot,
   logSnapshotEvent,
+  restoreLiveCodemirror,
 } = require("../../../../../../scripts/y-ws/room-snapshots.js") as {
   readSnapshotUpdate: (roomId: string, id: string) => Uint8Array | null;
   readSnapshotText: (roomId: string, id: string) => string | null;
@@ -35,6 +36,7 @@ const {
     action: string,
     fields: Record<string, unknown>,
   ) => void;
+  restoreLiveCodemirror: (roomId: string, text: string) => string;
 };
 const {
   parseSnapshotCredentials,
@@ -176,6 +178,8 @@ export async function POST(req: Request, context: RouteContext) {
   const restoredText = snapshotDoc.getText("codemirror").toString();
   snapshotDoc.destroy();
 
+  restoreLiveCodemirror(roomId, restoredText);
+
   const restoredMeta = findSnapshotMeta(roomId, snapId);
   logSnapshotEvent("restore", {
     roomId,
@@ -190,6 +194,7 @@ export async function POST(req: Request, context: RouteContext) {
     ok: true,
     text: restoredText,
     length: restoredText.length,
+    applied: true,
   });
 }
 

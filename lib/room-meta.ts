@@ -1,5 +1,8 @@
 /** Client helpers for room password + TTL metadata (#24). */
 
+import { loadEditSecret } from "@/lib/room-auth";
+import { ROOM_HEADERS } from "@/lib/collab-contract";
+
 export type RoomMetaPublic = {
   roomId: string;
   requiresPassword: boolean;
@@ -8,6 +11,8 @@ export type RoomMetaPublic = {
   expiresAt: number | null;
   expired: boolean;
   createdAt?: number | null;
+  /** Cloudflare public beta rejects "never"; Node still allows it. */
+  ttlNeverAllowed?: boolean;
 };
 
 export type RoomTtlPreset = "never" | "1h" | "24h" | "7d" | "30d";
@@ -19,6 +24,18 @@ export const ROOM_TTL_OPTIONS: Array<{ value: RoomTtlPreset; label: string }> = 
   { value: "7d", label: "7 days" },
   { value: "30d", label: "30 days" },
 ];
+
+export function roomTtlOptions(meta?: RoomMetaPublic | null): Array<{
+  value: RoomTtlPreset;
+  label: string;
+}> {
+  const hideNever =
+    process.env.NEXT_PUBLIC_HIDE_TTL_NEVER === "1" ||
+    meta?.ttlNeverAllowed === false;
+  return hideNever
+    ? ROOM_TTL_OPTIONS.filter((opt) => opt.value !== "never")
+    : ROOM_TTL_OPTIONS;
+}
 
 function authStorageKey(roomId: string): string {
   return `vimtex:roomAuth:${roomId}`;
@@ -91,9 +108,16 @@ export async function patchRoomMeta(
     ttl?: RoomTtlPreset;
   },
 ): Promise<RoomMetaPublic & { authToken?: string }> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  const edit = loadEditSecret(roomId);
+  const auth = loadRoomAuthToken(roomId);
+  if (edit) headers[ROOM_HEADERS.edit] = edit;
+  if (auth) headers[ROOM_HEADERS.auth] = auth;
   const res = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/meta`, {
     method: "PATCH",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify(patch),
   });
   const body = (await res.json().catch(() => null)) as

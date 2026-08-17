@@ -11,7 +11,7 @@ Phased design for VimTex version history (checkpoints of the shared note text).
 | API | `GET/POST /api/rooms/:id/snapshots` (`?q=&limit=&offset=`), `GET/POST/PATCH/DELETE …/:snapId`, `POST …/:snapId/diff`, `POST …/:snapId/fork` |
 | Auth | `scripts/y-ws/snapshot-access.js` — view token (read), edit secret (write), auth token (password rooms) |
 | Client | `lib/room-snapshots.ts`, `components/RoomHistoryPanel.tsx`, `lib/use-room-autosnapshots.ts` |
-| Restore | API returns note text; client applies via `WorkspaceController.restoreSnapshotText` |
+| Restore | Server replaces live `codemirror` (chat preserved), persists, broadcasts; `applied: true` in the JSON. Client skips a second local apply when connected. |
 | Diff | `lib/text-diff.ts` line diff (client preview compare vs live) |
 | AI Pre-AI | `lib/ai-accept-snapshot.ts` — optional checkpoint on Confirm Accept (#89) |
 | Autosnap | **Automatic** checkpoint mode: idle (45s after last **local** edit) + optional interval; **Manual** mode skips autosnaps (named saves only). Live Yjs sync always continues. Prefs: History header + Preferences → Workspace (`lib/history-prefs.ts`) |

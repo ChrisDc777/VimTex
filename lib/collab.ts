@@ -167,19 +167,30 @@ export function writeRoomToLocation(
     clearViewToken?: boolean;
     clearEditSecret?: boolean;
     editSecret?: string | null;
+    viewToken?: string | null;
   },
 ): void {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.searchParams.set("room", room);
+  url.searchParams.delete("view");
+  url.searchParams.delete("edit");
+  const hash = new URLSearchParams(
+    url.hash.startsWith("#") ? url.hash.slice(1) : url.hash,
+  );
   if (opts?.clearViewToken) {
-    url.searchParams.delete("view");
+    hash.delete("view");
   }
   if (opts?.clearEditSecret) {
-    url.searchParams.delete("edit");
+    hash.delete("edit");
   } else if (opts?.editSecret) {
-    url.searchParams.set("edit", opts.editSecret);
-    url.searchParams.delete("view");
+    hash.set("edit", opts.editSecret);
+    hash.delete("view");
   }
+  if (opts?.viewToken) {
+    hash.set("view", opts.viewToken);
+    hash.delete("edit");
+  }
+  url.hash = hash.toString();
   window.history.replaceState({}, "", url.toString());
 }

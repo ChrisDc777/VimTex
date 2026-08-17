@@ -22,6 +22,7 @@ const eslintConfig = defineConfig([
     "scripts/y-ws/**",
     "scripts/bug-hunt*.mjs",
     "scripts/probe-*.mjs",
+    "workers/**",
   ]),
 ]);
 

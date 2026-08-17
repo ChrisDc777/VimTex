@@ -7,6 +7,38 @@ This document explains **how VimTex is layered for deployment**, what can be swa
 
 ---
 
+## Public beta split deploy (selected)
+
+**Milestone:** [Cloudflare public beta](https://github.com/chrisdco/VimTex/milestone/7) · umbrella [#154](https://github.com/chrisdco/VimTex/issues/154)
+
+```text
+Browser ──UI + same-origin /api/rooms rewrite──► Vercel (Next.js, /api/chat)
+Browser ──Yjs WebSocket─────────────────────────► Cloudflare Worker
+Vercel  ──rewrite /api/rooms/:path*─────────────► Worker ──► Room Durable Object (SQLite)
+```
+
+| Host | Owns |
+|------|------|
+| **Vercel** | Next 16, Studio/Forge, static assets, `POST /api/chat` |
+| **Cloudflare** | `workers/collab/` — one SQLite Durable Object per room: Yjs, presence, ACL, password/TTL, history |
+| **Node (`server.mjs`)** | Local/fallback only until CF is proven. Do **not** fail over at runtime (split-brain). |
+
+**Non-goals for this beta:** R2, KV, D1, Queues, Redis, Hocuspocus, PartyKit, OpenNext, `y-crossws` / `y-durableobjects`. Snapshots live in DO SQLite (no billing-gated R2).
+
+**Wiring:** server-only `ROOM_SERVICE_ORIGIN` `beforeFiles` rewrite of `/api/rooms/:path*`. Browser REST stays same-origin. `NEXT_PUBLIC_COLLAB_WS_URL` is the only direct cross-origin connection.
+
+**Public-beta lifetime:** new Cloudflare rooms expire in **30 days** (renewable up to 30 days). `ttl=never` is rejected on CF and hidden in the UI when `NEXT_PUBLIC_HIDE_TTL_NEVER=1`. Local Node still allows “never”.
+
+**Secrets:** `ROOM_SECRET` required on the Worker (fail closed). `TURNSTILE_SECRET_KEY` only on Cloudflare; `AI_ADMISSION_SECRET` on Vercel + Worker; `NEXT_PUBLIC_TURNSTILE_SITE_KEY` on Vercel.
+
+**Local:** `npm run dev` / `npm start` = Node full stack. `npm run dev:cf` = Wrangler `:8787` + `next dev :3000` with rewrite + WS URL. Staging and production use **separate Durable Object namespaces**.
+
+**Cutover:** new rooms on Cloudflare only. Old Node room links are not migrated. Export any local document you need to keep.
+
+Re-evaluate **OpenNext / all-in Cloudflare** only after the room Worker is stable ([#162](https://github.com/chrisdco/VimTex/issues/162)) — not as part of this launch.
+
+---
+
 ## Summary
 
 VimTex is a **modular frontend around a monolithic collab backend** — a deliberate tradeoff for shipping at hobby/small-team scale.

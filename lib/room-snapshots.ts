@@ -233,7 +233,7 @@ export async function restoreRoomSnapshot(
     checkpointCurrent?: boolean;
     currentText?: string;
   },
-): Promise<{ text: string }> {
+): Promise<{ text: string; applied: boolean }> {
   const res = await fetch(
     `/api/rooms/${encodeURIComponent(roomId)}/snapshots/${encodeURIComponent(snapId)}`,
     {
@@ -252,6 +252,7 @@ export async function restoreRoomSnapshot(
   );
   const body = (await res.json().catch(() => null)) as {
     text?: string;
+    applied?: boolean;
     error?: string;
   } | null;
   if (!res.ok) {
@@ -260,7 +261,7 @@ export async function restoreRoomSnapshot(
   if (typeof body?.text !== "string") {
     throw new Error("Restore response missing note text.");
   }
-  return { text: body.text };
+  return { text: body.text, applied: body.applied !== false };
 }
 
 export async function patchRoomSnapshot(

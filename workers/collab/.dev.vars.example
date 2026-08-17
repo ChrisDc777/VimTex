@@ -1,0 +1,4 @@
+ROOM_SECRET=vimtex-dev-room-secret-change-me
+AI_ADMISSION_SECRET=vimtex-dev-ai-admit-change-me
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001

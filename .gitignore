@@ -61,3 +61,8 @@ bun.lock
 # durable Yjs / room metadata (local)
 .data/
 yjs-data/
+
+# Cloudflare Worker local state
+.wrangler/
+workers/collab/.dev.vars
+workers/collab/.wrangler/

@@ -56,13 +56,14 @@ CURRENT_STATE.md or the code, trust CURRENT_STATE.md and the code.
 ## Architecture
 
 ```
-Browser                    Node (server.mjs :3001)
-┌─────────────────┐       ┌──────────────────────────────┐
-│ StudioShell or  │ HTTP  │ Next.js (app router, /api/*) │
-│ ForgeShell      │◄─────►│ chat, rooms meta/caps/snaps  │
-│ VimEditor+Chat  │ WS    │ y-websocket + optional LevelDB│
-│ LatexPreview    │       │ Room = ?room= + edit|view    │
-└─────────────────┘       └──────────────────────────────┘
+Browser                    Vercel                         Cloudflare
+┌─────────────────┐       ┌──────────────────────┐       ┌─────────────────────────┐
+│ Studio / Forge  │ HTTP  │ Next.js UI + /api/chat│       │ workers/collab Worker   │
+│                 │◄─────►│ rewrite /api/rooms/* ─┼──────►│ SQLite Durable Object   │
+│                 │  WS   │                      │       │ Yjs + meta + snapshots │
+│                 │───────┼──────────────────────┼──────►│ wss://…workers.dev     │
+└─────────────────┘       └──────────────────────┘       └─────────────────────────┘
+Local fallback: node server.mjs :3001 (do not dual-serve the same room ids)
 ```
 
 - **Single route:** `/` + room APIs under `/api/rooms/...` + `POST /api/chat`
@@ -71,6 +72,8 @@ Browser                    Node (server.mjs :3001)
 - **Optional shell:** Forge via `localStorage` `vimtex:uiVariant` (always Basic UI)
 - **Collab:** Yjs `Y.Text` + `Y.Array` chat, `WebsocketProvider`, awareness carets — both shells
 - **Guest ACL:** mint `editSecret` on room **create**; WS requires `edit` or `view` once ACL is on (see `docs/RFC-collab-persistence.md`)
+- **Share links:** capabilities live in the URL **fragment** (`#edit=` / `#view=`). Legacy `?edit=` / `?view=` are captured, stored, and stripped so CDN logs do not keep them.
+- **Recent rooms:** list + per-room edit/view access in `localStorage`. Clearing recents (or site data) drops guest ownership.
 - **Editor:** CodeMirror 6 + Replit Vim + y-codemirror.next + Y.UndoManager; Vim/Standard modes
 - **Math:** KaTeX via `lib/render-note.ts`
 - **Request limits:** in-memory rate limit in `proxy.ts`
@@ -116,7 +119,7 @@ Browser                    Node (server.mjs :3001)
 3. ~~**Monolithic editor**~~ — `WorkspaceController` + provider (#5).
 4. ~~**No guest ACL**~~ — edit/view capabilities landed (#80).
 5. ~~**Dual chat AI paths**~~ — `lib/use-room-chat.ts`.
-6. **Persistence** — in-memory by default; set `YPERSISTENCE` for LevelDB. Multi-node = M5 (RFC option B).
+6. **Persistence** — in-memory Node by default (`YPERSISTENCE` for LevelDB). Public beta rooms persist in a Cloudflare SQLite Durable Object (30-day TTL). Multi-node / OpenNext = deferred issues.
 
 ## Convergence status
 

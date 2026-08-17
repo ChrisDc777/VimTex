@@ -12,8 +12,14 @@
     "start:next": "next start -H 127.0.0.1 -p 3001",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test lib/**/*.test.mjs",
+    "test": "node --experimental-strip-types --test --test-force-exit lib/**/*.test.mjs",
+    "test:cf": "node --experimental-strip-types --test workers/collab/test/**/*.test.mjs",
     "test:e2e": "playwright test",
+    "typecheck:cf": "tsc --noEmit -p workers/collab/tsconfig.json",
+    "dev:cf": "node scripts/dev-cf.mjs",
+    "deploy:collab:staging": "wrangler deploy -c workers/collab/wrangler.jsonc --env staging",
+    "deploy:collab:production": "wrangler deploy -c workers/collab/wrangler.jsonc --env production",
+    "cf:types": "wrangler types -c workers/collab/wrangler.jsonc --env production",
     "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001",
     "start:tunnel": "cross-env AUTO_TUNNEL=1 npm start",
     "dev:tunnel": "cross-env AUTO_TUNNEL=1 npm run dev"
@@ -44,6 +50,7 @@
     "ws": "^8.21.1",
     "y-codemirror.next": "^0.3.5",
     "y-leveldb": "^0.2.0",
+    "y-protocols": "^1.0.6",
     "y-websocket": "^3.0.0",
     "yjs": "^13.6.31"
   },
@@ -61,6 +68,7 @@
     "eslint-config-next": "16.3.0",
     "playwright": "^1.61.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.34.0"
   }
 }

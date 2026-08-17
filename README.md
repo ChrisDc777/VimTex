@@ -22,6 +22,15 @@ npm start
 
 Open **[http://localhost:3001](http://localhost:3001)**. You’ll land in a room (`?room=…`). Hit **Share**, send the URL, and you’re co-editing.
 
+Cloudflare room Worker (optional, alongside Next):
+
+```bash
+cp workers/collab/.dev.vars.example workers/collab/.dev.vars
+npm run dev:cf
+```
+
+Then open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. Room HTTP is rewritten to Wrangler `:8787`; Yjs WebSockets go there directly. `npm run dev` / `npm start` stay on the Node full stack (`:3001`).
+
 For local development (same custom server + Yjs WebSocket):
 
 ```bash
@@ -71,13 +80,14 @@ Type TeX directly — no `$` required for bare commands. Use `\(...\)` for inlin
 ## Room lifetime
 
 - Reconnecting to the same `?room=` restores the shared Yjs doc while the Node process is up.
-- Empty rooms (zero WebSocket clients) are garbage-collected after `YROOM_IDLE_MS` (default **30 minutes**).
-- **Without** `YPERSISTENCE`, a server restart clears all rooms (in-memory only).
-- **With** `YPERSISTENCE=/path/to/dir`, docs are stored in LevelDB (`y-leveldb`) and survive restarts. See `docs/RFC-collab-persistence.md`.
+- **Cloudflare public beta:** new rooms live **30 days** (absolute TTL, renewable up to 30 days). “No expiry” is hidden/rejected on that deploy.
+- Empty Node rooms (zero WebSocket clients) are garbage-collected after `YROOM_IDLE_MS` (default **30 minutes**).
+- **Without** `YPERSISTENCE`, a Node server restart clears all rooms (in-memory only).
+- **With** `YPERSISTENCE=/path/to/dir`, Node docs are stored in LevelDB (`y-leveldb`) and survive restarts. See `docs/RFC-collab-persistence.md`.
 - Forge also keeps a **browser localStorage** copy per room as a solo refresh cache (not authoritative after sync).
-- **Share → Copy edit / view-only link** upgrades the room to guest ACL (`editSecret` in `ROOM_DATA_DIR`). Edit links carry `?edit=`; view-only links carry `?view=` only. Stripping `?view=` does **not** grant edit. Before the first Share, bare `?room=` still edits (legacy). In Studio Enhanced, Share lives on the bottom dock and opens a Morphing Modal sheet.
-- **Share → Room settings** can set an optional PIN and absolute TTL (same Morphing Modal sheet in Enhanced). Password rooms require unlock once per browser session; expired rooms refuse WS joins.
-- **History icon** (dock / toolbar / Forge rail) opens version checkpoints of the note. Restore replaces the live buffer for everyone in the room.
+- **Share → Copy edit / view-only link** upgrades the room to guest ACL. Edit links carry `#edit=`; view-only links carry `#view=` only (legacy `?edit=` / `?view=` still work once, then are stripped). Stripping a view capability does **not** grant edit. Before the first Share, bare `?room=` still edits (legacy). Recent Rooms store access locally so they reopen after a browser restart; clearing site data still loses guest ownership.
+- **Share → Room settings** can set an optional PIN and absolute TTL. Password rooms require unlock once per browser session; expired rooms refuse WS joins.
+- **History icon** (dock / toolbar / Forge rail) opens version checkpoints of the note. Restore replaces the live `codemirror` buffer for everyone in the room (server-applied).
 - **Import & Export** (Studio Enhanced topbar Bloom; Basic/Forge Menu) covers `.tex` / `.md` import, LaTeX/Markdown/PDF export, and copy source.
 
 ---

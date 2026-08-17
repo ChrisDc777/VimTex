@@ -97,6 +97,8 @@ ACL and RO flags live on the controller (`readOnly`, WS `params` for `view` / `e
 
 **M2 near-term (option A) is complete.** Option B (Hocuspocus/Postgres) remains M5 when multi-instance is required.
 
+**Public beta (2026-08):** first second backend is a Cloudflare Worker + SQLite Durable Object per room (`workers/collab/`), with Vercel keeping the Next UI and `/api/chat`. Contracts in `lib/collab-contract.ts` and `docs/DEPLOYMENT_ARCHITECTURE.md`. Node `server.mjs` stays for local/rollback. Do not serve the same room ids from both backends.
+
 ## Open questions for product
 
 - Should password rooms still be discoverable by id alone (password only at join)?

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { TurnstileHost } from "@/components/TurnstileHost";
 import { STRIP_EXTENSION_HYDRATION_ATTRS_SCRIPT } from "@/lib/strip-extension-hydration-attrs";
 import "./globals.css";
 
@@ -80,6 +81,7 @@ export default function RootLayout({
           {STRIP_EXTENSION_HYDRATION_ATTRS_SCRIPT}
         </Script>
         {children}
+        <TurnstileHost />
       </body>
     </html>
   );

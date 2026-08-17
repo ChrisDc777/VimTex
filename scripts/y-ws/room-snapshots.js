@@ -17,6 +17,8 @@ const { upsertRoomMeta } = require('./room-meta.js')
 
 /** Max unpinned checkpoints per room (FIFO). Pinned snapshots skip eviction. */
 const MAX_SNAPSHOTS_PER_ROOM = Number(process.env.VIMTEX_MAX_SNAPSHOTS) || 50
+/** Hard cap including pinned — pinned cannot exhaust storage. */
+const MAX_SNAPSHOTS_HARD_CAP = Number(process.env.VIMTEX_MAX_SNAPSHOTS_HARD) || 100
 
 /** Skip duplicate creates when hash matches latest within this window. */
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000
@@ -192,10 +194,25 @@ function refreshSnapshotIndex (roomId) {
 function enforceRetention (roomId) {
   const snaps = listSnapshotsFromFs(roomId)
   const unpinned = snaps.filter((s) => !s.pinned)
-  if (unpinned.length <= MAX_SNAPSHOTS_PER_ROOM) return
-  const toRemove = unpinned.slice(MAX_SNAPSHOTS_PER_ROOM)
-  for (const snap of toRemove) {
+  if (unpinned.length > MAX_SNAPSHOTS_PER_ROOM) {
+    const toRemove = unpinned.slice(MAX_SNAPSHOTS_PER_ROOM)
+    for (const snap of toRemove) {
+      deleteSnapshot(roomId, snap.id)
+    }
+  }
+  const remaining = listSnapshotsFromFs(roomId)
+  const overflow = remaining.length - MAX_SNAPSHOTS_HARD_CAP
+  if (overflow <= 0) return
+  const extraUnpinned = remaining.filter((s) => !s.pinned).slice(-overflow)
+  for (const snap of extraUnpinned) {
     deleteSnapshot(roomId, snap.id)
+  }
+  if (listSnapshotsFromFs(roomId).length > MAX_SNAPSHOTS_HARD_CAP) {
+    const err = new Error(
+      'Too many pinned checkpoints. Unpin or delete some before saving another.',
+    )
+    err.code = 'SNAPSHOT_HARD_CAP'
+    throw err
   }
 }
 
@@ -403,6 +420,10 @@ function forkSnapshot (sourceRoomId, snapshotId, opts = {}) {
     ...(opts.createdBy ? { createdBy: opts.createdBy } : {}),
   })
 
+  // Seed the live Y.Doc before the client navigates — checkpoint-only fork
+  // left the first sync empty (or re-seeded starter content).
+  seedLiveYDoc(newRoomId, update)
+
   logSnapshotEvent('fork', {
     roomId: newRoomId,
     snapId: snapshot.id,
@@ -421,6 +442,37 @@ function forkSnapshot (sourceRoomId, snapshotId, opts = {}) {
 }
 
 /**
+ * Apply a Yjs update to the in-memory room doc (and broadcast via updateHandler).
+ * Used to seed a forked room before the first WebSocket client connects.
+ * @param {string} roomId
+ * @param {Uint8Array} update
+ */
+function seedLiveYDoc (roomId, update) {
+  const { getYDoc } = require('./utils.js')
+  const doc = getYDoc(roomId)
+  Y.applyUpdate(doc, update)
+}
+
+/**
+ * Replace only the `codemirror` Y.Text on the live room doc. Chat is preserved.
+ * Broadcasts to connected peers through the doc update handler.
+ * @param {string} roomId
+ * @param {string} text
+ * @returns {string}
+ */
+function restoreLiveCodemirror (roomId, text) {
+  const { getYDoc } = require('./utils.js')
+  const doc = getYDoc(roomId)
+  const ytext = doc.getText('codemirror')
+  doc.transact(() => {
+    const len = ytext.length
+    if (len > 0) ytext.delete(0, len)
+    if (text.length > 0) ytext.insert(0, text)
+  }, 'snapshot-restore')
+  return ytext.toString()
+}
+
+/**
  * Placeholder for M5 claim-guest authorship remapping (#128 / #37).
  * @param {string} _roomId
  * @param {{ fromClientId?: number, toUserId?: string }} _mapping
@@ -433,6 +485,7 @@ function remapSnapshotAuthorship (_roomId, _mapping) {
 
 module.exports = {
   MAX_SNAPSHOTS_PER_ROOM,
+  MAX_SNAPSHOTS_HARD_CAP,
   listSnapshots,
   listSnapshotsFromFs,
   querySnapshots,
@@ -447,6 +500,8 @@ module.exports = {
   deleteSnapshot,
   deleteAllSnapshots,
   forkSnapshot,
+  seedLiveYDoc,
+  restoreLiveCodemirror,
   remapSnapshotAuthorship,
   snapshotLogPayload,
   logSnapshotEvent,

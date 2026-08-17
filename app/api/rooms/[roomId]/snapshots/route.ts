@@ -169,6 +169,26 @@ export async function POST(req: Request, context: RouteContext) {
     const doc = getYDoc(roomId);
     update = Y.encodeStateAsUpdate(doc);
   }
-  const meta = createSnapshot(roomId, update, label, { kind, createdBy });
+  let meta;
+  try {
+    meta = createSnapshot(roomId, update, label, { kind, createdBy });
+  } catch (err) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code?: string }).code)
+        : "";
+    if (code === "SNAPSHOT_HARD_CAP") {
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : "Too many pinned checkpoints.",
+        },
+        { status: 507 },
+      );
+    }
+    throw err;
+  }
   return NextResponse.json({ snapshot: meta }, { status: 201 });
 }

@@ -26,6 +26,7 @@ import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
+import { RoomUnavailableScreen } from "@/components/RoomUnavailableScreen";
 import { SidePanel } from "@/components/SidePanel";
 import { openPreferences } from "@/lib/ui-events";
 import {
@@ -52,9 +53,8 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import {
+  hydrateRoomCapabilities,
   loadEditSecret,
-  readViewTokenFromLocation,
-  resolveEditSecret,
   mintEditCapabilityForNewRoom,
 } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
@@ -238,9 +238,11 @@ export function ForgeShell({
     try {
       const roomFromUrl = readRoomFromLocation();
       setUrlRoomId(roomFromUrl);
-      const token = readViewTokenFromLocation();
-      setViewToken(token);
-      setViewRoomId(token ? roomFromUrl : null);
+      const caps = roomFromUrl
+        ? hydrateRoomCapabilities(roomFromUrl)
+        : { editSecret: null, viewToken: null };
+      setViewToken(caps.viewToken);
+      setViewRoomId(caps.viewToken ? roomFromUrl : null);
       setRightPanelView(loadRightPanelView());
       setEditorMode(loadEditorMode());
       setRelativeLineNumbers(loadRelativeLineNumbers());
@@ -259,10 +261,10 @@ export function ForgeShell({
 
       // Open existing URL room: never mint (strip-view must stay denied).
       // Bare `/` creates a room via tabs — mint happens in onRoomCreated.
-      if (token) {
+      if (caps.viewToken) {
         finish(null, true);
       } else if (roomFromUrl) {
-        finish(resolveEditSecret(roomFromUrl), true);
+        finish(caps.editSecret, true);
       } else {
         finish(null, false);
       }
@@ -308,7 +310,7 @@ export function ForgeShell({
         });
       return;
     }
-    setEditSecret(resolveEditSecret(roomId));
+    setEditSecret(hydrateRoomCapabilities(roomId).editSecret);
     setCapabilityReady(true);
   }, [roomId, viewToken]);
 
@@ -520,6 +522,7 @@ export function ForgeShell({
   const ready =
     nameReady &&
     gate.checked &&
+    !gate.unavailable &&
     !gate.expired &&
     !gate.needsPassword &&
     !gate.needsShareLink;
@@ -545,6 +548,16 @@ export function ForgeShell({
     () => new Set(tabs.map((tab) => tab.roomId)),
     [tabs],
   );
+
+  if (gate.unavailable) {
+    return (
+      <RoomUnavailableScreen
+        roomId={roomId}
+        message={gate.unavailableError}
+        onRetry={() => void gate.refreshMeta()}
+      />
+    );
+  }
 
   if (gate.expired) {
     return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;

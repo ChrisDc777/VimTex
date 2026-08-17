@@ -22,6 +22,7 @@ import { RoomHistoryPanel } from "@/components/RoomHistoryPanel";
 import { RoomAutosnapHost } from "@/components/RoomAutosnapHost";
 import { RoomExpiredScreen } from "@/components/RoomExpiredScreen";
 import { RoomAccessDenied } from "@/components/RoomAccessDenied";
+import { RoomUnavailableScreen } from "@/components/RoomUnavailableScreen";
 import { VtToaster } from "@/components/VtToaster";
 import { NamePicker } from "@/components/NamePicker";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
@@ -56,9 +57,7 @@ import {
   writeRoomToLocation,
 } from "@/lib/collab";
 import {
-  loadEditSecret,
-  readViewTokenFromLocation,
-  resolveEditSecret,
+  hydrateRoomCapabilities,
   mintEditCapabilityForNewRoom,
 } from "@/lib/room-auth";
 import { useRoomGate } from "@/lib/use-room-gate";
@@ -179,9 +178,11 @@ export function StudioShell({
     const existing = readRoomFromLocation();
     const room = existing ?? createRoomId();
     const createdHere = !existing;
-    const view = readViewTokenFromLocation();
+    const caps = createdHere
+      ? { editSecret: null, viewToken: null }
+      : hydrateRoomCapabilities(room);
     setRoomId(room);
-    setViewToken(view);
+    setViewToken(caps.viewToken);
 
     const finish = (edit: string | null) => {
       if (cancelled) return;
@@ -208,8 +209,8 @@ export function StudioShell({
       setHydrated(true);
     };
 
-    if (view) {
-      writeRoomToLocation(room);
+    if (caps.viewToken) {
+      writeRoomToLocation(room, { viewToken: caps.viewToken, clearEditSecret: true });
       finish(null);
     } else if (createdHere) {
       // Creator path: mint edit into the URL. Do not mint when opening an
@@ -221,8 +222,13 @@ export function StudioShell({
           finish(null);
         });
     } else {
-      writeRoomToLocation(room);
-      finish(resolveEditSecret(room));
+      writeRoomToLocation(room, {
+        ...(caps.editSecret
+          ? { editSecret: caps.editSecret }
+          : { clearEditSecret: true }),
+        clearViewToken: true,
+      });
+      finish(caps.editSecret);
     }
 
     return () => {
@@ -306,16 +312,16 @@ export function StudioShell({
           .then(({ edit }) => setEditSecret(edit))
           .catch(() => setEditSecret(null));
       } else {
-        // Keep the stored edit capability — do not call resolveEditSecret after
-        // clearing the URL (that would wipe sessionStorage and deny access).
-        const edit = loadEditSecret(room);
+        const access = hydrateRoomCapabilities(room);
         writeRoomToLocation(room, {
-          clearViewToken: true,
-          ...(edit
-            ? { editSecret: edit }
-            : { clearEditSecret: true }),
+          ...(access.editSecret
+            ? { editSecret: access.editSecret, clearViewToken: true }
+            : access.viewToken
+              ? { viewToken: access.viewToken, clearEditSecret: true }
+              : { clearEditSecret: true, clearViewToken: true }),
         });
-        setEditSecret(edit);
+        setEditSecret(access.editSecret);
+        setViewToken(access.viewToken);
       }
       requestAnimationFrame(() => editorRef.current?.focus());
     },
@@ -420,6 +426,7 @@ export function StudioShell({
   const ready =
     nameReady &&
     gate.checked &&
+    !gate.unavailable &&
     !gate.expired &&
     !gate.needsPassword &&
     !gate.needsShareLink;
@@ -462,6 +469,16 @@ export function StudioShell({
     "--studio-preview-width": `${splitLayout.previewWidth}px`,
     "--studio-preview-mobile-height": `${splitLayout.previewMobileHeight}px`,
   } as CSSProperties;
+
+  if (gate.unavailable) {
+    return (
+      <RoomUnavailableScreen
+        roomId={roomId}
+        message={gate.unavailableError}
+        onRetry={() => void gate.refreshMeta()}
+      />
+    );
+  }
 
   if (gate.expired) {
     return <RoomExpiredScreen expiresAt={gate.meta?.expiresAt} />;

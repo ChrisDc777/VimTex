@@ -19,7 +19,25 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:cf
       - run: npm run build
+      - run: npx wrangler deploy -c workers/collab/wrangler.jsonc --dry-run --outdir .wrangler/dry
+      - name: Worker bundle under 3 MiB
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          root = ".wrangler/dry"
+          if not os.path.isdir(root):
+              print("no dry-run output; skip size check")
+              sys.exit(0)
+          total = 0
+          for dirpath, _, files in os.walk(root):
+              for name in files:
+                  total += os.path.getsize(os.path.join(dirpath, name))
+          print(f"dry-run output bytes={total}")
+          if total > 3 * 1024 * 1024:
+              raise SystemExit(f"Worker bundle {total} exceeds 3 MiB")
+          PY
 
   e2e:
     needs: quality

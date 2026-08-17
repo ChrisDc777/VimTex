@@ -4,6 +4,11 @@
  * to the server, so it stays consistent with the privacy-first product stance.
  */
 
+import {
+  clearAllRoomAccess,
+  clearRoomAccess,
+} from "./room-access.ts";
+
 const RECENT_ROOMS_KEY = "vimtex:recentRooms";
 const MAX_RECENT_ROOMS = 8;
 
@@ -59,6 +64,7 @@ export function recordRecentRoom(id: string): void {
 
 export function removeRecentRoom(id: string): void {
   saveRecentRooms(loadRecentRooms().filter((r) => r.id !== id));
+  clearRoomAccess(id);
 }
 
 export function clearRecentRooms(): void {
@@ -68,4 +74,5 @@ export function clearRecentRooms(): void {
   } catch {
     // ignore
   }
+  clearAllRoomAccess();
 }

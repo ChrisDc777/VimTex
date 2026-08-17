@@ -4,7 +4,11 @@ import {
 import { loadUserAiKey } from "@/lib/ai-keys";
 import type { EditorCaret } from "@/lib/ai-chat-context";
 import type { AiHistoryMessage } from "@/lib/ai-chat-history";
-import { backendForModel } from "@/lib/ai-providers";
+import { backendForModel, isServerKeyedModel } from "@/lib/ai-providers";
+import {
+  requestTurnstileToken,
+  turnstileEnabled,
+} from "@/lib/turnstile";
 import {
   normalizeAiUsage,
   stripAiUsageTrailer,
@@ -46,7 +50,7 @@ export type AiChatStreamHandlers = {
   onToken?: (accumulated: string) => void;
 };
 
-function requestBody({
+async function requestBody({
   instruction,
   document,
   model,
@@ -65,11 +69,16 @@ function requestBody({
   const backend = backendForModel(model);
   const apiKey = loadUserAiKey(backend) || undefined;
   const temp = normalizeAiTemperature(temperature);
+  let turnstileToken: string | undefined;
+  if (!apiKey && isServerKeyedModel(model) && turnstileEnabled()) {
+    turnstileToken = (await requestTurnstileToken()) || undefined;
+  }
   return {
     instruction,
     document,
     model,
     apiKey,
+    ...(turnstileToken ? { turnstileToken } : {}),
     ...(selection ? { selection } : {}),
     ...(surrounding ? { surrounding } : {}),
     ...(caret ? { caret } : {}),
@@ -91,7 +100,7 @@ export async function postAiChat(req: AiChatRequest): Promise<AiChatResult> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody(req)),
+    body: JSON.stringify(await requestBody(req)),
     signal: req.signal,
   });
 
@@ -126,7 +135,7 @@ export async function streamAiChat(
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody({ ...req, stream: true })),
+    body: JSON.stringify(await requestBody({ ...req, stream: true })),
     signal: req.signal,
   });
 

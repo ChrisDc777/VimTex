@@ -103,9 +103,9 @@ export function useEditorTabs({
 
   useEffect(() => {
     if (!session?.activeRoomId) return;
-    const edit = loadEditSecret(session.activeRoomId);
+    const access = loadEditSecret(session.activeRoomId);
     writeRoomToLocation(session.activeRoomId, {
-      ...(edit ? { editSecret: edit } : { clearEditSecret: true }),
+      ...(access ? { editSecret: access } : { clearEditSecret: true }),
     });
   }, [session?.activeRoomId]);
 

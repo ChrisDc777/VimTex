@@ -5,8 +5,7 @@ type RoomAccessDeniedProps = {
 };
 
 /**
- * Shown when guest ACL is on but the URL has neither `edit` nor `view`.
- * Avoids WebsocketProvider reconnect storms after stripping capability params.
+ * Shown when guest ACL is on but the URL has neither edit nor view capability.
  */
 export function RoomAccessDenied({ roomId }: RoomAccessDeniedProps) {
   return (
@@ -17,7 +16,9 @@ export function RoomAccessDenied({ roomId }: RoomAccessDeniedProps) {
         This room uses guest capabilities. Open an{" "}
         <span className="font-mono text-ink">edit</span> or{" "}
         <span className="font-mono text-ink">view</span> link from the host —
-        the room id alone is not enough.
+        the room id alone is not enough. Share links keep the capability in the
+        URL fragment (<span className="font-mono text-ink">#edit=</span> /{" "}
+        <span className="font-mono text-ink">#view=</span>).
       </p>
       <p className="mt-2 font-mono text-xs text-mute">{roomId}</p>
       <button

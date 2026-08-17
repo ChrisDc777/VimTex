@@ -22,6 +22,7 @@ import {
   normalizeAiUsage,
   type AiKeySource,
 } from "@/lib/ai-usage";
+import { admitServerAi } from "@/lib/ai-admit";
 import {
   DEFAULT_AI_TEMPERATURE,
   normalizeAiTemperature,
@@ -60,6 +61,8 @@ type ChatRequestBody = {
   diagnostics?: string;
   outline?: string;
   citations?: string;
+  /** Cloudflare Turnstile token for shared-key AI admission. */
+  turnstileToken?: string;
 };
 
 function appUrl(): string {
@@ -294,6 +297,21 @@ export async function POST(req: Request) {
 
   const parsed = parseBody(body);
   if (parsed.error) return parsed.error;
+
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+  const admitted = await admitServerAi({
+    model: parsed.model,
+    userApiKey: typeof body.apiKey === "string" ? body.apiKey : undefined,
+    turnstileToken:
+      typeof body.turnstileToken === "string" ? body.turnstileToken : undefined,
+    clientIp,
+  });
+  if (!admitted.ok) {
+    return Response.json({ error: admitted.error }, { status: admitted.status });
+  }
 
   const {
     instruction,
