@@ -30,7 +30,7 @@ import {
   type SnapshotKind,
 } from "@/lib/room-snapshots";
 import { writeRoomToLocation } from "@/lib/collab";
-import { saveEditSecret } from "@/lib/room-auth";
+import { buildRoomUrl, saveEditSecret } from "@/lib/room-auth";
 import { formatRelativeTime } from "@/lib/room-chat";
 import { notify } from "@/lib/toasts";
 
@@ -273,12 +273,14 @@ export function RoomHistoryPanel({
     setBusy(true);
     try {
       const currentText = workspace.getText();
-      const { text } = await restoreRoomSnapshot(roomId, snap.id, {
+      const { text, applied } = await restoreRoomSnapshot(roomId, snap.id, {
         auth,
         checkpointCurrent: true,
         currentText,
       });
-      workspace.restoreSnapshotText(text);
+      if (!applied) {
+        workspace.restoreSnapshotText(text);
+      }
       notify.success("Version restored for the room");
       await refresh();
     } catch (err) {
@@ -372,7 +374,7 @@ export function RoomHistoryPanel({
       });
       notify.success("Opened forked room");
       window.location.assign(
-        `/?room=${encodeURIComponent(forked.roomId)}&edit=${encodeURIComponent(forked.edit)}`,
+        buildRoomUrl(forked.roomId, { editSecret: forked.edit }),
       );
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Fork failed");

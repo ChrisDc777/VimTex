@@ -23,6 +23,20 @@ const {
   ) => RoomMeta;
   isRoomExpired: (meta: RoomMeta | null) => boolean;
 };
+const {
+  parseSnapshotCredentials,
+  authorizeSnapshotWrite,
+} = require("../../../../../scripts/y-ws/snapshot-access.js") as {
+  parseSnapshotCredentials: (req: Request) => {
+    edit?: string;
+    view?: string;
+    auth?: string;
+  };
+  authorizeSnapshotWrite: (
+    roomId: string,
+    creds: { edit?: string; view?: string; auth?: string },
+  ) => { ok: true } | { ok: false; status: number; error: string };
+};
 
 type RoomMeta = {
   roomId: string;
@@ -58,6 +72,7 @@ export async function GET(_req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid room id." }, { status: 400 });
   }
   const meta = readRoomMeta(roomId);
+  const ttlNeverAllowed = process.env.VIMTEX_TTL_NEVER !== "0";
   return NextResponse.json({
     roomId,
     requiresPassword: Boolean(meta?.passwordHash),
@@ -65,6 +80,7 @@ export async function GET(_req: Request, context: RouteContext) {
     expiresAt: meta?.expiresAt ?? null,
     expired: isRoomExpired(meta),
     createdAt: meta?.createdAt ?? null,
+    ttlNeverAllowed,
   });
 }
 
@@ -79,6 +95,12 @@ export async function PATCH(req: Request, context: RouteContext) {
   const roomId = parseRoomId((await context.params).roomId);
   if (!roomId) {
     return NextResponse.json({ error: "Invalid room id." }, { status: 400 });
+  }
+
+  const creds = parseSnapshotCredentials(req);
+  const auth = authorizeSnapshotWrite(roomId, creds);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   let body: MetaBody;
@@ -109,6 +131,12 @@ export async function PATCH(req: Request, context: RouteContext) {
   if (body.ttl != null && body.ttl !== "") {
     if (!(body.ttl in TTL_PRESETS_MS)) {
       return NextResponse.json({ error: "Unknown ttl preset." }, { status: 400 });
+    }
+    if (body.ttl === "never" && process.env.VIMTEX_TTL_NEVER === "0") {
+      return NextResponse.json(
+        { error: "This deployment does not allow rooms without expiry." },
+        { status: 400 },
+      );
     }
     const ms = TTL_PRESETS_MS[body.ttl]!;
     patch.expiresAt = ms == null ? null : Date.now() + ms;

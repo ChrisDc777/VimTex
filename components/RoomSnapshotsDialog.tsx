@@ -75,10 +75,10 @@ export function RoomSnapshotsDialog({
     }
     setBusy(true);
     try {
-      const { text } = await restoreRoomSnapshot(roomId, snap.id);
-      // Apply on the live client Y.Doc so the editor updates even when the
-      // API process does not share the WebSocket room map.
-      workspace.restoreSnapshotText(text);
+      const { text, applied } = await restoreRoomSnapshot(roomId, snap.id);
+      if (!applied) {
+        workspace.restoreSnapshotText(text);
+      }
       notify.success("Checkpoint restored");
       onClose();
     } catch (err) {

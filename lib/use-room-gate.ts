@@ -20,6 +20,9 @@ export type RoomGateState = {
    * Do not open the WS in this state (avoids reconnect loops).
    */
   needsShareLink: boolean;
+  /** Meta fetch failed — do not treat as a blank new room. */
+  unavailable: boolean;
+  unavailableError: string | null;
   expired: boolean;
   unlockError: string | null;
   unlocking: boolean;
@@ -48,6 +51,8 @@ export function useRoomGate(
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const [unavailableError, setUnavailableError] = useState<string | null>(null);
 
   const refreshMeta = useCallback(async () => {
     if (!roomId || !enabled) {
@@ -57,6 +62,8 @@ export function useRoomGate(
       return;
     }
     setChecked(false);
+    setUnavailable(false);
+    setUnavailableError(null);
     try {
       const next = await fetchRoomMeta(roomId);
       setMeta(next);
@@ -68,16 +75,13 @@ export function useRoomGate(
         setAuthToken(null);
       }
       setUnlockError(null);
-    } catch {
-      // Soft-fail: allow join if meta API is unavailable (dev / first boot).
-      setMeta({
-        roomId,
-        requiresPassword: false,
-        hasEditAcl: false,
-        expiresAt: null,
-        expired: false,
-      });
+    } catch (err) {
+      setMeta(null);
       setAuthToken(null);
+      setUnavailable(true);
+      setUnavailableError(
+        err instanceof Error ? err.message : "Room service unavailable",
+      );
     } finally {
       setChecked(true);
     }
@@ -146,6 +150,8 @@ export function useRoomGate(
     needsPassword,
     needsShareLink,
     expired,
+    unavailable,
+    unavailableError,
     unlockError,
     unlocking,
     unlock,

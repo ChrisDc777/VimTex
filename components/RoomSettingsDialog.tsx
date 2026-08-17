@@ -12,9 +12,9 @@ import {
 import {
   fetchRoomMeta,
   patchRoomMeta,
+  roomTtlOptions,
   type RoomMetaPublic,
   type RoomTtlPreset,
-  ROOM_TTL_OPTIONS,
 } from "@/lib/room-meta";
 import { notify } from "@/lib/toasts";
 
@@ -54,7 +54,12 @@ export function RoomSettingsPanel({
         const next = await fetchRoomMeta(roomId);
         if (cancelled) return;
         setMeta(next);
-        setTtl("never");
+        setTtl(
+          next.ttlNeverAllowed === false ||
+            process.env.NEXT_PUBLIC_HIDE_TTL_NEVER === "1"
+            ? "30d"
+            : "never",
+        );
       } catch (err) {
         if (cancelled) return;
         setLoadError(err instanceof Error ? err.message : "Failed to load");
@@ -143,7 +148,7 @@ export function RoomSettingsPanel({
           <SelectValue placeholder="Choose expiry" />
         </SelectTrigger>
         <SelectContent className="border-white/[0.08] bg-[#121214] shadow-[0_16px_40px_rgba(0,0,0,0.55)]">
-          {ROOM_TTL_OPTIONS.map((opt) => (
+          {roomTtlOptions(meta).map((opt) => (
             <SelectItem
               key={opt.value}
               value={opt.value}

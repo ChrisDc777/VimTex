@@ -205,6 +205,7 @@ const scheduleIdleGc = doc => {
     }
   }, yroomIdleMs)
   idleGcTimers.set(doc.name, timer)
+  timer.unref?.()
 }
 
 const getYDoc = (docname, gc = true) => map.setIfUndefined(docs, docname, () => {
@@ -396,6 +397,7 @@ exports.setupWSConnection = (conn, req, { docName = null, gc = true } = {}) => {
       }
     }
   }, pingTimeout)
+  pingInterval.unref?.()
   conn.on('close', () => {
     closeConn(doc, conn)
     clearInterval(pingInterval)

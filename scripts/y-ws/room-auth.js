@@ -8,7 +8,7 @@
  *
  * Once a room has editSecret, knowing the room id alone is not enough to write.
  */
-const { createHmac, timingSafeEqual, scryptSync, randomBytes } = require('node:crypto')
+const { createHmac, createHash, timingSafeEqual, scryptSync, randomBytes } = require('node:crypto')
 
 const DEV_FALLBACK_SECRET = 'vimtex-dev-room-secret'
 const DEFAULT_AUTH_TTL_MS = 24 * 60 * 60 * 1000
@@ -77,9 +77,39 @@ function createEditSecret () {
 function verifyEditSecret (presented, stored) {
   if (typeof presented !== 'string' || presented.length === 0) return false
   if (typeof stored !== 'string' || stored.length === 0) return false
+  if (stored.startsWith('sha256:')) {
+    return verifyHashedEditSecret(presented, stored.slice(7))
+  }
   try {
     const a = Buffer.from(presented)
     const b = Buffer.from(stored)
+    if (a.length !== b.length) return false
+    return timingSafeEqual(a, b)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * @param {string} secret
+ * @returns {string} hex SHA-256
+ */
+function hashEditSecret (secret) {
+  return createHash('sha256').update(secret, 'utf8').digest('hex')
+}
+
+/**
+ * @param {string} presented
+ * @param {string} storedHex
+ * @returns {boolean}
+ */
+function verifyHashedEditSecret (presented, storedHex) {
+  if (typeof presented !== 'string' || presented.length === 0) return false
+  if (typeof storedHex !== 'string' || storedHex.length === 0) return false
+  const actual = hashEditSecret(presented)
+  try {
+    const a = Buffer.from(actual, 'hex')
+    const b = Buffer.from(storedHex, 'hex')
     if (a.length !== b.length) return false
     return timingSafeEqual(a, b)
   } catch {
@@ -172,6 +202,7 @@ module.exports = {
   verifyViewToken,
   createEditSecret,
   verifyEditSecret,
+  hashEditSecret,
   createAuthToken,
   verifyAuthToken,
   hashPassword,
