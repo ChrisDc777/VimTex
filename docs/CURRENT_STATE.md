@@ -11,6 +11,7 @@ If two docs disagree, **this file + open GitHub issues win**. Do not implement f
 | Shipped vs not | This file |
 | Next work | History Phase 2 (editor time-travel); M5 gate [#35](https://github.com/ChrisDc777/VimTex/issues/35)/[#36](https://github.com/ChrisDc777/VimTex/issues/36) |
 | History internals | [`HISTORY.md`](./HISTORY.md) |
+| Deployment / infra swaps | [`DEPLOYMENT_ARCHITECTURE.md`](./DEPLOYMENT_ARCHITECTURE.md) |
 | AI shell matrix | [`AI_ROADMAP.md`](./AI_ROADMAP.md) (status line + ✅ rows; ignore leftover `🔄` unless code disagrees) |
 | Milestone overview | [`ROADMAP.md`](./ROADMAP.md) — historical; M0–M4 complete; M3 Level A largely shipped |
 | Do **not** treat as live backlog | `scripts/issue-backlog.json` (M0 seed only) |
