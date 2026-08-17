@@ -11,6 +11,7 @@ import { createRequire } from "node:module";
 import { parse } from "node:url";
 import next from "next";
 import { WebSocketServer } from "ws";
+import { startAutoTunnel } from "./scripts/auto-tunnel.mjs";
 
 const require = createRequire(import.meta.url);
 const { setupWSConnection } = require("./scripts/y-ws/utils.js");
@@ -62,4 +63,5 @@ server.on("upgrade", (req, socket, head) => {
 server.listen(port, hostname, () => {
   console.log(`VimTex ready on http://${hostname}:${port}`);
   console.log(`Yjs WebSocket on ws://${hostname}:${port}/<room>`);
+  startAutoTunnel(port);
 });

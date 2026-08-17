@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test lib/**/*.test.mjs",
     "test:e2e": "playwright test",
-    "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001"
+    "tunnel": "cloudflared tunnel --url http://127.0.0.1:3001",
+    "start:tunnel": "cross-env AUTO_TUNNEL=1 npm start",
+    "dev:tunnel": "cross-env AUTO_TUNNEL=1 npm run dev"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.27",
