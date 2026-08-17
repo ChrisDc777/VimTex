@@ -41,7 +41,7 @@ M2 delivered: read-only share links (#23), room TTL / optional password (#24), s
 1. **Wire LevelDB:** `y-leveldb` is a dependency; set `YPERSISTENCE=/path/to/dir` to enable. If the env var is set but the module is missing, the server fails fast with a clear log.
 2. **Source of truth:** when connected, `WorkspaceController` Y.Doc is SoT. Forge localStorage remains a **client cache only** (seed empty rooms / solo refresh), never authoritative over the server doc after sync.
 3. **Idle GC vs TTL:** keep process-local idle GC. Room **TTL** (#24) is a separate absolute expiry clock stored with the room metadata (LevelDB or a tiny side map), independent of “no clients.”
-4. **Defer B** to M5 / when multi-region or multi-instance is required. Client already talks Yjs protocols; migrating the server later should not require shell rewrites.
+4. **Defer B** to M5 / when multi-region or multi-instance is required. Client already talks Yjs protocols; migrating the server later should not require shell rewrites. See [`DEPLOYMENT_ARCHITECTURE.md`](./DEPLOYMENT_ARCHITECTURE.md) for tiers and swap contract.
 
 ## Capability model (guest mode)
 

@@ -30,12 +30,25 @@ npm run dev
 
 ### Share outside localhost
 
+**Option A — automatic (one command):**
+
+```bash
+npm start
+# or: npm run dev:tunnel
+```
+
+Set `AUTO_TUNNEL=1` (or use `npm run start:tunnel` / `npm run dev:tunnel`). The server spawns `cloudflared` and prints a `https://*.trycloudflare.com` link when ready. Requires [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) on your PATH.
+
+**Option B — manual second terminal:**
+
 ```bash
 npm start
 npm run tunnel   # needs cloudflared
 ```
 
 Open the printed `https://*.trycloudflare.com` link on two devices with the same room — carets, edits, and chat sync live.
+
+Quick tunnels get a **new URL every restart**. For a stable hostname you need a [named Cloudflare tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (one-time account setup). If the app is already on a public host (VPS, Fly, etc.), you do **not** need a tunnel — use that URL directly.
 
 ---
 
@@ -106,6 +119,7 @@ Development is tracked on **[ChrisDc777/VimTex](https://github.com/ChrisDc777/Vi
 | [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md) | M3+ AI plan (Studio full vs Forge suggest-only) |
 | [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | **Start here** — shipped inventory + next-session prompt |
 | [docs/RFC-collab-persistence.md](docs/RFC-collab-persistence.md) | Guest ACL / persistence (M2) |
+| [docs/DEPLOYMENT_ARCHITECTURE.md](docs/DEPLOYMENT_ARCHITECTURE.md) | Tiers, swap contract, scale scopes |
 | [docs/HISTORY.md](docs/HISTORY.md) | Version history architecture (Level A–E) |
 | [docs/GITHUB_ISSUES.md](docs/GITHUB_ISSUES.md) | Issue index + backlog |
 | [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) | Positioning and personas |
